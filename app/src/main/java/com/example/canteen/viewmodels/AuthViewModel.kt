@@ -1,4 +1,5 @@
-package com.example.medipoint.ui.theme.Viewmodels
+// 👇 FIX: Corrected package name
+package com.example.canteen.viewmodels
 
 import androidx.lifecycle.ViewModel
 import com.google.firebase.FirebaseNetworkException
@@ -15,20 +16,17 @@ import kotlinx.coroutines.flow.asStateFlow
 class AuthViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
 
-    // Keep existing isLoggedIn and currentUser logic
-    private val _isLoggedIn = MutableStateFlow(auth.currentUser != null) // Keep private
-    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow() // Expose as StateFlow
+    private val _isLoggedIn = MutableStateFlow(auth.currentUser != null)
+    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     val currentUser: FirebaseUser?
         get() = auth.currentUser
 
-    // --- State for Password Reset ---
     private val _passwordResetStatus = MutableStateFlow<String?>(null)
     val passwordResetStatus: StateFlow<String?> = _passwordResetStatus.asStateFlow()
 
     private val _isLoadingPasswordReset = MutableStateFlow(false)
     val isLoadingPasswordReset: StateFlow<Boolean> = _isLoadingPasswordReset.asStateFlow()
-    // ---
 
     init {
         auth.addAuthStateListener { firebaseAuth ->
@@ -38,10 +36,8 @@ class AuthViewModel : ViewModel() {
 
     fun signOut() {
         auth.signOut()
-        // _isLoggedIn.value will be updated by the AuthStateListener
     }
     fun createAccount(email: String, password: String, onResult: (Boolean, String) -> Unit) {
-        // Your existing createAccount logic here
         if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             onResult(false, "Please enter a valid email address")
             return
@@ -85,7 +81,7 @@ class AuthViewModel : ViewModel() {
         }
 
         _isLoadingPasswordReset.value = true
-        _passwordResetStatus.value = null // Clear previous status
+        _passwordResetStatus.value = null
 
         auth.sendPasswordResetEmail(email)
             .addOnCompleteListener { task ->
@@ -101,7 +97,6 @@ class AuthViewModel : ViewModel() {
                         is FirebaseNetworkException -> {
                             _passwordResetStatus.value = "Network error. Please check your connection."
                         }
-                        // Add more specific error handling if needed
                         else -> {
                             _passwordResetStatus.value = "Failed to send password reset email. Please try again. (${exception?.message ?: "Unknown error"})"
                         }
@@ -113,5 +108,4 @@ class AuthViewModel : ViewModel() {
     fun clearPasswordResetStatus() {
         _passwordResetStatus.value = null
     }
-    // --- End of New Function ---
 }

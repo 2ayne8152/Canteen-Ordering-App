@@ -29,7 +29,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.medipoint.ui.theme.Viewmodels.AuthViewModel
+// 👇 FIX: Corrected the import path for AuthViewModel
+import com.example.canteen.viewmodels.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,17 +43,15 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var isLoadingLogin by remember { mutableStateOf(false) }
     var loginErrorMessage by remember { mutableStateOf("") }
-    val context = LocalContext.current // For showing Toasts
+    val context = LocalContext.current
 
-    // Observe password reset states from ViewModel
     val passwordResetStatus by authViewModel.passwordResetStatus.collectAsState()
     val isLoadingPasswordReset by authViewModel.isLoadingPasswordReset.collectAsState()
 
-    // Effect to show Toast for password reset status and clear it
     LaunchedEffect(passwordResetStatus) {
         passwordResetStatus?.let { status ->
             Toast.makeText(context, status, Toast.LENGTH_LONG).show()
-            authViewModel.clearPasswordResetStatus() // Clear status after showing
+            authViewModel.clearPasswordResetStatus()
         }
     }
 
@@ -63,10 +62,9 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Canteen Login", style = MaterialTheme.typography.headlineMedium) // Changed from MediPoint
+        Text("Canteen Login", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Login Error message
         if (loginErrorMessage.isNotBlank()) {
             Text(loginErrorMessage, color = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.height(8.dp))
@@ -93,10 +91,8 @@ fun LoginScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Forgot Password Button
         TextButton(
             onClick = {
-                // Ensure email is not empty before attempting reset
                 if (email.isNotBlank()) {
                     authViewModel.sendPasswordResetEmail(email)
                 } else {
@@ -104,12 +100,11 @@ fun LoginScreen(
                 }
             },
             modifier = Modifier.align(Alignment.End),
-            enabled = !isLoadingLogin && !isLoadingPasswordReset // Disable if any loading is happening
+            enabled = !isLoadingLogin && !isLoadingPasswordReset
         ) {
             Text(if (isLoadingPasswordReset) "Sending..." else "Forgot Password?")
         }
         Spacer(modifier = Modifier.height(24.dp))
-
 
         Button(
             onClick = {
@@ -129,7 +124,6 @@ fun LoginScreen(
         ) {
             Text(if (isLoadingLogin) "Signing in..." else "Sign In")
         }
-        }
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
@@ -140,4 +134,4 @@ fun LoginScreen(
             Text("Create New Account")
         }
     }
-
+}

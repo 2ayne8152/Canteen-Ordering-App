@@ -16,14 +16,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.canteen.ui.theme.CanteenTheme
-import com.example.medipoint.ui.theme.Viewmodels.AuthViewModel
+// 👇 FIX: Corrected the import path for AuthViewModel
+import com.example.canteen.viewmodels.AuthViewModel
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             CanteenTheme {
-                // Main app navigation logic
                 AppNavigation()
             }
         }
@@ -33,39 +34,30 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
     val navController = rememberNavController()
-
-    // Observe the login state from the ViewModel
     val isLoggedIn = authViewModel.isLoggedIn.collectAsState()
-
-    // Define the start destination based on login state
     val startDestination = if (isLoggedIn.value) "home" else "login"
 
     NavHost(navController = navController, startDestination = startDestination) {
-        // Login Screen Route
         composable("login") {
             LoginScreen(
                 authViewModel = authViewModel,
                 onLoginSuccess = {
-                    // Navigate to home and clear the back stack
                     navController.navigate("home") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
                 onNavigateToRegistration = {
-                    // You can navigate to a registration screen here if you have one
-                    // For now, it does nothing
+                    // TODO: Navigate to a registration screen
                 }
             )
         }
 
-        // Home Screen Route (Placeholder)
         composable("home") {
             HomeScreen()
         }
     }
 }
 
-// A simple placeholder for your home screen after login
 @Composable
 fun HomeScreen() {
     Box(
