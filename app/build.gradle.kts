@@ -41,11 +41,15 @@ android {
 
 dependencies {
 
+    implementation("androidx.navigation:navigation-compose:2.8.0-beta05")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.3")
     implementation(platform(libs.androidx.compose.bom))
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation(libs.androidx.ui)
+    implementation("com.google.firebase:firebase-auth")
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
