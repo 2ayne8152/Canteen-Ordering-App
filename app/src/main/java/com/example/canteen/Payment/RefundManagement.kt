@@ -1,6 +1,7 @@
 package com.example.canteen.Payment
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -113,10 +114,10 @@ fun RefundCard(
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = Green,
-        shadowElevation = 2.dp,
+        shadowElevation = 6.dp,
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 6.dp).clickable{}
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 

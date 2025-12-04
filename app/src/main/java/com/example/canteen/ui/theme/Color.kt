@@ -11,3 +11,9 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
 val Green = Color(0xFFB9FFB5)
+val lightRed = Color(0xFFE4002B)
+val lightGreen =  Color(0xFF00B140) // green
+val veryLightRed = Color(0xFFFFDFDF) // Light pink
+val lightViolet = Color(0xFFE6EBFF) // violet-blue tint
+val lightBlue = Color(0xFFE7F3FF) // very light blue
+val softGreen = Color(0xFFDFF7E7) // soft green
