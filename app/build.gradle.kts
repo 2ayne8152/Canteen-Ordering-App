@@ -2,7 +2,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.android.application")
-id("com.google.gms.google-services")}
+    id("com.google.gms.google-services")
+}
 
 
 android {
@@ -42,12 +43,12 @@ android {
 
 dependencies {
 
-    implementation("androidx.navigation:navigation-compose:2.8.0-beta05")
-    implementation("androidx.compose.material:material-icons-extended-android:1.6.8") // Use the latest stable version
+    implementation("androidx.navigation:navigation-compose:2.9.6")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     implementation(platform(libs.androidx.compose.bom))
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation(libs.androidx.ui)
