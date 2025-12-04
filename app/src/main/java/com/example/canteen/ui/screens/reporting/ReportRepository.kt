@@ -1,4 +1,4 @@
-package com.example.canteen.reporting
+package com.example.canteen.ui.screens.reporting
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

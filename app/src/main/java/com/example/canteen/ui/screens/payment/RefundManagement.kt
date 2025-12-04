@@ -1,4 +1,4 @@
-package com.example.canteen.Payment
+package com.example.canteen.ui.screens.payment
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
@@ -34,8 +34,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.canteen.viewmodel.payment.RefundRequest
+import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.Green
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @Composable
 fun RefundManagementScreenWrapper(
@@ -140,8 +144,8 @@ fun RefundCard(
 
 @SuppressLint("SimpleDateFormat")
 fun formatTime(timestamp: Long): String {
-    val sdf = java.text.SimpleDateFormat("HH:mm dd/MM/yyyy")
-    return sdf.format(java.util.Date(timestamp))
+    val sdf = SimpleDateFormat("HH:mm dd/MM/yyyy")
+    return sdf.format(Date(timestamp))
 }
 
 // If Your Timestamp is in seconds (common in Firebase)

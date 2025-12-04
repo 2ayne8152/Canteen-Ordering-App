@@ -1,4 +1,4 @@
-package com.example.canteen.Payment
+package com.example.canteen.viewmodel.payment
 
 data class RefundRequest(
     val orderId: String = "",

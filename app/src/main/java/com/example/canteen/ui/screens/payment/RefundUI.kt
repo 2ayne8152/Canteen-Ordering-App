@@ -1,4 +1,4 @@
-package com.example.canteen.Payment
+package com.example.canteen.ui.screens.payment
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

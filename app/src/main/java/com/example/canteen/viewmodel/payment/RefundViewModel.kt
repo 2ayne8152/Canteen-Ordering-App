@@ -1,4 +1,4 @@
-package com.example.canteen.Payment
+package com.example.canteen.viewmodel.payment
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
