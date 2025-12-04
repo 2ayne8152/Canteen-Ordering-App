@@ -8,7 +8,6 @@ data class RefundRequest(
     val reason: String = "",
     val requestTime: Long = 0L,
     val refundBy: String = "",
-    val refundDate: String = "",
     val remark: String = "",
     val status: String = ""
 )
