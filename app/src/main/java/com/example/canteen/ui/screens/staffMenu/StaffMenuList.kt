@@ -12,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,30 +42,39 @@ fun MenuListPage() {
         )
     }
 
-    Column(
+    // Built-in beautiful font
+    val beautifulFont = FontFamily.Serif
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Title
-        Text(
-            text = "Menu List",
-            fontSize = 24.sp,
-            color = Color(0xFF0D47A1),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        // Scrollable list
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(menuItems) { item ->
-                MenuItemCard(item = item, onEdit = { editedItem ->
-                    val index = menuItems.indexOf(item)
-                    if (index != -1) menuItems[index] = editedItem
-                })
+        // Title with divider
+        item {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Menu List",
+                    fontSize = 28.sp,
+                    fontFamily = beautifulFont,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0D47A1)
+                )
+                Divider(
+                    color = Color(0xFF0D47A1),
+                    thickness = 2.dp,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+                )
             }
+        }
+
+        // Menu items
+        items(menuItems) { item ->
+            MenuItemCard(item = item, onEdit = { editedItem ->
+                val index = menuItems.indexOf(item)
+                if (index != -1) menuItems[index] = editedItem
+            })
         }
     }
 }
