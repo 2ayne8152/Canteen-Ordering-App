@@ -182,7 +182,8 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
                             onClick = { /* Approve logic */ },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightGreen
-                            )
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(8.dp)
                         ) {
                             /*Icon(Icons.Default.CheckCircle, contentDescription = null)
                             Spacer(Modifier.width(6.dp))*/
@@ -193,7 +194,8 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
                             onClick = { /* Reject logic */ },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightRed// red
-                            )
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(8.dp)
                         ) {
                             /*Icon(Icons.Default.Close, contentDescription = null)
                             Spacer(Modifier.width(6.dp))*/
