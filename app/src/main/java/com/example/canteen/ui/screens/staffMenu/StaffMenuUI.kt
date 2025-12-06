@@ -19,7 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import com.example.canteen.data.CategoryData
+import com.example.canteen.viewmodel.staffMenu.CategoryData
 
 @Composable
 fun MenuItemForm() {

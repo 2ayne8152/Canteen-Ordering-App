@@ -10,6 +10,7 @@ import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.MenuListPage
 import com.example.canteen.ui.screens.staffMenu.MenuListPagePreview
 import com.example.canteen.ui.theme.CanteenTheme
+import com.example.menumanagement.StaffDashboardScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,7 +18,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CanteenTheme {
-                MenuListPage()
+                StaffDashboardScreen()
             }
         }
     }

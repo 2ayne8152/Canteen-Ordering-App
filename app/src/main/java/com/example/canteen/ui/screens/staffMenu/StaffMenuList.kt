@@ -1,5 +1,8 @@
 package com.example.canteen.ui.screens.staffMenu
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,7 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import com.example.canteen.data.CategoryData
+import com.example.canteen.viewmodel.staffMenu.CategoryData
 
 // Menu item model
 data class MenuItem(
@@ -132,24 +135,60 @@ fun MenuItemCard(item: MenuItem, onEdit: (MenuItem) -> Unit) {
         }
     }
 
-    // =====================
-    // EDIT DIALOG
-    // =====================
     if (showEditDialog) {
         var editedName by remember { mutableStateOf(item.name) }
         var editedDescription by remember { mutableStateOf(item.description) }
         var editedCategory by remember { mutableStateOf(item.category) }
         var editedPrice by remember { mutableStateOf(item.price) }
         var editedAvailability by remember { mutableStateOf(item.availability) }
+        var editedImageUri by remember { mutableStateOf<Uri?>(item.imageUri?.let { Uri.parse(it) }) }
 
         val categoryOptions = CategoryData.categories.map { it.name }
         val availabilityOptions = listOf("Available", "Unavailable")
+
+        val imageLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent()
+        ) { uri: Uri? ->
+            editedImageUri = uri
+        }
 
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
             title = { Text("Edit Item") },
             text = {
                 Column {
+                    // Image picker
+                    Box(
+                        modifier = Modifier
+                            .height(150.dp)
+                            .fillMaxWidth()
+                            .background(Color.LightGray, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (editedImageUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(editedImageUri),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text("No Image")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { imageLauncher.launch("image/*") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1))
+                    ) {
+                        Text("Change Image", color = Color.White)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     OutlinedTextField(
                         value = editedName,
                         onValueChange = { editedName = it },
@@ -199,7 +238,8 @@ fun MenuItemCard(item: MenuItem, onEdit: (MenuItem) -> Unit) {
                             description = editedDescription,
                             category = editedCategory,
                             price = editedPrice,
-                            availability = editedAvailability
+                            availability = editedAvailability,
+                            imageUri = editedImageUri?.toString()
                         )
                     )
                     showEditDialog = false
