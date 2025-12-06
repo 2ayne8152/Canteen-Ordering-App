@@ -3,6 +3,7 @@ package com.example.menumanagement
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,9 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.LocalPizza
-import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -21,36 +19,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// ---------------------------------------------
-// DATA MODEL
-// ---------------------------------------------
-data class MenuItem(
-    val icon: ImageVector,
-    val name: String,
-    val desc: String,
-    val category: String
-)
+// Import your actual menu data model
+import com.example.canteen.data.MenuItem
+import com.example.canteen.data.menuItems
 
-val menuItems = listOf(
-    MenuItem(Icons.Default.Fastfood, "Classic Burger", "Juicy beef patty with fresh…", "Burgers"),
-    MenuItem(Icons.Default.LocalPizza, "Margherita Pizza", "Fresh mozzarella, basil, and…", "Pizza"),
-    MenuItem(Icons.Default.PieChart, "Creamy Pasta Carbonara", "Rich and creamy pasta with bac…", "Pasta")
-)
+// Example category list (you can change it)
+val categories = listOf("All", "Chicken Rice", "Curry Mee", "Tomyam Maggi")
 
-val categories = listOf("All (9)", "Burgers (2)", "Pizza (1)", "Pasta (1)")
-
-
-// FULL SCREEN UI
+// ===========================================================
+// FULL DASHBOARD UI
+// ===========================================================
 @Composable
 fun StaffDashboardScreen() {
     var search by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("All (9)") }
+    var selectedCategory by remember { mutableStateOf("All") }
 
     Column(
         modifier = Modifier
@@ -80,7 +69,7 @@ fun StaffDashboardScreen() {
 
         // Section Title
         Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text("Total Items: 9 | Categories: 7", fontSize = 13.sp, color = Color.Gray)
+        Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
         Spacer(Modifier.height(16.dp))
 
         // Add New Item Button
@@ -128,7 +117,9 @@ fun StaffDashboardScreen() {
 
         Spacer(Modifier.height(20.dp))
 
-        // Menu List
+        // ===========================================================
+        // MENU LIST (real data from your data class)
+        // ===========================================================
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -140,8 +131,9 @@ fun StaffDashboardScreen() {
     }
 }
 
-
+// ===========================================================
 // CATEGORY CHIP
+// ===========================================================
 @Composable
 fun CategoryChip(text: String, selected: Boolean = false, onClick: () -> Unit) {
     Box(
@@ -151,7 +143,7 @@ fun CategoryChip(text: String, selected: Boolean = false, onClick: () -> Unit) {
                 if (selected) Color(0xFF0A3D91) else Color(0xFFEFEFEF)
             )
             .padding(horizontal = 14.dp, vertical = 8.dp)
-            .clickable { onClick() }   // handle click
+            .clickable { onClick() }
     ) {
         Text(
             text,
@@ -161,7 +153,9 @@ fun CategoryChip(text: String, selected: Boolean = false, onClick: () -> Unit) {
     }
 }
 
-// MENU ITEM CARD
+// ===========================================================
+// MENU ITEM CARD (uses your real MenuItem)
+// ===========================================================
 @Composable
 fun MenuItemCard(item: MenuItem) {
     Row(
@@ -170,38 +164,47 @@ fun MenuItemCard(item: MenuItem) {
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+
+        // Actual Image
+        Image(
+            painter = painterResource(id = item.imageRes),
+            contentDescription = null,
             modifier = Modifier
                 .size(60.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color.White),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                item.icon,
-                contentDescription = null,
-                modifier = Modifier.size(30.dp),
-                tint = Color.Black
-            )
-        }
+        )
 
         Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(item.desc, fontSize = 13.sp, color = Color.Gray, maxLines = 1)
+            Text(
+                text = stringResource(id = item.itemName),
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+
+            Text(
+                text = stringResource(id = item.itemDesc),
+                fontSize = 13.sp,
+                color = Color.Gray,
+                maxLines = 1
+            )
         }
 
+        // Price Tag
         Box(
             modifier = Modifier
                 .background(Color(0xFFFFE0C2), RoundedCornerShape(12.dp))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
-            Text(item.category, color = Color(0xFFFF6F3C), fontSize = 12.sp)
+            Text(
+                text = "RM %.2f".format(item.itemPrice),
+                color = Color(0xFFFF6F3C),
+                fontSize = 12.sp
+            )
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

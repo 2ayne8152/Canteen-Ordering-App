@@ -24,7 +24,7 @@ import com.example.canteen.viewmodel.staffMenu.CategoryData
 @Composable
 fun MenuItemForm() {
 
-    val categoryOptions = CategoryData.categories.map { it.name }
+    val categoryOptions = CategoryData.category.map { it.name }
 
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var itemName by remember { mutableStateOf("") }
