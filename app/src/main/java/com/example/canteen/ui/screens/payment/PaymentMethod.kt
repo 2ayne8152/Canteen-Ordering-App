@@ -1,5 +1,6 @@
 package com.example.canteen.ui.screens.payment
 
+import android.R.attr.text
 import android.widget.Button
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -42,9 +43,12 @@ import com.example.canteen.ui.theme.white
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.core.text.isDigitsOnly
@@ -55,12 +59,13 @@ import kotlin.math.sin
 
 @Composable
 fun PaymentMethod(
+    phoneNumber: String,
     savedCard: String? = null,          // <-- ONLY ONE CARD
     onCardSelected: () -> Unit = {}  // Navigate to Card Detail Page
 ) {
 
     var selectedMethod by remember { mutableStateOf<String?>(null) }
-    var phoneNumber by remember { mutableStateOf("") }
+    //var phoneNumber by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.padding(16.dp)) {
 
@@ -140,16 +145,41 @@ fun PaymentMethod(
 
         // Expand section for E-Wallet
         AnimatedVisibility(visible = selectedMethod == "ewallet") {
-            val isValid = remember(phoneNumber) { isValidPhoneNumber(phoneNumber) }
+            /*val isValid = remember(phoneNumber) { isValidPhoneNumber(phoneNumber) }
             val showError = phoneNumber.isNotEmpty() && !isValid
+            var showTrailingIcon by remember { mutableStateOf(false) }
+
+            LaunchedEffect(phoneNumber) {
+                showTrailingIcon = phoneNumber.isNotEmpty()
+            }*/
 
             Column(modifier = Modifier.padding(top = 12.dp)) {
+                val formattedNumber = "${phoneNumber.substring(0, 3)}-${phoneNumber.substring(3, 6)} ${phoneNumber.substring(6)}"
 
                 Text("E-Wallet Phone Number")
 
                 Spacer(Modifier.height(8.dp))
 
-                OutlinedTextField(
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = lightBlue
+                    )
+                ) {
+                    Column(Modifier.padding(16.dp).fillMaxWidth()) {
+                        Row {
+                            Icon(
+                                imageVector = Icons.Filled.CheckBox,
+                                contentDescription = null
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(formattedNumber, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                            //Text("Tap to use this card", fontSize = 14.sp, color = gray)
+                        }
+                    }
+                }
+
+                /*OutlinedTextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it },
                     placeholder = { Text("0123456789") },
@@ -157,17 +187,29 @@ fun PaymentMethod(
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Number
                     ),
-                    isError = isValid,
-                    singleLine = true
-                )
-                if (showError) {
-                    Text(
-                        text = "Invalid phone number format",
-                        color = lightRed,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                    )
-                }
+                    isError = showError,
+                    singleLine = true,
+                    supportingText = {
+                        if (showError) {
+                            Text(
+                                text = "Invalid phone number format",
+                                color = lightRed,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                            )
+                        }
+                    },
+                    trailingIcon = {
+                        if (showTrailingIcon) {
+                            IconButton(onClick = { phoneNumber = "" }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Clear,
+                                    contentDescription = "Clear"
+                                )
+                            }
+                        }
+                    }
+                )*/
             }
         }
     }
@@ -223,6 +265,6 @@ fun PaymentOptionCard(
 @Composable
 fun PaymentOptionPreview() {
     CanteenTheme {
-        PaymentMethod("Visa ending 4321")
+        PaymentMethod(savedCard = "Visa ending 4321", phoneNumber = "0123456789")
     }
 }
