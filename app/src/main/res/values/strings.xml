@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Canteen</string>
+    <string name="tomyam_maggi">Tomyam Maggi</string>
+    <string name="tomyam_flavour_maggi_mee">tomyam flavour maggi mee</string>
+    <string name="chicken_rice">Chicken Rice</string>
+    <string name="chicken_and_rice">Chicken and rice</string>
+    <string name="curry_mee">Curry Mee</string>
+    <string name="curry_and_mee">Curry and mee</string>
 </resources>
