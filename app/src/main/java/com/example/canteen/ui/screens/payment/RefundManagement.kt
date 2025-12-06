@@ -1,6 +1,7 @@
 package com.example.canteen.ui.screens.payment
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,10 +16,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -30,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,8 +42,10 @@ import com.example.canteen.viewmodel.payment.RefundRequest
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.Green
+import com.example.canteen.ui.theme.lightBlue
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 @Composable
 fun RefundManagementScreenWrapper(
@@ -65,6 +71,7 @@ fun RefundManagementScreen(
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Pending", "Approved", "Rejected")
+    var expandedCardId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -103,7 +110,21 @@ fun RefundManagementScreen(
                     .padding(12.dp)
             ) {
                 items(listToDisplay) { refundItem ->
-                    RefundCard(data = refundItem)
+                    when (selectedTab) {
+                        0 -> RefundCard(data = refundItem)               // Pending
+                        1 -> ApprovedRefundCard(
+                            data = refundItem,
+                            expanded = expandedCardId == refundItem.orderId,
+                            onClick = {
+                                expandedCardId = if (expandedCardId == refundItem.orderId) {
+                                    null // collapse
+                                } else {
+                                    refundItem.orderId // expand new card
+                                }
+                            }
+                        )      // Approved
+                        2 -> RejectedRefundCard(data = refundItem)       // Rejected
+                    }
                 }
             }
         }
@@ -129,7 +150,96 @@ fun RefundCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order${data.orderId}", fontSize = 16.sp)
+                Text("Order${data.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(text = formatTime(data.requestTime) , fontSize = 14.sp)
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            Text("Student ID : ${data.studentId}")
+            Text("Total : RM${String.format("%.2f", data.total)}")
+            Text("Refund Reason : ${data.reason}")
+        }
+    }
+}
+
+@Composable
+fun ApprovedRefundCard(
+    data: RefundRequest,
+    expanded: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = lightBlue,
+        shadowElevation = 6.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clickable { onClick() }
+    ) {
+
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Order ${data.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            Text("Student ID : ${data.studentId}")
+            Text("Total Refunded : RM${String.format("%.2f", data.total)}")
+            Text("Reason : ${data.reason}")
+
+            // ▼▼▼ ONLY SHOW WHEN EXPANDED ▼▼▼
+            AnimatedVisibility(visible = expanded) {
+
+                Column {
+
+                    Spacer(Modifier.height(8.dp))
+                    Divider()
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Text("Admin: ${data.refundBy}")
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Text("Additional Notes:")
+                    Text(
+                        text = data.remark,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RejectedRefundCard(
+    data: RefundRequest,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Green,
+        shadowElevation = 6.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp).clickable{}
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Order${data.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Text(text = formatTime(data.requestTime) , fontSize = 14.sp)
             }
 
@@ -144,7 +254,7 @@ fun RefundCard(
 
 @SuppressLint("SimpleDateFormat")
 fun formatTime(timestamp: Long): String {
-    val sdf = SimpleDateFormat("HH:mm dd/MM/yyyy")
+    val sdf = SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
 
@@ -187,9 +297,38 @@ fun RefundManagementPreview() {
             )
         )
 
+        val approvedRefundList = listOf(
+            RefundRequest(
+                orderId = "Order1234",
+                studentId = "student13",
+                total = 12.50,
+                reason = "Missing Item",
+                status = "pending",
+                requestTime = 1733985600L, // 12/12/2025
+                refundBy = "Lili",
+                remark = "Thank you"
+            ),
+            RefundRequest(
+                orderId = "Order4567",
+                studentId = "student22",
+                total = 9.90,
+                reason = "Poor quality order",
+                status = "pending",
+                requestTime = 1733900000L
+            ),
+            RefundRequest(
+                orderId = "Order9999",
+                studentId = "student31",
+                total = 5.00,
+                reason = "Change of Mind",
+                status = "pending",
+                requestTime = 1733800000L
+            )
+        )
+
         RefundManagementScreen(
             pendingList = sampleRefundList,
-            approvedList = emptyList(),
+            approvedList = approvedRefundList,
             rejectedList = emptyList(),
             onBack = {}
         )

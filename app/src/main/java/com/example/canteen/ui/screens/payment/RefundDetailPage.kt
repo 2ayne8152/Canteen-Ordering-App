@@ -45,6 +45,7 @@ import com.example.canteen.ui.theme.veryLightRed
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RefundDetailPage(onBack: () -> Unit = {}) {
+    var responseBy by remember { mutableStateOf("") }
     var responseRemark by remember { mutableStateOf("") }
 
     Scaffold(
@@ -157,6 +158,16 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
                 Column(Modifier.padding(16.dp)) {
 
                     Text("Refund Response :", fontWeight = FontWeight.Bold)
+
+                    Spacer(Modifier.height(4.dp))
+
+                    OutlinedTextField(
+                        value = responseBy,
+                        onValueChange = { responseBy = it },
+                        label = { Text("Response By") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
 
                     Spacer(Modifier.height(8.dp))
 
