@@ -123,7 +123,17 @@ fun RefundManagementScreen(
                                 }
                             }
                         )      // Approved
-                        2 -> RejectedRefundCard(data = refundItem)       // Rejected
+                        2 -> RejectedRefundCard(
+                            data = refundItem,
+                            expanded = expandedCardId == refundItem.orderId,
+                            onClick = {
+                                expandedCardId = if (expandedCardId == refundItem.orderId) {
+                                    null // collapse
+                                } else {
+                                    refundItem.orderId // expand new card
+                                }
+                            }
+                        )       // Rejected
                     }
                 }
             }
@@ -223,7 +233,9 @@ fun ApprovedRefundCard(
 @Composable
 fun RejectedRefundCard(
     data: RefundRequest,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    expanded: Boolean,
+    onClick: () -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -231,7 +243,8 @@ fun RejectedRefundCard(
         shadowElevation = 6.dp,
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp).clickable{}
+            .padding(vertical = 6.dp)
+            .clickable{onClick()}
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
@@ -240,7 +253,6 @@ fun RejectedRefundCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Order${data.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text(text = formatTime(data.requestTime) , fontSize = 14.sp)
             }
 
             Spacer(Modifier.height(4.dp))
@@ -248,6 +260,27 @@ fun RejectedRefundCard(
             Text("Student ID : ${data.studentId}")
             Text("Total : RM${String.format("%.2f", data.total)}")
             Text("Refund Reason : ${data.reason}")
+
+            AnimatedVisibility(visible = expanded) {
+
+                Column {
+
+                    Spacer(Modifier.height(8.dp))
+                    Divider()
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Text("Admin: ${data.refundBy}")
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Text("Reject Reason:")
+                    Text(
+                        text = data.remark,
+                        fontSize = 14.sp
+                    )
+                }
+            }
         }
     }
 }

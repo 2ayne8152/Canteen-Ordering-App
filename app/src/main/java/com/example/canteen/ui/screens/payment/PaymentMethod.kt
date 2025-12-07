@@ -5,6 +5,7 @@ import android.widget.Button
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -98,15 +99,44 @@ fun PaymentMethod(
                             containerColor = lightBlue
                         )
                     ) {
-                        Column(Modifier.padding(16.dp).fillMaxWidth()) {
-                            Row {
-                                Icon(
-                                    imageVector = Icons.Filled.CheckBox,
-                                    contentDescription = null
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Text(savedCard, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                                //Text("Tap to use this card", fontSize = 14.sp, color = gray)
+                        Column(
+                            Modifier
+                                .padding(12.dp)
+                                .fillMaxWidth()
+                        ) {
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+
+                                // LEFT SECTION: Icon + Card Number
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.CheckBox,
+                                        contentDescription = null
+                                    )
+
+                                    Spacer(Modifier.width(10.dp))
+
+                                    Text(
+                                        text = savedCard,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+
+                                // RIGHT SECTION: Delete Button
+                                Button(
+                                    shape = RoundedCornerShape(8.dp),
+                                    onClick = { /* Handle Delete */ },
+                                    elevation = ButtonDefaults.buttonElevation(8.dp)
+                                ) {
+                                    Text("Delete")
+                                }
                             }
                         }
                     }
@@ -118,7 +148,7 @@ fun PaymentMethod(
                     Button(
                         onClick = onCardSelected, // navigate
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(8.dp)
                     ) {
                         Text("Add New Card")
@@ -162,7 +192,9 @@ fun PaymentMethod(
                         containerColor = lightBlue
                     )
                 ) {
-                    Column(Modifier.padding(16.dp).fillMaxWidth()) {
+                    Column(Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()) {
                         Row {
                             Icon(
                                 imageVector = Icons.Filled.CheckBox,

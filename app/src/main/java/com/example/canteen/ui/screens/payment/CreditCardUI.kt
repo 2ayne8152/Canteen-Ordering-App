@@ -163,14 +163,6 @@ fun PayByCard(onBack: () -> Unit = {}) {
     }
 }
 
-fun formatCardNumber(input: String): String {
-    // Keep only digits
-    val digits = input.filter { it.isDigit() }
-
-    // Insert space every 4 digits
-    return digits.chunked(4).joinToString(" ")
-}
-
 
 @Preview(showBackground = true)
 @Composable
