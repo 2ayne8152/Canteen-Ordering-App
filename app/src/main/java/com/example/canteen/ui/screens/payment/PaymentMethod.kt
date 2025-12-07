@@ -46,21 +46,25 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.core.text.isDigitsOnly
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.theme.gray
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.ui.theme.lightRed
+import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import kotlin.math.sin
 
 @Composable
 fun PaymentMethod(
+    cardDetailViewModel: CardDetailViewModel = viewModel(),
     phoneNumber: String,
     savedCard: String? = null,          // <-- ONLY ONE CARD
     onCardSelected: () -> Unit = {}  // Navigate to Card Detail Page
 ) {
-
+    //val savedCard by cardDetailViewModel.savedCard.collectAsState()
     var selectedMethod by remember { mutableStateOf<String?>(null) }
     //var phoneNumber by remember { mutableStateOf("") }
 

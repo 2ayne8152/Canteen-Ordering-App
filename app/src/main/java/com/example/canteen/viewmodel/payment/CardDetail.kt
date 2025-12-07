@@ -1,7 +1,7 @@
 package com.example.canteen.viewmodel.payment
 
 //@Entity
-data class PaymentMethod(
+data class CardDetail(
     //@PrimaryKey(autoGenerate = true) val id: Int = 0,
     val userId: String,
     val maskedCard: String,   // **** **** **** 4242
