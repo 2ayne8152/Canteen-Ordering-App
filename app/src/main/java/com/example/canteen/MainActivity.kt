@@ -52,9 +52,15 @@ fun CanteenApp() {
         composable("staff_login") {
             StaffLoginScreen(
                 onUserLoginClick = { navController.navigate("login") },
-                onLoginSuccess = { 
-                    navController.navigate(it) {
-                        popUpTo("login") { inclusive = true }
+                onLoginSuccess = { role ->
+                    when (role) {
+                        "staff" -> navController.navigate("staff") {
+                            popUpTo("staff_login") { inclusive = true }
+                        }
+                        // Staff can also login as user if they have that role
+                        "user" -> navController.navigate("user") {
+                            popUpTo("staff_login") { inclusive = true }
+                        }
                     }
                 }
             )

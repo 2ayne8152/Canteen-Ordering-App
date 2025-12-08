@@ -34,54 +34,108 @@ fun StaffLoginScreen(
 
     val authState by authViewModel.authState.collectAsState()
 
+    // Track if we're currently registering to prevent false login triggers
+    val isCurrentlyRegistering = remember { mutableStateOf(false) }
+
     LaunchedEffect(authState) {
-        if (authState is AuthState.LoggedIn) {
-            onLoginSuccess((authState as AuthState.LoggedIn).role)
+        when (authState) {
+            is AuthState.LoggedIn -> {
+                // Only navigate if we're NOT in the middle of registration
+                if (!isCurrentlyRegistering.value) {
+                    onLoginSuccess((authState as AuthState.LoggedIn).role)
+                } else {
+                    // If we get LoggedIn during registration, reset and show error
+                    authViewModel.resetAuthState()
+                }
+            }
+            // Don't auto-navigate on registration success - let user click OK first
+            else -> {
+                // Reset registration flag when not loading
+                if (authState !is AuthState.Loading) {
+                    isCurrentlyRegistering.value = false
+                }
+            }
         }
+    }
+
+    // Show success dialog
+    if (authState is AuthState.RegistrationSuccess) {
+        AlertDialog(
+            onDismissRequest = {
+                authViewModel.resetAuthState()
+                isCurrentlyRegistering.value = false
+            },
+            title = { Text("Registration Successful!") },
+            text = {
+                Text((authState as AuthState.RegistrationSuccess).message)
+            },
+            confirmButton = {
+                Button(onClick = {
+                    authViewModel.resetAuthState()
+                    isRegistering = false
+                    isCurrentlyRegistering.value = false
+                    email = ""
+                    password = ""
+                    username = ""
+                }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    // Show error dialog
+    if (authState is AuthState.Error) {
+        AlertDialog(
+            onDismissRequest = {
+                authViewModel.resetAuthState()
+                isCurrentlyRegistering.value = false
+            },
+            title = { Text("Error") },
+            text = {
+                Text((authState as AuthState.Error).message)
+            },
+            confirmButton = {
+                Button(onClick = {
+                    authViewModel.resetAuthState()
+                    isCurrentlyRegistering.value = false
+                }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        if (authState is AuthState.RegistrationSuccess) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Registration Successful!", style = MaterialTheme.typography.headlineSmall)
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = {
-                    authViewModel.resetAuthState()
-                    isRegistering = false
-                }) {
-                    Text("Back to Login")
-                }
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = if (isRegistering) "Staff Register" else "Staff Login",
-                    style = MaterialTheme.typography.headlineLarge,
-                    modifier = Modifier.padding(bottom = 32.dp)
-                )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = if (isRegistering) "Staff Register" else "Staff Login",
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
 
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Registration form fields
                 if (isRegistering) {
                     OutlinedTextField(
                         value = username,
                         onValueChange = { username = it },
                         label = { Text("Username") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = authState !is AuthState.Loading
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -92,7 +146,8 @@ fun StaffLoginScreen(
                     label = { Text("Email") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = authState !is AuthState.Loading
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -107,53 +162,75 @@ fun StaffLoginScreen(
                     trailingIcon = {
                         val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                         val description = if (passwordVisible) "Hide password" else "Show password"
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        IconButton(
+                            onClick = { passwordVisible = !passwordVisible },
+                            enabled = authState !is AuthState.Loading
+                        ) {
                             Icon(imageVector = image, contentDescription = description)
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = authState !is AuthState.Loading
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (authState is AuthState.Error) {
-                        Text(
-                            text = (authState as AuthState.Error).message,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
-                    if (authState is AuthState.Loading) {
-                        CircularProgressIndicator()
-                    } else {
-                        Button(
-                            onClick = {
-                                if (isRegistering) {
-                                    authViewModel.register(email, password, username, "staff")
-                                } else {
-                                    authViewModel.login(email, password, "staff")
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                        ) {
-                            Text(if (isRegistering) "Register" else "Login")
+                // Show loading text on button if loading, otherwise show normal button text
+                val buttonText = if (authState is AuthState.Loading) {
+                    if (isRegistering) "Registering..." else "Logging in..."
+                } else {
+                    if (isRegistering) "Register" else "Login"
+                }
+
+                Button(
+                    onClick = {
+                        if (isRegistering) {
+                            // Set flag that we're registering
+                            isCurrentlyRegistering.value = true
+                            authViewModel.register(email, password, username, "staff")
+                        } else {
+                            isCurrentlyRegistering.value = false
+                            authViewModel.login(email, password, "staff")
                         }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    enabled = authState !is AuthState.Loading &&
+                            email.isNotEmpty() &&
+                            password.isNotEmpty() &&
+                            (!isRegistering || username.isNotEmpty())
+                ) {
+                    Text(buttonText)
+                }
+
+                // Emergency reset button (visible only when stuck in loading)
+                if (authState is AuthState.Loading) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = {
+                            // Force reset everything
+                            authViewModel.resetAuthState()
+                            isCurrentlyRegistering.value = false
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Reset (if stuck)")
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = if (isRegistering) "Already have a staff account? Login" else "Don\'t have a staff account? Register",
-                    modifier = Modifier.clickable { 
-                        isRegistering = !isRegistering 
-                        authViewModel.resetAuthState()
+                    text = if (isRegistering) "Already have a staff account? Login" else "Don't have a staff account? Register",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        if (authState !is AuthState.Loading) {
+                            isRegistering = !isRegistering
+                            isCurrentlyRegistering.value = false
+                            authViewModel.resetAuthState()
+                            username = ""
+                        }
                     }
                 )
 
@@ -161,7 +238,12 @@ fun StaffLoginScreen(
 
                 Text(
                     text = "User access",
-                    modifier = Modifier.clickable { onUserLoginClick() }
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        if (authState !is AuthState.Loading) {
+                            onUserLoginClick()
+                        }
+                    }
                 )
             }
         }
