@@ -46,9 +46,8 @@ fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
 
     // Reason dropdown
     val refundReasons = listOf(
-        "Missing Item",
-        "Poor quality order",
-        "Technical / Payment Problem",
+        "Payment Problem",
+        "Technical Problem",
         "Change of Mind",
         "Other"
     )
