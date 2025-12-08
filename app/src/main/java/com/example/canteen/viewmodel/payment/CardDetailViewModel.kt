@@ -43,7 +43,7 @@ class CardDetailViewModel : ViewModel() {
         val cleanCard = cardNumber.replace(" ", "")
 
         return cleanCard.length in 13..19 &&
-                expiry.matches(Regex("""^(0[1-9]|1[0-2])\/\d{2}$""")) &&
+                expiry.matches(Regex("""^(0[1-9]|1[0-2])/\d{2}$""")) &&
                 cvv.length in 3..4
     }
 }
