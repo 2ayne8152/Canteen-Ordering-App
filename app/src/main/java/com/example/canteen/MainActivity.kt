@@ -16,6 +16,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
+import com.example.canteen.ui.screens.staffMenu.MenuItemForm
+import com.example.canteen.ui.screens.staffMenu.MenuListPage
 import com.example.canteen.ui.screens.usermenu.UserMenu
 import com.example.canteen.ui.theme.CanteenTheme
 
@@ -38,45 +40,51 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun CanteenApp() {
     val navController = rememberNavController()
+
     NavHost(navController = navController, startDestination = "login") {
+        // User Login Screen
         composable("login") {
             LoginScreen(
                 onStaffLoginClick = { navController.navigate("staff_login") },
-                onLoginSuccess = {
-                    navController.navigate(it) { 
-                        popUpTo("login") { inclusive = true } 
+                onLoginSuccess = { role ->
+                    when (role) {
+                        "user" -> navController.navigate("user_menu") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                        "staff" -> navController.navigate("staff_menu") {
+                            popUpTo("login") { inclusive = true }
+                        }
                     }
                 }
             )
         }
+
+        // Staff Login Screen
         composable("staff_login") {
             StaffLoginScreen(
                 onUserLoginClick = { navController.navigate("login") },
                 onLoginSuccess = { role ->
                     when (role) {
-                        "staff" -> navController.navigate("staff") {
+                        "staff" -> navController.navigate("staff_menu") {
                             popUpTo("staff_login") { inclusive = true }
                         }
-                        // Staff can also login as user if they have that role
-                        "user" -> navController.navigate("user") {
+                        "user" -> navController.navigate("user_menu") {
                             popUpTo("staff_login") { inclusive = true }
                         }
                     }
                 }
             )
         }
-        composable("user") {
-            UserMenu(onDetailClick = { /* TODO: Navigate to cart/detail screen */ })
+
+        // User Menu Screen
+        composable("user_menu") {
+            UserMenu(
+                onDetailClick = {
+                    // TODO: Navigate to order details/cart screen
+                }
+            )
         }
-        composable("staff") {
-            StaffMenu()
-        }
+
     }
 }
 
-@Composable
-fun StaffMenu() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Staff Menu")
-    }
-}
