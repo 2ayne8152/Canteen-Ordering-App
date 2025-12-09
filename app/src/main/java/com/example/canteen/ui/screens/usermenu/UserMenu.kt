@@ -1,7 +1,5 @@
 package com.example.canteen.ui.screens.usermenu
 
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,26 +24,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.canteen.R
-import com.example.canteen.data.MenuItem
-import com.example.canteen.data.menuItems
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.canteen.ui.theme.CanteenTheme
+import com.example.canteen.viewmodel.login.FirestoreMenuItem
+import com.example.canteen.viewmodel.login.MenuViewModel
 
 @Composable
 fun UserMenu(
-    menuItems: List<MenuItem>,
-    numOfItem: Int,
-    totalPrice: Double,
-    onItemClick: (MenuItem) -> Unit,
+    menuViewModel: MenuViewModel = viewModel(),
     onDetailClick: () -> Unit
 ){
+    val menuItems by menuViewModel.menuItems.collectAsState()
+    val numOfItem by menuViewModel.numOfItem.collectAsState()
+    val totalPrice by menuViewModel.totalPrice.collectAsState()
+
     Scaffold(
         topBar = {},
     ) { padding ->
@@ -77,12 +76,9 @@ fun UserMenu(
 
                 items(menuItems) { item ->
                     MenuItemCard(
-                        imageRes = item.imageRes,
-                        itemName = item.itemName,
-                        itemDesc = item.itemDesc,
-                        itemPrice = item.itemPrice,
+                        menuItem = item,
                         modifier = Modifier.fillMaxWidth(),
-                        onItemClick = { onItemClick(item) }
+                        onItemClick = { menuViewModel.addToCart(item) }
                     )
                 }
             }
@@ -104,10 +100,7 @@ fun UserMenu(
 
 @Composable
 fun MenuItemCard(
-    @DrawableRes imageRes: Int,
-    @StringRes itemName: Int,
-    @StringRes itemDesc: Int,
-    itemPrice: Double,
+    menuItem: FirestoreMenuItem,
     modifier: Modifier = Modifier,
     onItemClick: () -> Unit
 ) {
@@ -130,8 +123,8 @@ fun MenuItemCard(
             verticalAlignment = Alignment.Top
         ) {
             // IMAGE (64dp)
-            Image(
-                painter = painterResource(imageRes),
+            AsyncImage(
+                model = menuItem.imageUrl,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp)
             )
@@ -145,12 +138,12 @@ fun MenuItemCard(
                 verticalArrangement = Arrangement.Top
             ) {
                 Text(
-                    text = stringResource(itemName),
+                    text = menuItem.name,
                     style = MaterialTheme.typography.titleMedium
                 )
 
                 Text(
-                    text = stringResource(itemDesc),
+                    text = menuItem.description,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -158,7 +151,7 @@ fun MenuItemCard(
             Spacer(modifier = Modifier.weight(1f))
 
             Text(
-                text = String.format("RM %.2f", itemPrice),
+                text = String.format("RM %.2f", menuItem.price),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.align(Alignment.Bottom)
             )

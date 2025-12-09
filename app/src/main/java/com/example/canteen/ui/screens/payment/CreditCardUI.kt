@@ -167,7 +167,7 @@ fun PayByCard(onBack: () -> Unit = {}) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    CanteenTheme {
+    CanteenTheme() {
         PayByCard()
     }
 }
