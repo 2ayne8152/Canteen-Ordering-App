@@ -11,7 +11,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,126 +26,146 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 
-// Import your actual menu data model
+// Your menu data
 import com.example.canteen.data.MenuItem
 import com.example.canteen.data.menuItems
+import com.example.canteen.ui.screens.CanteenScreen
 
-// Example category list (you can change it)
+// Category List
 val categories = listOf("All", "Chicken Rice", "Curry Mee", "Tomyam Maggi")
 
-// ===========================================================
-// FULL DASHBOARD UI
-// ===========================================================
+// ===================================================================
+// MAIN UI WITH BOTTOM BAR
+// ===================================================================
 @Composable
-fun StaffDashboardScreen() {
+fun StaffDashboardScreen(navController: NavController)  {
     var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF7F7F7))
-            .padding(16.dp)
-    ) {
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController) }
+    ) { paddingValues ->
 
-        // ---------- Top Header ----------
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF7F7F7))
+                .padding(16.dp)
+                .padding(paddingValues)
         ) {
-            Column {
-                Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
-            }
-            Icon(
-                Icons.Default.Logout,
-                contentDescription = "Logout",
-                tint = Color.Blue
-            )
-        }
 
-        Spacer(Modifier.height(20.dp))
-
-        // Section Title
-        Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
-        Spacer(Modifier.height(16.dp))
-
-        // Add New Item Button
-        Button(
-            onClick = {},
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF0A3D91)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("+ Add New Item", fontSize = 15.sp, color = Color.White)
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Search Bar
-        OutlinedTextField(
-            value = search,
-            onValueChange = { search = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search menu items...") },
-            leadingIcon = {
+            // -------------------- Header --------------------
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
+                }
                 Icon(
-                    Icons.Default.Search,
-                    contentDescription = "Search",
+                    Icons.Default.Logout,
+                    contentDescription = "Logout",
                     tint = Color.Blue
                 )
-            },
-            shape = RoundedCornerShape(14.dp)
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Category Chips
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            categories.forEach { category ->
-                CategoryChip(
-                    text = category,
-                    selected = category == selectedCategory,
-                    onClick = { selectedCategory = category }
-                )
             }
-        }
 
-        Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp))
 
-        // ===========================================================
-        // MENU LIST (real data from your data class)
-        // ===========================================================
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(menuItems) { item ->
-                MenuItemCard(item)
+            // -------------------- Section Title --------------------
+            Text("Menu Items", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
+            Spacer(Modifier.height(16.dp))
+
+            // -------------------- Add New + Edit --------------------
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = {},
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A3D91)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("+ Add New Item", fontSize = 15.sp, color = Color.White)
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                IconButton(
+                    onClick = {},
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Edit Menu",
+                        tint = Color.Blue
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // -------------------- Search Bar --------------------
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search menu items...") },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Blue)
+                },
+                shape = RoundedCornerShape(14.dp)
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // -------------------- Category Chips --------------------
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                categories.forEach { category ->
+                    CategoryChip(
+                        text = category,
+                        selected = category == selectedCategory,
+                        onClick = { selectedCategory = category }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // -------------------- Menu List --------------------
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(menuItems) { item ->
+                    MenuItemCard(item)
+                }
             }
         }
     }
 }
 
-// ===========================================================
+// ===================================================================
 // CATEGORY CHIP
-// ===========================================================
+// ===================================================================
 @Composable
-fun CategoryChip(text: String, selected: Boolean = false, onClick: () -> Unit) {
+fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(
-                if (selected) Color(0xFF0A3D91) else Color(0xFFEFEFEF)
-            )
+            .background(if (selected) Color(0xFF0A3D91) else Color(0xFFEFEFEF))
             .padding(horizontal = 14.dp, vertical = 8.dp)
             .clickable { onClick() }
     ) {
@@ -153,9 +177,9 @@ fun CategoryChip(text: String, selected: Boolean = false, onClick: () -> Unit) {
     }
 }
 
-// ===========================================================
-// MENU ITEM CARD (uses your real MenuItem)
-// ===========================================================
+// ===================================================================
+// MENU ITEM CARD
+// ===================================================================
 @Composable
 fun MenuItemCard(item: MenuItem) {
     Row(
@@ -164,8 +188,6 @@ fun MenuItemCard(item: MenuItem) {
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
-        // Actual Image
         Image(
             painter = painterResource(id = item.imageRes),
             contentDescription = null,
@@ -182,7 +204,6 @@ fun MenuItemCard(item: MenuItem) {
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
-
             Text(
                 text = stringResource(id = item.itemDesc),
                 fontSize = 13.sp,
@@ -191,14 +212,13 @@ fun MenuItemCard(item: MenuItem) {
             )
         }
 
-        // Price Tag
         Box(
             modifier = Modifier
                 .background(Color(0xFFFFE0C2), RoundedCornerShape(12.dp))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
             Text(
-                text = "RM %.2f".format(item.itemPrice),
+                "RM %.2f".format(item.itemPrice),
                 color = Color(0xFFFF6F3C),
                 fontSize = 12.sp
             )
@@ -206,8 +226,39 @@ fun MenuItemCard(item: MenuItem) {
     }
 }
 
+// ===================================================================
+// BOTTOM NAVIGATION BAR
+// ===================================================================
+@Composable
+fun BottomNavigationBar(navController: NavController) {
+    NavigationBar {
+        NavigationBarItem(
+            selected = false,
+            onClick = { navController.navigate(CanteenScreen.StaffDashboard.name) },
+            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+            label = { androidx.compose.material3.Text("Home") }
+        )
+
+        NavigationBarItem(
+            selected = false,
+            onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
+            icon = { Icon(Icons.Default.Add, contentDescription = "Add Item") },
+            label = { androidx.compose.material3.Text("Add Item") }
+        )
+
+        NavigationBarItem(
+            selected = false,
+            onClick = { navController.navigate(CanteenScreen.StaffDashboard.name) },
+            icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+            label = { androidx.compose.material3.Text("Profile") }
+        )
+    }
+}
+
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewUI() {
-    StaffDashboardScreen()
+    val navController = rememberNavController()
+    StaffDashboardScreen(navController)
 }

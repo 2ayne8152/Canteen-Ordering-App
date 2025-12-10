@@ -18,11 +18,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.canteen.viewmodel.staffMenu.CategoryData
 
 @Composable
-fun MenuItemForm() {
+fun MenuItemForm(navController: NavController) {
 
     val categoryOptions = CategoryData.category.map { it.name }
 
@@ -231,5 +233,7 @@ fun DropdownMenuWrapper(
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun MenuItemFormPreview() {
-    MenuItemForm()
+    val navController = rememberNavController()
+    MenuItemForm(navController)
 }
+
