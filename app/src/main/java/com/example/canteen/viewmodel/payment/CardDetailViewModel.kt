@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class CardDetailViewModel : ViewModel() {
-
     // Holds the saved card (only ONE allowed)
     private val _savedCard = MutableStateFlow<CardDetail?>(null)
     val savedCard: StateFlow<CardDetail?> = _savedCard.asStateFlow()
@@ -46,4 +45,5 @@ class CardDetailViewModel : ViewModel() {
                 expiry.matches(Regex("""^(0[1-9]|1[0-2])/\d{2}$""")) &&
                 cvv.length in 3..4
     }
+
 }

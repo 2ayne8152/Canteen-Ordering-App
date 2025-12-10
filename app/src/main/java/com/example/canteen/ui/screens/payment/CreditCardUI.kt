@@ -41,18 +41,25 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.substring
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.middleGray
 import com.example.canteen.ui.theme.lightRed
+import com.example.canteen.viewmodel.payment.CardDetail
+import com.example.canteen.viewmodel.payment.CardDetailViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PayByCard(onBack: () -> Unit = {}) {val focusManager = LocalFocusManager.current
-
+fun PayByCard(
+    onBack: () -> Unit = {},
+    viewModel: CardDetailViewModel
+) {
+    val focusManager = LocalFocusManager.current
 
     var cardNumber by remember { mutableStateOf(TextFieldValue()) }
     var expiry by remember { mutableStateOf(TextFieldValue()) }
@@ -68,10 +75,10 @@ fun PayByCard(onBack: () -> Unit = {}) {val focusManager = LocalFocusManager.cur
     var isExpiryError by remember { mutableStateOf(false) }
     var hasFocusOnExpiry by remember { mutableStateOf(false) }
 
-    val expiryError = isExpiryError
-    val cardNumberError = isCardNumberError
-    val cvvError = isCVVError
-    val isValid = !expiryError && !cardNumberError && !cvvError && cardHolder.isNotBlank()
+    var hasFocusOnHolder by remember {mutableStateOf(false)}
+    var hasTouchedHolder by remember { mutableStateOf(false) }
+
+    val isValid = !isExpiryError && !isCardNumberError && !isCVVError && cardHolder.isNotBlank() && cardNumber.text.isNotEmpty() && expiry.text.isNotEmpty() && cvv.text.isNotEmpty()
 
 
     Scaffold(
@@ -115,6 +122,7 @@ fun PayByCard(onBack: () -> Unit = {}) {val focusManager = LocalFocusManager.cur
                 var showTrailingIcon by remember { mutableStateOf(false) }
 
                 // Card Number Input
+
                 OutlinedTextField(
                     value = cardNumber,
                     onValueChange = { newValue ->
@@ -306,10 +314,15 @@ fun PayByCard(onBack: () -> Unit = {}) {val focusManager = LocalFocusManager.cur
                     value = cardHolder,
                     onValueChange = { cardHolder = it },
                     label = { Text("Card holder name") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().onFocusChanged{ focusState ->
+                        if (focusState.isFocused) {
+                            hasTouchedHolder = true
+                        }
+                        hasFocusOnHolder = focusState.isFocused
+                    },
                     singleLine = true,
                     trailingIcon = {
-                        if (cardHolder.isNotEmpty()) {
+                        if (cardHolder.isNotEmpty() && hasFocusOnHolder) {
                             IconButton(
                                 onClick = {
                                     cardHolder = ""
@@ -320,6 +333,15 @@ fun PayByCard(onBack: () -> Unit = {}) {val focusManager = LocalFocusManager.cur
                                 )
                             }
                         }
+                    },
+                    supportingText = {
+                        if (cardHolder.isEmpty() && hasTouchedHolder) {
+                            Text(
+                                "Cannot be empty",
+                                color = lightRed,
+                                fontSize = 12.sp
+                            )
+                        }
                     }
                 )
 
@@ -328,7 +350,16 @@ fun PayByCard(onBack: () -> Unit = {}) {val focusManager = LocalFocusManager.cur
                 // Done Button
                 Button(
                     shape = RoundedCornerShape(8.dp),
-                    onClick = { /* Handle Save */ },
+                    onClick = {
+                        val card = CardDetail(
+                            maskedCard = cardNumber.text.substring(15),
+                            expiry = expiry.text,
+                            CVV = cvv.text
+                        )
+                        viewModel.saveCard(card)   // <-- SAVE TO VIEWMODEL
+
+                        onBack()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -377,6 +408,6 @@ fun isValidExpiry(expiry: String): Boolean {
 @Composable
 fun GreetingPreview() {
     CanteenTheme {
-        PayByCard()
+        PayByCard(viewModel =  viewModel())
     }
 }

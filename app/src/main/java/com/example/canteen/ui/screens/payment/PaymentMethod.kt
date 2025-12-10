@@ -1,7 +1,9 @@
 package com.example.canteen.ui.screens.payment
 
 import android.R.attr.text
+import android.os.Build
 import android.widget.Button
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -55,18 +57,21 @@ import com.example.canteen.ui.theme.gray
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.ui.theme.lightRed
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
+import com.example.canteen.viewmodel.payment.PaymentMethodViewModel
 import kotlin.math.sin
 
 @Composable
 fun PaymentMethod(
-    cardDetailViewModel: CardDetailViewModel = viewModel(),
+    cardDetailViewModel: CardDetailViewModel,
+    paymentMethodViewModel: PaymentMethodViewModel = viewModel(),
     phoneNumber: String,
     savedCard: String? = null,          // <-- ONLY ONE CARD
     onCardSelected: () -> Unit = {}  // Navigate to Card Detail Page
 ) {
     //val savedCard by cardDetailViewModel.savedCard.collectAsState()
-    var selectedMethod by remember { mutableStateOf<String?>(null) }
+    //var selectedMethod by remember { mutableStateOf<String?>(null) }
     //var phoneNumber by remember { mutableStateOf("") }
+    val selectedMethod = paymentMethodViewModel.selectedMethod.value
 
     Column(modifier = Modifier.padding(16.dp)) {
 
@@ -83,7 +88,10 @@ fun PaymentMethod(
             icon = Icons.Outlined.CreditCard,
             selected = selectedMethod == "card",
             onClick = {
-                selectedMethod = if (selectedMethod == "card") null else "card"
+                //selectedMethod = if (selectedMethod == "card") null else "card"
+                paymentMethodViewModel.select(
+                    if (selectedMethod == "card") null else "card"
+                )
             }
         )
 
@@ -127,7 +135,7 @@ fun PaymentMethod(
                                     Spacer(Modifier.width(10.dp))
 
                                     Text(
-                                        text = savedCard,
+                                        text = "Visa ending $savedCard",
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -136,7 +144,7 @@ fun PaymentMethod(
                                 // RIGHT SECTION: Delete Button
                                 Button(
                                     shape = RoundedCornerShape(8.dp),
-                                    onClick = { /* Handle Delete */ },
+                                    onClick = {cardDetailViewModel.deleteCard()},
                                     elevation = ButtonDefaults.buttonElevation(8.dp)
                                 ) {
                                     Text("Delete")
@@ -150,7 +158,8 @@ fun PaymentMethod(
                     Spacer(Modifier.height(12.dp))
 
                     Button(
-                        onClick = onCardSelected, // navigate
+                        onClick = {
+                            onCardSelected() }, // navigate
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(8.dp)
@@ -169,7 +178,10 @@ fun PaymentMethod(
             icon = Icons.Outlined.Wallet,
             selected = selectedMethod == "ewallet",
             onClick = {
-                selectedMethod = if (selectedMethod == "ewallet") null else "ewallet"
+                //selectedMethod = if (selectedMethod == "ewallet") null else "ewallet"
+                paymentMethodViewModel.select(
+                    if (selectedMethod == "ewallet") null else "ewallet"
+                )
             }
         )
 
@@ -205,7 +217,7 @@ fun PaymentMethod(
                                 contentDescription = null
                             )
                             Spacer(Modifier.width(10.dp))
-                            Text(formattedNumber, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                            Text(text = formattedNumber, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                             //Text("Tap to use this card", fontSize = 14.sp, color = gray)
                         }
                     }
@@ -293,10 +305,11 @@ fun PaymentOptionCard(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
 fun PaymentOptionPreview() {
     CanteenTheme {
-        PaymentMethod(savedCard = "Visa ending 4321", phoneNumber = "0123456789")
+        PaymentMethod(savedCard = "Visa ending 4321", phoneNumber = "0123456789", cardDetailViewModel = viewModel())
     }
 }
