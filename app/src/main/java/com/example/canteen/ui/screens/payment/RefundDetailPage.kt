@@ -45,6 +45,7 @@ import com.example.canteen.ui.theme.veryLightRed
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RefundDetailPage(onBack: () -> Unit = {}) {
+    var responseBy by remember { mutableStateOf("") }
     var responseRemark by remember { mutableStateOf("") }
 
     Scaffold(
@@ -158,6 +159,16 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
 
                     Text("Refund Response :", fontWeight = FontWeight.Bold)
 
+                    Spacer(Modifier.height(4.dp))
+
+                    OutlinedTextField(
+                        value = responseBy,
+                        onValueChange = { responseBy = it },
+                        label = { Text("Response By") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
                     Spacer(Modifier.height(8.dp))
 
                     OutlinedTextField(
@@ -182,7 +193,8 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
                             onClick = { /* Approve logic */ },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightGreen
-                            )
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(8.dp)
                         ) {
                             /*Icon(Icons.Default.CheckCircle, contentDescription = null)
                             Spacer(Modifier.width(6.dp))*/
@@ -193,7 +205,8 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
                             onClick = { /* Reject logic */ },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightRed// red
-                            )
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(8.dp)
                         ) {
                             /*Icon(Icons.Default.Close, contentDescription = null)
                             Spacer(Modifier.width(6.dp))*/
