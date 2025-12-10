@@ -1,5 +1,7 @@
 package com.example.canteen.ui.screens.usermenu
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -24,27 +28,35 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import com.example.canteen.R
+import com.example.canteen.data.MenuItem
+import com.example.canteen.data.menuItems
 import com.example.canteen.ui.theme.CanteenTheme
-import com.example.canteen.viewmodel.login.FirestoreMenuItem
-import com.example.canteen.viewmodel.login.MenuViewModel
 
 @Composable
 fun UserMenu(
-    menuViewModel: MenuViewModel = viewModel(),
+    menuItems: List<MenuItem>,
+    numOfItem: Int,
+    totalPrice: Double,
+    onItemClick: (MenuItem) -> Unit,
     onDetailClick: () -> Unit
-){
-    val menuItems by menuViewModel.menuItems.collectAsState()
-    val numOfItem by menuViewModel.numOfItem.collectAsState()
-    val totalPrice by menuViewModel.totalPrice.collectAsState()
+) {
+    // Track the selected item for customization
+    var selectedItem by remember { mutableStateOf<MenuItem?>(null) }
+    var quantity by remember { mutableStateOf(1) }
 
     Scaffold(
         topBar = {},
@@ -56,19 +68,18 @@ fun UserMenu(
                 .fillMaxSize()
         ) {
 
-            // Background: scrollable list
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 110.dp) // space for floating bar
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 110.dp)
             ) {
 
                 item {
                     Text(
                         text = "Main Menu",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
                         fontSize = 30.sp,
                         modifier = Modifier.padding(top = 16.dp)
                     )
@@ -76,14 +87,20 @@ fun UserMenu(
 
                 items(menuItems) { item ->
                     MenuItemCard(
-                        menuItem = item,
+                        imageRes = item.imageRes,
+                        itemName = item.itemName,
+                        itemDesc = item.itemDesc,
+                        itemPrice = item.itemPrice,
                         modifier = Modifier.fillMaxWidth(),
-                        onItemClick = { menuViewModel.addToCart(item) }
+                        onItemClick = {
+                            selectedItem = item   // <-- open customization
+                            quantity = 1          // reset
+                            onItemClick(item)
+                        }
                     )
                 }
             }
 
-            // FOREGROUND: floating bottom bar (visible only if > 0 items)
             if (numOfItem > 0) {
                 ViewDetailButton(
                     numOfItem = numOfItem,
@@ -94,13 +111,43 @@ fun UserMenu(
                         .padding(16.dp)
                 )
             }
+
+            // Show customization overlay when an item is selected
+            selectedItem?.let { sel ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    MenuItemCustomization(
+                        // convert @StringRes -> String for display
+                        itemName = stringResource(sel.itemName),
+                        itemImage = sel.imageRes,
+                        quantity = quantity,
+                        onIncrease = { quantity++ },
+                        onDecrease = { if (quantity > 1) quantity-- },
+                        onAddToCart = {
+                            // TODO: Add to cart logic (use sel & quantity)
+                            selectedItem = null // close popup
+                        },
+                        onCancel = {
+                            selectedItem = null
+                        },
+                        modifier = Modifier
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 fun MenuItemCard(
-    menuItem: FirestoreMenuItem,
+    @DrawableRes imageRes: Int,
+    @StringRes itemName: Int,
+    @StringRes itemDesc: Int,
+    itemPrice: Double,
     modifier: Modifier = Modifier,
     onItemClick: () -> Unit
 ) {
@@ -123,8 +170,8 @@ fun MenuItemCard(
             verticalAlignment = Alignment.Top
         ) {
             // IMAGE (64dp)
-            AsyncImage(
-                model = menuItem.imageUrl,
+            Image(
+                painter = painterResource(imageRes),
                 contentDescription = null,
                 modifier = Modifier.size(64.dp)
             )
@@ -138,12 +185,12 @@ fun MenuItemCard(
                 verticalArrangement = Arrangement.Top
             ) {
                 Text(
-                    text = menuItem.name,
+                    text = stringResource(itemName),
                     style = MaterialTheme.typography.titleMedium
                 )
 
                 Text(
-                    text = menuItem.description,
+                    text = stringResource(itemDesc),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -151,7 +198,7 @@ fun MenuItemCard(
             Spacer(modifier = Modifier.weight(1f))
 
             Text(
-                text = String.format("RM %.2f", menuItem.price),
+                text = String.format("RM %.2f", itemPrice),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.align(Alignment.Bottom)
             )
@@ -205,14 +252,170 @@ fun ViewDetailButton(
     }
 }
 
+@Composable
+fun MenuItemCustomization(
+    itemName: String,
+    itemImage: Int,
+    quantity: Int,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    onAddToCart: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+
+            // Top Row: Title + Cancel Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Customize Order",
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                // Cancel Button (X)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clickable { onCancel() }
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "✕",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+
+            // Item Image
+            Image(
+                painter = painterResource(id = itemImage),
+                contentDescription = itemName,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            // Item Name
+            Text(
+                text = itemName,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            // Quantity Label
+            Text(
+                text = "Select Quantity",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            // Quantity Selector
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+
+                // Minus Button
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable { onDecrease() }
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "–",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(32.dp))
+
+                Text(
+                    text = quantity.toString(),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                Spacer(modifier = Modifier.width(32.dp))
+
+                // Plus Button
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable { onIncrease() }
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "+",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+            }
+
+            // Add to Cart Button
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .clickable { onAddToCart() },
+                shape = RoundedCornerShape(30.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Add to Cart",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+
 @Preview(showBackground = true)
 @Composable
 fun UserMenuPreview(){
     CanteenTheme {
-        ViewDetailButton(
-            numOfItem = 10,
-            totalPrice = 100.00,
-            onDetailClick = {}
-        )
+
     }
 }

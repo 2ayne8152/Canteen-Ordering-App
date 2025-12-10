@@ -86,13 +86,13 @@ fun CanteenApp() {
         }
 
         // User Menu Screen
-        composable("user_menu") {
+        /*composable("user_menu") {
             UserMenu(
                 onDetailClick = {
                     // TODO: Navigate to order details/cart screen
                 }
             )
-        }
+        }*/
 
         // Staff Menu Screen
         composable("staff_menu") {

@@ -20,14 +20,14 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.LoggedOut)
     val authState = _authState.asStateFlow()
 
-    fun register(email: String, password: String, username: String, role: String) {
+    fun register(email: String, password: String, username: String, role: String, phoneNumber: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             Log.d("AuthViewModel", "Starting registration for email: $email")
 
             try {
                 // Validate inputs first
-                if (email.isEmpty() || password.isEmpty() || username.isEmpty()) {
+                if (email.isEmpty() || password.isEmpty() || username.isEmpty() || phoneNumber.isEmpty()) {
                     _authState.value = AuthState.Error("Please fill in all fields")
                     return@launch
                 }
@@ -45,10 +45,11 @@ class AuthViewModel : ViewModel() {
                     Log.d("AuthViewModel", "User created successfully, UID: ${firebaseUser.uid}")
 
                     val user = hashMapOf(
-                        "uid" to firebaseUser.uid,
-                        "email" to email,
-                        "username" to username,
-                        "role" to role
+                        "UserID" to firebaseUser.uid,
+                        "Email" to email,
+                        "Name" to username,
+                        "Role" to role,
+                        "PhoneNumber" to phoneNumber
                     )
 
                     Log.d("AuthViewModel", "Saving user data to Firestore...")
