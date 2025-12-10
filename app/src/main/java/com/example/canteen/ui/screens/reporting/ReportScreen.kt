@@ -91,43 +91,50 @@ object MockReportDataProvider {
         }
     }
 
-    fun getItemsData(period: String): MockReportData {
-        return MockReportData(
-            totalSales = "1,234",
-            salesChange = "+8.4%",
-            isPositiveChange = true,
-            average = "176",
-            averageSubtitle = "Items sold",
-            trendData = listOf(150f, 165f, 180f, 175f, 190f, 210f, 195f),
-            trendLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
-            volumeData = listOf(140f, 160f, 175f, 185f, 195f, 180f, 170f)
-        )
-    }
-
-    fun getOrdersData(period: String): MockReportData {
-        return MockReportData(
-            totalSales = "847",
-            salesChange = "+15.6%",
-            isPositiveChange = true,
-            average = "121",
-            averageSubtitle = "Orders per day",
-            trendData = listOf(90f, 105f, 120f, 115f, 135f, 150f, 132f),
-            trendLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
-            volumeData = listOf(85f, 100f, 115f, 125f, 140f, 135f, 120f)
-        )
-    }
-
-    fun getRevenueData(period: String): MockReportData {
-        return MockReportData(
-            totalSales = "$42,850",
-            salesChange = "+19.8%",
-            isPositiveChange = true,
-            average = "$6,121",
-            averageSubtitle = "Per day",
-            trendData = listOf(4500f, 5200f, 6000f, 5800f, 7200f, 8500f, 7650f),
-            trendLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
-            volumeData = listOf(4200f, 5000f, 5800f, 6500f, 7500f, 7000f, 6300f)
-        )
+    fun getProfitData(period: String): MockReportData {
+        return when (period) {
+            "Daily" -> MockReportData(
+                totalSales = "$18,450",
+                salesChange = "+15.2%",
+                isPositiveChange = true,
+                average = "$2,635",
+                averageSubtitle = "Per period",
+                trendData = listOf(2000f, 1900f, 2500f, 2200f, 3200f, 4000f, 2650f),
+                trendLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+                volumeData = listOf(1800f, 2100f, 2600f, 3000f, 3400f, 3100f, 2400f)
+            )
+            "Weekly" -> MockReportData(
+                totalSales = "$78,300",
+                salesChange = "+21.4%",
+                isPositiveChange = true,
+                average = "$11,185",
+                averageSubtitle = "Per week",
+                trendData = listOf(9000f, 10000f, 11000f, 12500f, 14000f, 12000f, 9800f),
+                trendLabels = listOf("W1", "W2", "W3", "W4", "W5", "W6", "W7"),
+                volumeData = listOf(7500f, 9000f, 11000f, 13000f, 14000f, 12000f, 9500f)
+            )
+            "Monthly" -> MockReportData(
+                totalSales = "$324,800",
+                salesChange = "+28.3%",
+                isPositiveChange = true,
+                average = "$27,066",
+                averageSubtitle = "Per month",
+                trendData = listOf(22000f, 24000f, 26000f, 29000f, 31000f, 34000f, 37500f, 36000f, 34000f, 32000f, 30000f, 29300f),
+                trendLabels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+                volumeData = listOf(21000f, 23000f, 25000f, 28000f, 30000f, 33000f, 36000f, 35000f, 33000f, 31000f, 29000f, 28800f)
+            )
+            "Yearly" -> MockReportData(
+                totalSales = "$1,215,600",
+                salesChange = "+35.8%",
+                isPositiveChange = true,
+                average = "$101,300",
+                averageSubtitle = "Per year",
+                trendData = listOf(90000f, 97500f, 105000f, 117500f, 134000f),
+                trendLabels = listOf("2020", "2021", "2022", "2023", "2024"),
+                volumeData = listOf(87500f, 95000f, 102500f, 115000f, 132500f)
+            )
+            else -> getProfitData("Daily")
+        }
     }
 }
 
@@ -138,10 +145,8 @@ fun ReportScreen(onBack: () -> Unit = {}) {
     var selectedPeriod by remember { mutableStateOf("Daily") }
 
     val tabs = listOf(
-        ReportTab("Sales", Icons.Default.TrendingUp),
-        ReportTab("Items", Icons.Default.Inventory),
-        ReportTab("Orders", Icons.Default.ShoppingCart),
-        ReportTab("Revenue", Icons.Default.AttachMoney)
+        ReportTab("Profit Summary", Icons.Default.AccountBalance),
+        ReportTab("Sales Report", Icons.Default.TrendingUp)
     )
 
     val periods = listOf("Daily", "Weekly", "Monthly", "Yearly")
@@ -149,11 +154,9 @@ fun ReportScreen(onBack: () -> Unit = {}) {
     // Get mock data based on selected tab and period
     val currentData = remember(selectedTabIndex, selectedPeriod) {
         when (selectedTabIndex) {
-            0 -> MockReportDataProvider.getSalesData(selectedPeriod)
-            1 -> MockReportDataProvider.getItemsData(selectedPeriod)
-            2 -> MockReportDataProvider.getOrdersData(selectedPeriod)
-            3 -> MockReportDataProvider.getRevenueData(selectedPeriod)
-            else -> MockReportDataProvider.getSalesData(selectedPeriod)
+            0 -> MockReportDataProvider.getProfitData(selectedPeriod)
+            1 -> MockReportDataProvider.getSalesData(selectedPeriod)
+            else -> MockReportDataProvider.getProfitData(selectedPeriod)
         }
     }
 
@@ -274,13 +277,7 @@ fun ReportScreen(onBack: () -> Unit = {}) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     MetricCard(
-                        title = when (selectedTabIndex) {
-                            0 -> "Total Sales"
-                            1 -> "Total Items"
-                            2 -> "Total Orders"
-                            3 -> "Total Revenue"
-                            else -> "Total Sales"
-                        },
+                        title = if (selectedTabIndex == 0) "Total Profit" else "Total Sales",
                         value = currentData.totalSales,
                         change = currentData.salesChange,
                         isPositive = currentData.isPositiveChange,
@@ -296,15 +293,9 @@ fun ReportScreen(onBack: () -> Unit = {}) {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Sales Trend Chart with mock data
+                // Trend Chart with mock data
                 ChartCard(
-                    title = when (selectedTabIndex) {
-                        0 -> "Sales Trend"
-                        1 -> "Items Trend"
-                        2 -> "Orders Trend"
-                        3 -> "Revenue Trend"
-                        else -> "Sales Trend"
-                    }
+                    title = if (selectedTabIndex == 0) "Profit Trend" else "Sales Trend"
                 ) {
                     LineChart(
                         dataPoints = currentData.trendData,
@@ -317,15 +308,9 @@ fun ReportScreen(onBack: () -> Unit = {}) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Sales Volume Chart with mock data
+                // Volume Chart with mock data
                 ChartCard(
-                    title = when (selectedTabIndex) {
-                        0 -> "Sales Volume"
-                        1 -> "Items Volume"
-                        2 -> "Orders Volume"
-                        3 -> "Revenue Volume"
-                        else -> "Sales Volume"
-                    }
+                    title = if (selectedTabIndex == 0) "Profit Volume" else "Sales Volume"
                 ) {
                     AreaChart(
                         dataPoints = currentData.volumeData,
