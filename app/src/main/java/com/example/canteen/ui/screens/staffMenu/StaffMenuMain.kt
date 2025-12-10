@@ -40,9 +40,6 @@ import com.example.canteen.ui.screens.CanteenScreen
 // Category List
 val categories = listOf("All", "Chicken Rice", "Curry Mee", "Tomyam Maggi")
 
-// ===================================================================
-// MAIN UI WITH BOTTOM BAR
-// ===================================================================
 @Composable
 fun StaffDashboardScreen(navController: NavController)  {
     var search by remember { mutableStateOf("") }
@@ -91,7 +88,7 @@ fun StaffDashboardScreen(navController: NavController)  {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = {},
+                    onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A3D91)),
                     shape = RoundedCornerShape(12.dp)
@@ -102,7 +99,7 @@ fun StaffDashboardScreen(navController: NavController)  {
                 Spacer(Modifier.width(12.dp))
 
                 IconButton(
-                    onClick = {},
+                    onClick = {navController.navigate(CanteenScreen.MenuListPage.name)},
                     modifier = Modifier
                         .size(48.dp)
                         .background(Color(0xFFE0E0E0), RoundedCornerShape(12.dp))

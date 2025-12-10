@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.canteen.data.MenuItem
 import com.example.canteen.data.menuItems
@@ -48,7 +50,7 @@ data class MenuItemEditable(
 // Main Menu List Page
 // -------------------------------
 @Composable
-fun MenuListPage() {
+fun MenuListPage(navController: NavController) {
     val beautifulFont = FontFamily.Serif
 
     // Wrap menuItems in a mutable state list to allow editing
@@ -304,5 +306,6 @@ fun SimpleDropdown(
 @Composable
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 fun MenuListPagePreview() {
-    MenuListPage()
+    val navController = rememberNavController()
+    MenuListPage(navController)
 }

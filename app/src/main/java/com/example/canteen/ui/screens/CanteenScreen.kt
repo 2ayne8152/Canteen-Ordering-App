@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.canteen.ui.screens.payment.PayByCard
 import com.example.canteen.ui.screens.payment.PaymentMethod
 import com.example.canteen.ui.screens.staffMenu.MenuItemForm
+import com.example.canteen.ui.screens.staffMenu.MenuListPage
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.menumanagement.StaffDashboardScreen // Import your dashboard screen
 
@@ -21,8 +22,9 @@ enum class CanteenScreen(val title: String) {
     PaymentMethod(title = "PaymentMethod"),
     PayByCard(title = "PayByCard"),
     StaffDashboard(title = "StaffDashboard"),
+    MenuItemForm(title = "MenuItemForm"),
 
-    MenuItemForm(title = "MenuItemForm")
+    MenuListPage(title = "MenuListPage")
 
 }
 
@@ -42,6 +44,10 @@ fun CanteenScreen(
 
         composable(CanteenScreen.MenuItemForm.name){
             MenuItemForm(navController)
+        }
+
+        composable (CanteenScreen.MenuListPage.name){
+            MenuListPage(navController)
         }
 
         composable(CanteenScreen.PaymentMethod.name) {
