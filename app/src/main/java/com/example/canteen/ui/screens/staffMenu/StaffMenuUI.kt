@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +31,8 @@ fun MenuItemForm(navController: NavController) {
 
     val categoryOptions = CategoryData.category.map { it.name }
 
+    // -------------------- States --------------------
+    var menuId by remember { mutableStateOf("") } // Added menuId
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var itemName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -50,7 +51,8 @@ fun MenuItemForm(navController: NavController) {
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
-    ) {  // BACK BUTTON
+    ) {
+        // -------------------- BACK BUTTON --------------------
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
@@ -66,7 +68,18 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(8.dp))
 
-        // CATEGORY DROPDOWN
+        // -------------------- MENU ID INPUT --------------------
+        TextField(
+            value = menuId,
+            onValueChange = { menuId = it },
+            label = { Text("Menu ID") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // -------------------- CATEGORY DROPDOWN --------------------
         Text("Category", fontSize = 16.sp)
         DropdownMenuWrapper(
             options = categoryOptions,
@@ -77,7 +90,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ITEM NAME INPUT
+        // -------------------- ITEM NAME INPUT --------------------
         TextField(
             value = itemName,
             onValueChange = { itemName = it },
@@ -88,7 +101,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // DESCRIPTION
+        // -------------------- DESCRIPTION --------------------
         TextField(
             value = description,
             onValueChange = { description = it },
@@ -102,9 +115,8 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // PRICE + AVAILABILITY
+        // -------------------- PRICE + AVAILABILITY --------------------
         Row(modifier = Modifier.fillMaxWidth()) {
-
             TextField(
                 value = unitPrice,
                 onValueChange = { unitPrice = it },
@@ -125,7 +137,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // IMAGE PICKER
+        // -------------------- IMAGE PICKER --------------------
         Button(
             onClick = { imagePickerLauncher.launch("image/*") },
             modifier = Modifier.align(Alignment.Start),
@@ -136,9 +148,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // =====================
-        // PREVIEW SECTION
-        // =====================
+        // -------------------- PREVIEW SECTION --------------------
         Text("Preview", fontSize = 18.sp, modifier = Modifier.padding(bottom = 8.dp))
 
         Card(
@@ -174,6 +184,7 @@ fun MenuItemForm(navController: NavController) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // TEXT PREVIEW
+                PreviewTextRow(label = "Menu ID", value = menuId.ifEmpty { "ID" })
                 PreviewTextRow(label = "Category", value = selectedCategory)
                 PreviewTextRow(label = "Name", value = itemName.ifEmpty { "Item Name" })
                 PreviewTextRow(label = "Description", value = description.ifEmpty { "Description" })
@@ -184,9 +195,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // =====================
-        // SUBMIT BUTTON
-        // =====================
+        // -------------------- SUBMIT BUTTON --------------------
         Button(
             onClick = {
                 // TODO: Add database save logic here
@@ -254,4 +263,3 @@ fun MenuItemFormPreview() {
     val navController = rememberNavController()
     MenuItemForm(navController)
 }
-
