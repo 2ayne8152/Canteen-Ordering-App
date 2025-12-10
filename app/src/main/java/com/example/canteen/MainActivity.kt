@@ -35,17 +35,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CanteenTheme {
-                CanteenScreen()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    CanteenApp()
+                }
             }
         }
-
-        /*Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            CanteenApp()
-        }*/
-
     }
 }
 
@@ -97,6 +94,9 @@ fun CanteenApp() {
             )
         }
 
+        // Staff Menu Screen
+        composable("staff_menu") {
+            StaffDashboardScreen()
+        }
     }
 }
-
