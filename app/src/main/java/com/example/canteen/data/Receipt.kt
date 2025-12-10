@@ -1,16 +1,12 @@
 package com.example.canteen.data
 
-data class Receipt(
-    val ReceiptID: String,
-    val Payment_Date: String,   // Long
-    val Pay_Amount: Double,
-    val Payment_Method: String,
-)
+import com.example.canteen.data.RefundRequest
 
-data class PaymentRecord(
-    val id: String,
-    val date: String,
-    val amount: Double,
-    val method: String,
-    val refundStatus: String
+data class Receipt(
+    val receiptId: String = "",
+    val orderId: String = "",
+    val payment_Date: Long = 0L,
+    val payment_Method: String = "",
+    val pay_Amount: Double = 0.0,
+    val refund : RefundRequest? = null
 )

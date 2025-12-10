@@ -33,12 +33,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.canteen.ui.theme.CanteenTheme
+import com.example.canteen.ui.theme.lightRed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +61,7 @@ fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
     var refundDetails by remember { mutableStateOf("") }
     var textFieldWidth by remember { mutableStateOf(0.dp) }
     val isValid = selectedReason.isNotBlank() && refundDetails.isNotBlank()
-
+    var hasTouchedHolder by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -146,8 +148,21 @@ fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
                     label = { Text("Refund Details") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp),
-                    maxLines = 5
+                        .height(150.dp).onFocusChanged{ focusState ->
+                            if (focusState.isFocused) {
+                                hasTouchedHolder = true
+                            }
+                        },
+                    maxLines = 5,
+                    supportingText = {
+                        if (refundDetails.isEmpty() && hasTouchedHolder) {
+                            Text(
+                                "Cannot be empty",
+                                color = lightRed,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
                 )
 
                 Spacer(Modifier.height(24.dp))

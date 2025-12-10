@@ -29,7 +29,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,7 +40,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.substring
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,7 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.middleGray
 import com.example.canteen.ui.theme.lightRed
-import com.example.canteen.viewmodel.payment.CardDetail
+import com.example.canteen.data.CardDetail
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)

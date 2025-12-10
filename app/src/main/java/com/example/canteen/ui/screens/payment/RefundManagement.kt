@@ -21,7 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -37,17 +36,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.canteen.viewmodel.payment.RefundRequest
-import com.example.canteen.viewmodel.payment.RefundViewModel
+import com.example.canteen.data.RefundRequest
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.Green
 import com.example.canteen.ui.theme.lightBlue
+import com.example.canteen.data.Receipt
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@Composable
+/*@Composable
 fun RefundManagementScreenWrapper(
     viewModel: RefundViewModel = viewModel(),
     onBack: () -> Unit = {}
@@ -58,15 +56,15 @@ fun RefundManagementScreenWrapper(
         rejectedList = viewModel.rejectedList,
         onBack = onBack
     )
-}
+}*/
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RefundManagementScreen(
-    pendingList: List<RefundRequest>,
-    approvedList: List<RefundRequest>,
-    rejectedList: List<RefundRequest>,
+    pendingList: List<Receipt>,
+    approvedList: List<Receipt>,
+    rejectedList: List<Receipt>,
     onBack: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -143,7 +141,7 @@ fun RefundManagementScreen(
 
 @Composable
 fun RefundCard(
-    data: RefundRequest,
+    data: Receipt,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -161,21 +159,20 @@ fun RefundCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Order${data.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text(text = formatTime(data.requestTime) , fontSize = 14.sp)
+                Text(text = formatTime(data.refund?.requestTime ?: 0L) , fontSize = 14.sp)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Student ID : ${data.studentId}")
-            Text("Total : RM${String.format("%.2f", data.total)}")
-            Text("Refund Reason : ${data.reason}")
+            Text("Total : RM${String.format("%.2f", data.pay_Amount)}")
+            Text("Refund Reason : ${data.refund?.reason}")
         }
     }
 }
 
 @Composable
 fun ApprovedRefundCard(
-    data: RefundRequest,
+    data: Receipt,
     expanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -201,9 +198,8 @@ fun ApprovedRefundCard(
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Student ID : ${data.studentId}")
-            Text("Total Refunded : RM${String.format("%.2f", data.total)}")
-            Text("Reason : ${data.reason}")
+            Text("Total Refunded : RM${String.format("%.2f", data.pay_Amount)}")
+            Text("Reason : ${data.refund?.reason}")
 
             // ▼▼▼ ONLY SHOW WHEN EXPANDED ▼▼▼
             AnimatedVisibility(visible = expanded) {
@@ -215,13 +211,13 @@ fun ApprovedRefundCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Admin: ${data.refundBy}")
+                    Text("Admin: ${data.refund?.refundBy}")
 
                     Spacer(Modifier.height(4.dp))
 
                     Text("Additional Notes:")
                     Text(
-                        text = data.remark,
+                        text = data.refund?.remark ?: "",
                         fontSize = 14.sp
                     )
                 }
@@ -232,7 +228,7 @@ fun ApprovedRefundCard(
 
 @Composable
 fun RejectedRefundCard(
-    data: RefundRequest,
+    data: Receipt,
     modifier: Modifier = Modifier,
     expanded: Boolean,
     onClick: () -> Unit
@@ -257,9 +253,8 @@ fun RejectedRefundCard(
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Student ID : ${data.studentId}")
-            Text("Total : RM${String.format("%.2f", data.total)}")
-            Text("Refund Reason : ${data.reason}")
+            Text("Total : RM${String.format("%.2f", data.pay_Amount)}")
+            Text("Refund Reason : ${data.refund?.reason}")
 
             AnimatedVisibility(visible = expanded) {
 
@@ -270,13 +265,13 @@ fun RejectedRefundCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Admin: ${data.refundBy}")
+                    Text("Admin: ${data.refund?.refundBy}")
 
                     Spacer(Modifier.height(4.dp))
 
                     Text("Reject Reason:")
                     Text(
-                        text = data.remark,
+                        text = data.refund?.remark ?: "",
                         fontSize = 14.sp
                     )
                 }
@@ -304,58 +299,55 @@ fun formatTime(timestamp: Long): String {
 fun RefundManagementPreview() {
     CanteenTheme {
         val sampleRefundList = listOf(
-            RefundRequest(
+            Receipt(
                 orderId = "Order1234",
-                studentId = "student13",
-                total = 12.50,
-                reason = "Missing Item",
-                status = "pending",
-                requestTime = 1733985600L // 12/12/2025
+                pay_Amount = 12.50,
+                refund = RefundRequest(
+                    reason = "Missing Item",
+                    status = "pending",
+                    requestTime = 1733985600L // 12/12/2025
+                )
             ),
-            RefundRequest(
+            Receipt(
                 orderId = "Order4567",
-                studentId = "student22",
-                total = 9.90,
-                reason = "Poor quality order",
-                status = "pending",
-                requestTime = 1733900000L
+                pay_Amount = 9.90,
+                refund = RefundRequest(
+                    reason = "Poor quality order",
+                    status = "pending",
+                    requestTime = 1733900000L)
             ),
-            RefundRequest(
+            Receipt(
                 orderId = "Order9999",
-                studentId = "student31",
-                total = 5.00,
-                reason = "Change of Mind",
+                pay_Amount = 5.00,
+                refund = RefundRequest ( reason = "Change of Mind",
                 status = "pending",
-                requestTime = 1733800000L
+                requestTime = 1733800000L)
             )
         )
 
         val approvedRefundList = listOf(
-            RefundRequest(
+            Receipt(
                 orderId = "Order1234",
-                studentId = "student13",
-                total = 12.50,
-                reason = "Missing Item",
+                pay_Amount = 12.50,
+                refund = RefundRequest( reason = "Missing Item",
                 status = "pending",
                 requestTime = 1733985600L, // 12/12/2025
                 refundBy = "Lili",
-                remark = "Thank you"
+                remark = "Thank you")
             ),
-            RefundRequest(
+            Receipt(
                 orderId = "Order4567",
-                studentId = "student22",
-                total = 9.90,
-                reason = "Poor quality order",
+                pay_Amount = 9.90,
+                refund = RefundRequest( reason = "Poor quality order",
                 status = "pending",
-                requestTime = 1733900000L
+                requestTime = 1733900000L)
             ),
-            RefundRequest(
+            Receipt(
                 orderId = "Order9999",
-                studentId = "student31",
-                total = 5.00,
-                reason = "Change of Mind",
+                pay_Amount = 5.00,
+                refund = RefundRequest( reason = "Change of Mind",
                 status = "pending",
-                requestTime = 1733800000L
+                requestTime = 1733800000L)
             )
         )
 
