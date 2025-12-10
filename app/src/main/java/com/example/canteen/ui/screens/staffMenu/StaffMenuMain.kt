@@ -1,22 +1,16 @@
 package com.example.menumanagement
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,30 +19,40 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-
-// Your menu data
 import com.example.canteen.data.MenuItem
 import com.example.canteen.data.menuItems
 import com.example.canteen.ui.screens.CanteenScreen
 
-// Category List
-val categories = listOf("All", "Chicken Rice", "Curry Mee", "Tomyam Maggi")
-
 @Composable
-fun StaffDashboardScreen(navController: NavController)  {
+fun StaffDashboardScreen(navController: NavController) {
     var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
+
+    // Mapping display name → categoryId
+    val categoryMap = mapOf(
+        "Chicken Rice" to "C0001",
+        "Curry Mee" to "C0003",
+        "Tomyam Maggi" to "C0002"
+    )
+    val categories = listOf("All") + categoryMap.keys.toList()
+
+    // Filtered menu items
+    val filteredMenuItems = menuItems.filter { item ->
+        val matchesCategory = selectedCategory == "All" ||
+                item.categoryId == categoryMap[selectedCategory]
+        val matchesSearch = stringResource(id = item.itemName)
+            .contains(search.trim(), ignoreCase = true)
+        matchesCategory && matchesSearch
+    }
 
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -56,32 +60,27 @@ fun StaffDashboardScreen(navController: NavController)  {
                 .padding(16.dp)
                 .padding(paddingValues)
         ) {
-
-            // -------------------- Header --------------------
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Staff Dashboard", fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                     Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
                 }
-                Icon(
-                    Icons.Default.Logout,
-                    contentDescription = "Logout",
-                    tint = Color.Blue
-                )
+                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue)
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // -------------------- Section Title --------------------
-            Text("Menu Items", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
+            // Section Title
+            Text("Menu Items", fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            Text("Total Items: ${filteredMenuItems.size}", fontSize = 13.sp, color = Color.Gray)
             Spacer(Modifier.height(16.dp))
 
-            // -------------------- Add New + Edit --------------------
+            // Add New + Edit
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -99,37 +98,36 @@ fun StaffDashboardScreen(navController: NavController)  {
                 Spacer(Modifier.width(12.dp))
 
                 IconButton(
-                    onClick = {navController.navigate(CanteenScreen.MenuListPage.name)},
+                    onClick = { navController.navigate(CanteenScreen.MenuListPage.name) },
                     modifier = Modifier
                         .size(48.dp)
                         .background(Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
                 ) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Edit Menu",
-                        tint = Color.Blue
-                    )
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Menu", tint = Color.Blue)
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // -------------------- Search Bar --------------------
+            // Search Bar
             OutlinedTextField(
                 value = search,
                 onValueChange = { search = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search menu items...") },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Blue)
-                },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Blue) },
                 shape = RoundedCornerShape(14.dp)
             )
 
             Spacer(Modifier.height(16.dp))
 
-            // -------------------- Category Chips --------------------
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Scrollable Category Chips
+            Row(
+                modifier = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 categories.forEach { category ->
                     CategoryChip(
                         text = category,
@@ -139,14 +137,14 @@ fun StaffDashboardScreen(navController: NavController)  {
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // -------------------- Menu List --------------------
+            // Menu List
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(menuItems) { item ->
+                items(filteredMenuItems) { item ->
                     MenuItemCard(item)
                 }
             }
@@ -154,9 +152,6 @@ fun StaffDashboardScreen(navController: NavController)  {
     }
 }
 
-// ===================================================================
-// CATEGORY CHIP
-// ===================================================================
 @Composable
 fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
@@ -174,9 +169,6 @@ fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-// ===================================================================
-// MENU ITEM CARD
-// ===================================================================
 @Composable
 fun MenuItemCard(item: MenuItem) {
     Row(
@@ -198,7 +190,7 @@ fun MenuItemCard(item: MenuItem) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(id = item.itemName),
-                fontWeight = FontWeight.Bold,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 fontSize = 16.sp
             )
             Text(
@@ -223,9 +215,6 @@ fun MenuItemCard(item: MenuItem) {
     }
 }
 
-// ===================================================================
-// BOTTOM NAVIGATION BAR
-// ===================================================================
 @Composable
 fun BottomNavigationBar(navController: NavController) {
     NavigationBar {
@@ -235,40 +224,32 @@ fun BottomNavigationBar(navController: NavController) {
             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
             label = { androidx.compose.material3.Text("Home") }
         )
-
         NavigationBarItem(
             selected = false,
             onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
             icon = { Icon(Icons.Default.Add, contentDescription = "Add Item") },
             label = { androidx.compose.material3.Text("Add Item") }
         )
-
-        // Refund
         NavigationBarItem(
             selected = false,
-            onClick = { /* TODO: navigate to Refund screen */ },
+            onClick = { /* Refund */ },
             icon = { Icon(Icons.Default.Edit, contentDescription = "Refund") },
             label = { Text("Refund") }
         )
-
-        // Payment History
         NavigationBarItem(
             selected = false,
-            onClick = { /* TODO: navigate to Payment History screen */ },
+            onClick = { /* Payment History */ },
             icon = { Icon(Icons.Default.Search, contentDescription = "Payment History") },
             label = { Text("History") }
         )
-
-        // Report
         NavigationBarItem(
             selected = false,
-            onClick = { /* TODO: navigate to Report screen */ },
+            onClick = { /* Report */ },
             icon = { Icon(Icons.Default.Person, contentDescription = "Report") },
             label = { Text("Report") }
         )
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

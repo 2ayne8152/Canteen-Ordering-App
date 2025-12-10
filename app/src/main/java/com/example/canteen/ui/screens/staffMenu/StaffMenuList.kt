@@ -32,7 +32,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.canteen.data.MenuItem
 import com.example.canteen.data.menuItems
 import com.example.canteen.viewmodel.staffMenu.CategoryData
-import com.example.menumanagement.categories
 import com.example.canteen.viewmodel.staffMenu.Category
 import com.example.canteen.viewmodel.staffMenu.CategoryData.category
 

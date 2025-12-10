@@ -39,64 +39,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        /*Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            CanteenApp()
-        }*/
-
-    }
-}
-
-@Composable
-fun CanteenApp() {
-    val navController = rememberNavController()
-
-    NavHost(navController = navController, startDestination = "login") {
-        // User Login Screen
-        composable("login") {
-            LoginScreen(
-                onStaffLoginClick = { navController.navigate("staff_login") },
-                onLoginSuccess = { role ->
-                    when (role) {
-                        "user" -> navController.navigate("user_menu") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                        "staff" -> navController.navigate("staff_menu") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    }
-                }
-            )
-        }
-
-        // Staff Login Screen
-        composable("staff_login") {
-            StaffLoginScreen(
-                onUserLoginClick = { navController.navigate("login") },
-                onLoginSuccess = { role ->
-                    when (role) {
-                        "staff" -> navController.navigate("staff_menu") {
-                            popUpTo("staff_login") { inclusive = true }
-                        }
-                        "user" -> navController.navigate("user_menu") {
-                            popUpTo("staff_login") { inclusive = true }
-                        }
-                    }
-                }
-            )
-        }
-
-        // User Menu Screen
-        composable("user_menu") {
-            UserMenu(
-                onDetailClick = {
-                    // TODO: Navigate to order details/cart screen
-                }
-            )
-        }
-
     }
 }
 
