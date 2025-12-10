@@ -41,6 +41,7 @@ import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.Green
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.data.Receipt
+import com.example.canteen.data.RefundItem
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -62,9 +63,9 @@ fun RefundManagementScreenWrapper(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RefundManagementScreen(
-    pendingList: List<Receipt>,
-    approvedList: List<Receipt>,
-    rejectedList: List<Receipt>,
+    pendingList: List<RefundItem>,
+    approvedList: List<RefundItem>,
+    rejectedList: List<RefundItem>,
     onBack: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -112,23 +113,23 @@ fun RefundManagementScreen(
                         0 -> RefundCard(data = refundItem)               // Pending
                         1 -> ApprovedRefundCard(
                             data = refundItem,
-                            expanded = expandedCardId == refundItem.orderId,
+                            expanded = expandedCardId == refundItem.receipt.orderId,
                             onClick = {
-                                expandedCardId = if (expandedCardId == refundItem.orderId) {
+                                expandedCardId = if (expandedCardId == refundItem.receipt.orderId) {
                                     null // collapse
                                 } else {
-                                    refundItem.orderId // expand new card
+                                    refundItem.receipt.orderId // expand new card
                                 }
                             }
                         )      // Approved
                         2 -> RejectedRefundCard(
                             data = refundItem,
-                            expanded = expandedCardId == refundItem.orderId,
+                            expanded = expandedCardId == refundItem.receipt.orderId,
                             onClick = {
-                                expandedCardId = if (expandedCardId == refundItem.orderId) {
+                                expandedCardId = if (expandedCardId == refundItem.receipt.orderId) {
                                     null // collapse
                                 } else {
-                                    refundItem.orderId // expand new card
+                                    refundItem.receipt.orderId // expand new card
                                 }
                             }
                         )       // Rejected
@@ -141,7 +142,7 @@ fun RefundManagementScreen(
 
 @Composable
 fun RefundCard(
-    data: Receipt,
+    data: RefundItem,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -158,13 +159,13 @@ fun RefundCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order${data.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Order${data.receipt.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Text(text = formatTime(data.refund?.requestTime ?: 0L) , fontSize = 14.sp)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Total : RM${String.format("%.2f", data.pay_Amount)}")
+            Text("Total : RM${String.format("%.2f", data.receipt.pay_Amount)}")
             Text("Refund Reason : ${data.refund?.reason}")
         }
     }
@@ -172,7 +173,7 @@ fun RefundCard(
 
 @Composable
 fun ApprovedRefundCard(
-    data: Receipt,
+    data: RefundItem,
     expanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -193,13 +194,13 @@ fun ApprovedRefundCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order ${data.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Order ${data.receipt.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Total Refunded : RM${String.format("%.2f", data.pay_Amount)}")
-            Text("Reason : ${data.refund?.reason}")
+            Text("Total Refunded : RM${String.format("%.2f", data.receipt.pay_Amount)}")
+            Text("Reason : ${data.refund.reason}")
 
             // ▼▼▼ ONLY SHOW WHEN EXPANDED ▼▼▼
             AnimatedVisibility(visible = expanded) {
@@ -211,13 +212,13 @@ fun ApprovedRefundCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Admin: ${data.refund?.refundBy}")
+                    Text("Admin: ${data.refund.refundBy}")
 
                     Spacer(Modifier.height(4.dp))
 
                     Text("Additional Notes:")
                     Text(
-                        text = data.refund?.remark ?: "",
+                        text = data.refund.remark,
                         fontSize = 14.sp
                     )
                 }
@@ -228,7 +229,7 @@ fun ApprovedRefundCard(
 
 @Composable
 fun RejectedRefundCard(
-    data: Receipt,
+    data: RefundItem,
     modifier: Modifier = Modifier,
     expanded: Boolean,
     onClick: () -> Unit
@@ -248,12 +249,12 @@ fun RejectedRefundCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order${data.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Order${data.receipt.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Total : RM${String.format("%.2f", data.pay_Amount)}")
+            Text("Total : RM${String.format("%.2f", data.receipt.pay_Amount)}")
             Text("Refund Reason : ${data.refund?.reason}")
 
             AnimatedVisibility(visible = expanded) {
@@ -265,13 +266,13 @@ fun RejectedRefundCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Admin: ${data.refund?.refundBy}")
+                    Text("Admin: ${data.refund.refundBy}")
 
                     Spacer(Modifier.height(4.dp))
 
                     Text("Reject Reason:")
                     Text(
-                        text = data.refund?.remark ?: "",
+                        text = data.refund.remark,
                         fontSize = 14.sp
                     )
                 }
@@ -299,26 +300,29 @@ fun formatTime(timestamp: Long): String {
 fun RefundManagementPreview() {
     CanteenTheme {
         val sampleRefundList = listOf(
-            Receipt(
-                orderId = "Order1234",
-                pay_Amount = 12.50,
+            RefundItem(
+                receipt = Receipt(
+                    orderId = "Order1234",
+                    pay_Amount = 12.50),
                 refund = RefundRequest(
                     reason = "Missing Item",
                     status = "pending",
                     requestTime = 1733985600L // 12/12/2025
                 )
             ),
-            Receipt(
-                orderId = "Order4567",
-                pay_Amount = 9.90,
+            RefundItem(
+                receipt = Receipt(
+                    orderId = "Order4567",
+                    pay_Amount = 9.90),
                 refund = RefundRequest(
                     reason = "Poor quality order",
                     status = "pending",
                     requestTime = 1733900000L)
             ),
-            Receipt(
-                orderId = "Order9999",
-                pay_Amount = 5.00,
+            RefundItem(
+                receipt = Receipt(
+                    orderId = "Order9999",
+                    pay_Amount = 5.00),
                 refund = RefundRequest ( reason = "Change of Mind",
                 status = "pending",
                 requestTime = 1733800000L)
@@ -326,25 +330,28 @@ fun RefundManagementPreview() {
         )
 
         val approvedRefundList = listOf(
-            Receipt(
-                orderId = "Order1234",
-                pay_Amount = 12.50,
+            RefundItem(
+                receipt = Receipt(
+                    orderId = "Order1234",
+                    pay_Amount = 12.50),
                 refund = RefundRequest( reason = "Missing Item",
                 status = "pending",
                 requestTime = 1733985600L, // 12/12/2025
                 refundBy = "Lili",
                 remark = "Thank you")
             ),
-            Receipt(
-                orderId = "Order4567",
-                pay_Amount = 9.90,
+            RefundItem(
+                receipt = Receipt(
+                    orderId = "Order4567",
+                    pay_Amount = 9.90),
                 refund = RefundRequest( reason = "Poor quality order",
                 status = "pending",
                 requestTime = 1733900000L)
             ),
-            Receipt(
-                orderId = "Order9999",
-                pay_Amount = 5.00,
+            RefundItem(
+                receipt = Receipt(
+                    orderId = "Order9999",
+                    pay_Amount = 5.00),
                 refund = RefundRequest( reason = "Change of Mind",
                 status = "pending",
                 requestTime = 1733800000L)
