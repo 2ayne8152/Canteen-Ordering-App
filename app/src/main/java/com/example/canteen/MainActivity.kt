@@ -1,155 +1,102 @@
 package com.example.canteen
 
 import android.graphics.drawable.Icon
+import android.os.Build
 import android.os.Bundle
-import android.widget.Button
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.annotation.RequiresApi
+import com.example.canteen.ui.screens.CanteenScreen
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.canteen.ui.screens.loginscreens.LoginScreen
+import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
+import com.example.canteen.ui.screens.staffMenu.MenuItemForm
+import com.example.canteen.ui.screens.staffMenu.MenuListPage
+import com.example.canteen.ui.screens.staffMenu.MenuListPagePreview
+import com.example.canteen.ui.screens.usermenu.UserMenu
 import com.example.canteen.ui.theme.CanteenTheme
+import com.example.menumanagement.StaffDashboardScreen
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             CanteenTheme {
-                Greeting()
+                CanteenScreen()
             }
         }
+
+        /*Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            CanteenApp()
+        }*/
+
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Greeting(onBack: () -> Unit = {}) {
+fun CanteenApp() {
+    val navController = rememberNavController()
 
-    var cardNumber by remember { mutableStateOf("") }
-    var expiry by remember { mutableStateOf("") }
-    var cvv by remember { mutableStateOf("") }
-    var cardHolder by remember { mutableStateOf("") }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Add credit or debit card") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+    NavHost(navController = navController, startDestination = "login") {
+        // User Login Screen
+        composable("login") {
+            LoginScreen(
+                onStaffLoginClick = { navController.navigate("staff_login") },
+                onLoginSuccess = { role ->
+                    when (role) {
+                        "user" -> navController.navigate("user_menu") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                        "staff" -> navController.navigate("staff_menu") {
+                            popUpTo("login") { inclusive = true }
+                        }
                     }
                 }
             )
         }
-    ) { padding ->
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-
-            Text(
-                text = "Card Detail",
-                style = MaterialTheme.typography.titleMedium
+        // Staff Login Screen
+        composable("staff_login") {
+            StaffLoginScreen(
+                onUserLoginClick = { navController.navigate("login") },
+                onLoginSuccess = { role ->
+                    when (role) {
+                        "staff" -> navController.navigate("staff_menu") {
+                            popUpTo("staff_login") { inclusive = true }
+                        }
+                        "user" -> navController.navigate("user_menu") {
+                            popUpTo("staff_login") { inclusive = true }
+                        }
+                    }
+                }
             )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Card Number Input
-            OutlinedTextField(
-                value = cardNumber,
-                onValueChange = { cardNumber = it },
-                label = { Text("Card number") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // MM/YY + CVV Row
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-
-                OutlinedTextField(
-                    value = expiry,
-                    onValueChange = { expiry = it },
-                    label = { Text("MM/YY") },
-                    modifier = Modifier.weight(1f)
-                )
-
-                OutlinedTextField(
-                    value = cvv,
-                    onValueChange = { cvv = it },
-                    label = { Text("CVV") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Card Holder Name
-            OutlinedTextField(
-                value = cardHolder,
-                onValueChange = { cardHolder = it },
-                label = { Text("Card holder name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // Done Button
-            Button(
-                shape = RoundedCornerShape(8.dp),
-                onClick = { /* Handle Save */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Text("Done")
-            }
         }
+
+        // User Menu Screen
+        composable("user_menu") {
+            UserMenu(
+                onDetailClick = {
+                    // TODO: Navigate to order details/cart screen
+                }
+            )
+        }
+
     }
 }
 
-
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    CanteenTheme {
-        Greeting()
-    }
-}
