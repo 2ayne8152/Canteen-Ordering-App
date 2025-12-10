@@ -29,6 +29,7 @@ fun StaffLoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isRegistering by remember { mutableStateOf(false) }
 
@@ -77,6 +78,7 @@ fun StaffLoginScreen(
                     email = ""
                     password = ""
                     username = ""
+                    phoneNumber = ""
                 }) {
                     Text("OK")
                 }
@@ -138,6 +140,16 @@ fun StaffLoginScreen(
                         enabled = authState !is AuthState.Loading
                     )
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = phoneNumber,
+                        onValueChange = { phoneNumber = it },
+                        label = { Text("Phone Number") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = authState !is AuthState.Loading
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
                 OutlinedTextField(
@@ -187,7 +199,7 @@ fun StaffLoginScreen(
                         if (isRegistering) {
                             // Set flag that we're registering
                             isCurrentlyRegistering.value = true
-                            authViewModel.register(email, password, username, "staff")
+                            authViewModel.register(email, password, username, "staff", phoneNumber)
                         } else {
                             isCurrentlyRegistering.value = false
                             authViewModel.login(email, password, "staff")
