@@ -243,11 +243,28 @@ fun BottomNavigationBar(navController: NavController) {
             label = { androidx.compose.material3.Text("Add Item") }
         )
 
+        // Refund
         NavigationBarItem(
             selected = false,
-            onClick = { navController.navigate(CanteenScreen.StaffDashboard.name) },
-            icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-            label = { androidx.compose.material3.Text("Profile") }
+            onClick = { /* TODO: navigate to Refund screen */ },
+            icon = { Icon(Icons.Default.Edit, contentDescription = "Refund") },
+            label = { Text("Refund") }
+        )
+
+        // Payment History
+        NavigationBarItem(
+            selected = false,
+            onClick = { /* TODO: navigate to Payment History screen */ },
+            icon = { Icon(Icons.Default.Search, contentDescription = "Payment History") },
+            label = { Text("History") }
+        )
+
+        // Report
+        NavigationBarItem(
+            selected = false,
+            onClick = { /* TODO: navigate to Report screen */ },
+            icon = { Icon(Icons.Default.Person, contentDescription = "Report") },
+            label = { Text("Report") }
         )
     }
 }
