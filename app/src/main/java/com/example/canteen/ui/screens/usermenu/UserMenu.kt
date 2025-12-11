@@ -48,6 +48,11 @@ fun UserMenu(
                     fontSize = 30.sp,
                     modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                 )
+
+                Text(
+                    text = "Browse and order your favourite meals",
+
+                )
             }
 
             items(menuItems) { item ->
@@ -89,6 +94,7 @@ fun UserMenu(
                 MenuItemCustomization(
                     itemName = item.name,
                     itemImageUrl = item.imageUrl,
+                    itemPrice = item.price,
                     placeholderRes = R.drawable.tomyammaggi,
                     quantity = quantity,
                     onIncrease = { if (quantity < item.remainQuantity) quantity++ },
@@ -166,6 +172,7 @@ fun FloatingCheckoutBar(
 fun MenuItemCustomization(
     itemName: String,
     itemImageUrl: String,
+    itemPrice: Double, // pass price here
     @DrawableRes placeholderRes: Int = R.drawable.tomyammaggi,
     quantity: Int,
     onIncrease: () -> Unit,
@@ -174,11 +181,21 @@ fun MenuItemCustomization(
     onCancel: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(0.9f).wrapContentHeight(),
+        modifier = Modifier
+            .fillMaxWidth(0.9f)
+            .wrapContentHeight(),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Title
+            Text(itemName, style = MaterialTheme.typography.titleLarge)
 
+            Spacer(Modifier.height(12.dp))
+
+            // Image
             if (itemImageUrl.isNotBlank()) {
                 AsyncImage(
                     model = itemImageUrl,
@@ -201,21 +218,43 @@ fun MenuItemCustomization(
                 )
             }
 
-            Spacer(Modifier.height(12.dp))
-            Text(itemName, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
+            // Price info
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Unit Price: RM %.2f".format(itemPrice), style = MaterialTheme.typography.bodyMedium)
+                Text("Subtotal: RM %.2f".format(itemPrice * quantity), style = MaterialTheme.typography.bodyLarge)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Quantity selector
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = onDecrease) { Text("-") }
+                OutlinedButton(onClick = onDecrease, modifier = Modifier.size(40.dp, 40.dp)) { Text("-") }
                 Spacer(Modifier.width(16.dp))
                 Text(quantity.toString(), style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.width(16.dp))
-                OutlinedButton(onClick = onIncrease) { Text("+") }
+                OutlinedButton(onClick = onIncrease, modifier = Modifier.size(40.dp, 40.dp)) { Text("+") }
             }
 
-            Spacer(Modifier.height(12.dp))
-            Button(onClick = onAddToCart, modifier = Modifier.fillMaxWidth()) { Text("Add to Cart") }
-            TextButton(onClick = onCancel) { Text("Cancel") }
+            Spacer(Modifier.height(16.dp))
+
+            // Add to cart button
+            Button(
+                onClick = onAddToCart,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Add to Cart • RM %.2f".format(itemPrice * quantity))
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Cancel
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
         }
     }
 }
+
