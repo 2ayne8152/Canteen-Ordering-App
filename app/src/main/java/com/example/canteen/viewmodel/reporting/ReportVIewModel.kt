@@ -45,14 +45,14 @@ class ReportViewModel(
     private val _reportData = MutableStateFlow<UiState<RevenueReportData>>(UiState.Loading)
     val reportData: StateFlow<UiState<RevenueReportData>> = _reportData.asStateFlow()
 
-    fun loadRevenueData(period: String) {
+    fun loadRevenueData(period: String, selectedDate: Calendar = Calendar.getInstance()) {
         viewModelScope.launch {
             _reportData.value = UiState.Loading
 
             try {
                 // Fetch receipts from Firebase
                 val receipts = fetchReceiptsFromFirebase()
-                val data = calculateRevenueData(receipts, period)
+                val data = calculateRevenueData(receipts, period, selectedDate)
                 _reportData.value = UiState.Success(data)
             } catch (e: Exception) {
                 _reportData.value = UiState.Error(e.message ?: "Failed to load revenue data")
@@ -90,12 +90,10 @@ class ReportViewModel(
         }
     }
 
-    private fun calculateRevenueData(receipts: List<ReceiptWithTimestamp>, period: String): RevenueReportData {
-        val now = Calendar.getInstance()
-
-        // Filter receipts based on period
+    private fun calculateRevenueData(receipts: List<ReceiptWithTimestamp>, period: String, selectedDate: Calendar): RevenueReportData {
+        // Filter receipts based on period and selected date
         val filteredReceipts = receipts.filter { receipt ->
-            isWithinPeriod(receipt.paymentDate, now.time, period)
+            isWithinPeriod(receipt.paymentDate, selectedDate.time, period)
         }
 
         // Calculate total revenue
@@ -103,7 +101,7 @@ class ReportViewModel(
 
         // Calculate previous period revenue for comparison
         val previousPeriodReceipts = receipts.filter { receipt ->
-            isWithinPreviousPeriod(receipt.paymentDate, now.time, period)
+            isWithinPreviousPeriod(receipt.paymentDate, selectedDate.time, period)
         }
         val previousRevenue = previousPeriodReceipts.sumOf { it.payAmount }
 
@@ -156,52 +154,74 @@ class ReportViewModel(
         )
     }
 
-    private fun isWithinPeriod(date: Date, now: Date, period: String): Boolean {
+    private fun isWithinPeriod(date: Date, selectedDate: Date, period: String): Boolean {
         val cal = Calendar.getInstance()
-        cal.time = now
-
-        when (period) {
-            "Daily" -> cal.add(Calendar.DAY_OF_YEAR, -7)
-            "Weekly" -> cal.add(Calendar.WEEK_OF_YEAR, -7)
-            "Monthly" -> cal.add(Calendar.MONTH, -12)
-            "Yearly" -> cal.add(Calendar.YEAR, -5)
-        }
-
-        return date.after(cal.time) || date == cal.time
-    }
-
-    private fun isWithinPreviousPeriod(date: Date, now: Date, period: String): Boolean {
-        val cal = Calendar.getInstance()
-        cal.time = now
+        cal.time = selectedDate
 
         when (period) {
             "Daily" -> {
-                cal.add(Calendar.DAY_OF_YEAR, -14)
-                val startDate = cal.time
-                cal.add(Calendar.DAY_OF_YEAR, 7)
-                val endDate = cal.time
-                return date.after(startDate) && date.before(endDate)
+                // Check if date is on the same day as selectedDate
+                val dateCal = Calendar.getInstance().apply { time = date }
+                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
+                        cal.get(Calendar.DAY_OF_YEAR) == dateCal.get(Calendar.DAY_OF_YEAR)
             }
             "Weekly" -> {
-                cal.add(Calendar.WEEK_OF_YEAR, -14)
-                val startDate = cal.time
-                cal.add(Calendar.WEEK_OF_YEAR, 7)
-                val endDate = cal.time
-                return date.after(startDate) && date.before(endDate)
+                // Check if date is in the same week as selectedDate
+                cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
+                val weekStart = cal.time
+                cal.add(Calendar.DAY_OF_YEAR, 6)
+                val weekEnd = cal.time
+                return (date.after(weekStart) || date == weekStart) &&
+                        (date.before(weekEnd) || date == weekEnd)
             }
             "Monthly" -> {
-                cal.add(Calendar.MONTH, -24)
-                val startDate = cal.time
-                cal.add(Calendar.MONTH, 12)
-                val endDate = cal.time
-                return date.after(startDate) && date.before(endDate)
+                // Check if date is in the same month as selectedDate
+                val dateCal = Calendar.getInstance().apply { time = date }
+                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
+                        cal.get(Calendar.MONTH) == dateCal.get(Calendar.MONTH)
             }
             "Yearly" -> {
-                cal.add(Calendar.YEAR, -10)
-                val startDate = cal.time
-                cal.add(Calendar.YEAR, 5)
-                val endDate = cal.time
-                return date.after(startDate) && date.before(endDate)
+                // Check if date is in the same year as selectedDate
+                val dateCal = Calendar.getInstance().apply { time = date }
+                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR)
+            }
+        }
+
+        return false
+    }
+
+    private fun isWithinPreviousPeriod(date: Date, selectedDate: Date, period: String): Boolean {
+        val cal = Calendar.getInstance()
+        cal.time = selectedDate
+
+        when (period) {
+            "Daily" -> {
+                cal.add(Calendar.DAY_OF_YEAR, -1)
+                val prevDay = cal.time
+                val dateCal = Calendar.getInstance().apply { time = date }
+                val prevCal = Calendar.getInstance().apply { time = prevDay }
+                return prevCal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
+                        prevCal.get(Calendar.DAY_OF_YEAR) == dateCal.get(Calendar.DAY_OF_YEAR)
+            }
+            "Weekly" -> {
+                cal.add(Calendar.WEEK_OF_YEAR, -1)
+                cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
+                val weekStart = cal.time
+                cal.add(Calendar.DAY_OF_YEAR, 6)
+                val weekEnd = cal.time
+                return (date.after(weekStart) || date == weekStart) &&
+                        (date.before(weekEnd) || date == weekEnd)
+            }
+            "Monthly" -> {
+                cal.add(Calendar.MONTH, -1)
+                val dateCal = Calendar.getInstance().apply { time = date }
+                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
+                        cal.get(Calendar.MONTH) == dateCal.get(Calendar.MONTH)
+            }
+            "Yearly" -> {
+                cal.add(Calendar.YEAR, -1)
+                val dateCal = Calendar.getInstance().apply { time = date }
+                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR)
             }
         }
         return false

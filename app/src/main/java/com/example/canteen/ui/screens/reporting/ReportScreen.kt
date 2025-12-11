@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
 import java.util.*
 import com.example.canteen.viewmodel.reporting.UiState
 import com.example.canteen.viewmodel.reporting.ReportViewModel
@@ -33,16 +34,18 @@ import androidx.compose.ui.tooling.preview.Preview
 fun ReportScreen(
     onBack: () -> Unit = {}
 ) {
-    val viewModel: ReportViewModel = viewModel() // No factory needed - uses Firebase directly
+    val viewModel: ReportViewModel = viewModel()
     var selectedPeriod by remember { mutableStateOf("Daily") }
+    var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
+    var showDatePicker by remember { mutableStateOf(false) }
     val reportData by viewModel.reportData.collectAsState()
     val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale.US) }
 
     val periods = listOf("Daily", "Weekly", "Monthly", "Yearly")
 
-    // Load data when period changes
-    LaunchedEffect(selectedPeriod) {
-        viewModel.loadRevenueData(selectedPeriod)
+    // Load data when period or date changes
+    LaunchedEffect(selectedPeriod, selectedDate.timeInMillis) {
+        viewModel.loadRevenueData(selectedPeriod, selectedDate)
     }
 
     Scaffold(
@@ -92,7 +95,7 @@ fun ReportScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadRevenueData(selectedPeriod) }) {
+                        Button(onClick = { viewModel.loadRevenueData(selectedPeriod, selectedDate) }) {
                             Text("Retry")
                         }
                     }
@@ -126,6 +129,104 @@ fun ReportScreen(
                                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                     )
                                 )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Date Navigation
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Previous button
+                                IconButton(
+                                    onClick = {
+                                        selectedDate = Calendar.getInstance().apply {
+                                            time = selectedDate.time
+                                            when (selectedPeriod) {
+                                                "Daily" -> add(Calendar.DAY_OF_YEAR, -1)
+                                                "Weekly" -> add(Calendar.WEEK_OF_YEAR, -1)
+                                                "Monthly" -> add(Calendar.MONTH, -1)
+                                                "Yearly" -> add(Calendar.YEAR, -1)
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronLeft,
+                                        contentDescription = "Previous",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                // Date display and calendar button
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    IconButton(onClick = { showDatePicker = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.CalendarToday,
+                                            contentDescription = "Select Date",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Text(
+                                        text = when (selectedPeriod) {
+                                            "Daily" -> SimpleDateFormat("EEEE, MMM dd, yyyy", Locale.getDefault()).format(selectedDate.time)
+                                            "Weekly" -> {
+                                                val weekStart = Calendar.getInstance().apply {
+                                                    time = selectedDate.time
+                                                    set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+                                                }
+                                                val weekEnd = Calendar.getInstance().apply {
+                                                    time = weekStart.time
+                                                    add(Calendar.DAY_OF_YEAR, 6)
+                                                }
+                                                "${SimpleDateFormat("MMM dd", Locale.getDefault()).format(weekStart.time)} - ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(weekEnd.time)}"
+                                            }
+                                            "Monthly" -> SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(selectedDate.time)
+                                            "Yearly" -> SimpleDateFormat("yyyy", Locale.getDefault()).format(selectedDate.time)
+                                            else -> SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(selectedDate.time)
+                                        },
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+
+                                // Next button
+                                IconButton(
+                                    onClick = {
+                                        selectedDate = Calendar.getInstance().apply {
+                                            time = selectedDate.time
+                                            when (selectedPeriod) {
+                                                "Daily" -> add(Calendar.DAY_OF_YEAR, 1)
+                                                "Weekly" -> add(Calendar.WEEK_OF_YEAR, 1)
+                                                "Monthly" -> add(Calendar.MONTH, 1)
+                                                "Yearly" -> add(Calendar.YEAR, 1)
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = "Next",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
 
@@ -204,6 +305,37 @@ fun ReportScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
                     }
+                }
+            }
+
+            // Date Picker Dialog
+            if (showDatePicker) {
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = selectedDate.timeInMillis
+                )
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                datePickerState.selectedDateMillis?.let { millis ->
+                                    selectedDate = Calendar.getInstance().apply {
+                                        timeInMillis = millis
+                                    }
+                                }
+                                showDatePicker = false
+                            }
+                        ) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
                 }
             }
         }
