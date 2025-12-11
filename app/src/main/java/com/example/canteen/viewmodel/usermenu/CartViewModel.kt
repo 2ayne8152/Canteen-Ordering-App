@@ -14,7 +14,6 @@ class CartViewModel : ViewModel() {
 
     fun addToCart(item: MenuItem, quantity: Int) {
         val current = _cart.value.toMutableList()
-
         val existingIndex = current.indexOfFirst { it.menuItem.id == item.id }
 
         if (existingIndex >= 0) {
@@ -33,12 +32,7 @@ class CartViewModel : ViewModel() {
         _cart.value = emptyList()
     }
 
-    val totalItems = cart.map { list ->
-        list.sumOf { it.quantity }
-    }
-
-    val totalPrice = cart.map { list ->
-        list.sumOf { it.totalPrice }
-    }
+    // Flows for totals (consume with StateFlow/collect in your UI or ViewModel consumers)
+    val totalItems = cart.map { list -> list.sumOf { it.quantity } }
+    val totalPrice = cart.map { list -> list.sumOf { it.totalPrice } }
 }
-

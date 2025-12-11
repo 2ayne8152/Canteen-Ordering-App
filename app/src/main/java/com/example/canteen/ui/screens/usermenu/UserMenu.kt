@@ -8,11 +8,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -32,7 +36,7 @@ fun UserMenu(
     modifier: Modifier = Modifier
 ) {
     var selectedItem by remember { mutableStateOf<MenuItem?>(null) }
-    var quantity by remember { mutableStateOf(1) }
+    var isSheetOpen by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
 
@@ -59,15 +63,16 @@ fun UserMenu(
                         menuItem = item,
                         onClick = {
                             selectedItem = item
-                            quantity = 1
+                            isSheetOpen = true
                             onItemClick(item)
                         },
-                        modifier = Modifier.fillMaxWidth(0.95f) // card will take 95% of width
+                        modifier = Modifier.fillMaxWidth(0.95f)
                     )
                 }
             }
         }
 
+        // Floating checkout bar
         if (totalItemsInCart > 0) {
             FloatingCheckoutBar(
                 numOfItems = totalItemsInCart,
@@ -79,27 +84,21 @@ fun UserMenu(
             )
         }
 
-        selectedItem?.let { item ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
-                contentAlignment = Alignment.Center
-            ) {
-                MenuItemCustomization(
-                    itemName = item.name,
-                    itemImageUrl = item.imageUrl,
-                    placeholderRes = R.drawable.tomyammaggi,
-                    quantity = quantity,
-                    onIncrease = { if (quantity < item.remainQuantity) quantity++ },
-                    onDecrease = { if (quantity > 1) quantity-- },
-                    onAddToCart = {
-                        onAddToCart(item, quantity)
-                        selectedItem = null
-                    },
-                    onCancel = { selectedItem = null }
-                )
-            }
+        // Show bottom sheet customization if requested
+        if (isSheetOpen && selectedItem != null) {
+            MenuItemCustomization(
+                item = selectedItem!!,
+                onAddToCart = { qty ->
+                    onAddToCart(selectedItem!!, qty)
+                    isSheetOpen = false
+                },
+                onDismiss = { isSheetOpen = false },
+                onViewCart = {
+                    isSheetOpen = false
+                    onViewCart()
+                },
+                cartItemCount = totalItemsInCart
+            )
         }
     }
 }
@@ -111,25 +110,27 @@ fun MenuItemCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-
             if (menuItem.imageUrl.isNotBlank()) {
                 AsyncImage(
                     model = menuItem.imageUrl,
                     contentDescription = menuItem.name,
-                    modifier = Modifier.size(70.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
             } else {
                 Image(
                     painter = painterResource(R.drawable.tomyammaggi),
                     contentDescription = menuItem.name,
-                    modifier = Modifier.size(70.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
@@ -155,67 +156,139 @@ fun FloatingCheckoutBar(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(60.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(60.dp),
         shape = MaterialTheme.shapes.large
     ) {
         Text("$numOfItems items • RM ${"%.2f".format(totalPrice)}")
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuItemCustomization(
-    itemName: String,
-    itemImageUrl: String,
-    @DrawableRes placeholderRes: Int = R.drawable.tomyammaggi,
-    quantity: Int,
-    onIncrease: () -> Unit,
-    onDecrease: () -> Unit,
-    onAddToCart: () -> Unit,
-    onCancel: () -> Unit
+    item: MenuItem,
+    onAddToCart: (Int) -> Unit,
+    onDismiss: () -> Unit,
+    onViewCart: () -> Unit,
+    cartItemCount: Int
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(0.9f).wrapContentHeight(),
-        shape = RoundedCornerShape(16.dp)
+    var quantity by remember { mutableStateOf(1) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
 
-            if (itemImageUrl.isNotBlank()) {
-                AsyncImage(
-                    model = itemImageUrl,
-                    contentDescription = itemName,
-                    modifier = Modifier
-                        .height(160.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
+            // ITEM TITLE
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            // DESCRIPTION
+            Text(
+                text = item.description,
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // PRICE + QUANTITY CONTROLS
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                // PRICE
+                Text(
+                    text = "RM %.2f".format(item.price),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
                 )
-            } else {
-                Image(
-                    painter = painterResource(placeholderRes),
-                    contentDescription = itemName,
+
+                // Clean quantity selector
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .height(160.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                        .background(Color(0xFFF2F2F2), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    IconButton(
+                        onClick = { if (quantity > 1) quantity-- },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(Icons.Default.Remove, contentDescription = "Decrease")
+                    }
+
+                    Text(
+                        text = quantity.toString(),
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    IconButton(
+                        onClick = { quantity++ },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Increase")
+                    }
+                }
             }
 
-            Spacer(Modifier.height(12.dp))
-            Text(itemName, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(20.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = onDecrease) { Text("-") }
-                Spacer(Modifier.width(16.dp))
-                Text(quantity.toString(), style = MaterialTheme.typography.headlineSmall)
-                Spacer(Modifier.width(16.dp))
-                OutlinedButton(onClick = onIncrease) { Text("+") }
+            // SUBTOTAL
+            Text(
+                text = "Subtotal: RM ${(item.price * quantity).format(2)}",
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // ACTIONS
+            Column {
+                // Add to cart (shows subtotal in label too)
+                Button(
+                    onClick = {
+                        onAddToCart(quantity)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                ) {
+                    Text("Add to Cart • RM ${(item.price * quantity).format(2)}")
+                }
+
+                // Show view cart if there are already items in cart
+                if (cartItemCount > 0) {
+                    Spacer(Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = onViewCart,
+                        modifier = Modifier.fillMaxWidth(),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50))
+                    ) {
+                        Text("View Cart ($cartItemCount)")
+                    }
+                }
             }
 
-            Spacer(Modifier.height(12.dp))
-            Button(onClick = onAddToCart, modifier = Modifier.fillMaxWidth()) { Text("Add to Cart") }
-            TextButton(onClick = onCancel) { Text("Cancel") }
+            Spacer(Modifier.height(10.dp))
         }
     }
 }
+
+// small helper
+fun Double.format(digits: Int) = "%.${digits}f".format(this)

@@ -24,8 +24,9 @@ fun UserHomeScreen(
     menuItems: List<MenuItem>,
     numOfItem: Int,
     totalPrice: Double,
-    onItemClick: (MenuItem) -> Unit,
-    onDetailClick: () -> Unit
+    onAddToCart: (MenuItem, Int) -> Unit,
+    onViewCart: () -> Unit,
+    onItemClick: (MenuItem) -> Unit
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -55,9 +56,9 @@ fun UserHomeScreen(
                 menuItems = menuItems,
                 totalItemsInCart = numOfItem,
                 totalPriceInCart = totalPrice,
-                onAddToCart = { item, qty -> onItemClick(item) },
-                onViewCart = { /* TODO */ },
-                onItemClick = { item -> onItemClick(item) },
+                onAddToCart = onAddToCart,
+                onViewCart = onViewCart,
+                onItemClick = onItemClick,
                 modifier = Modifier.padding(padding)
             )
         }
