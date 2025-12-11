@@ -5,66 +5,53 @@ import androidx.annotation.StringRes
 import com.example.canteen.R
 
 data class MenuItem(
-    @DrawableRes val imageRes: Int,
-    @StringRes val itemName: Int,
-    @StringRes val itemDesc: Int,
-    val itemPrice: Double
+    val id: String = "",
+    val name: String = "",
+    val description: String = "",
+    val price: Double = 0.0,
+    val remainQuantity: Int = 0,
+    val imageUrl: String = ""
 )
 
-// For Testing Only, will retrieve from database in future
-val menuItems = listOf(
+val sampleMenu = listOf(
     MenuItem(
-        imageRes = R.drawable.chickenrice,
-        itemName = R.string.chicken_rice,
-        itemDesc = R.string.chicken_and_rice,
-        itemPrice = 6.00
+        id = "1",
+        name = "Cheeseburger",
+        description = "Juicy beef patty with melted cheese",
+        price = 8.50,
+        remainQuantity = 10,
+        imageUrl = "" // You can put a real URL here for testing, e.g., "https://via.placeholder.com/150"
     ),
     MenuItem(
-        imageRes = R.drawable.tomyammaggi,
-        itemName = R.string.tomyam_maggi,
-        itemDesc = R.string.tomyam_flavour_maggi_mee,
-        itemPrice = 8.00
+        id = "2",
+        name = "Veggie Wrap",
+        description = "Healthy wrap with fresh vegetables and hummus",
+        price = 6.00,
+        remainQuantity = 5,
+        imageUrl = ""
     ),
     MenuItem(
-        imageRes = R.drawable.currymee,
-        itemName = R.string.curry_mee,
-        itemDesc = R.string.curry_and_mee,
-        itemPrice = 10.00
+        id = "3",
+        name = "French Fries",
+        description = "Crispy golden fries",
+        price = 3.50,
+        remainQuantity = 20,
+        imageUrl = ""
     ),
     MenuItem(
-        imageRes = R.drawable.chickenrice,
-        itemName = R.string.chicken_rice,
-        itemDesc = R.string.chicken_and_rice,
-        itemPrice = 6.00
+        id = "4",
+        name = "Chocolate Muffin",
+        description = "Soft muffin filled with chocolate chips",
+        price = 4.00,
+        remainQuantity = 15,
+        imageUrl = ""
     ),
     MenuItem(
-        imageRes = R.drawable.tomyammaggi,
-        itemName = R.string.tomyam_maggi,
-        itemDesc = R.string.tomyam_flavour_maggi_mee,
-        itemPrice = 8.00
-    ),
-    MenuItem(
-        imageRes = R.drawable.currymee,
-        itemName = R.string.curry_mee,
-        itemDesc = R.string.curry_and_mee,
-        itemPrice = 10.00
-    ),
-    MenuItem(
-        imageRes = R.drawable.chickenrice,
-        itemName = R.string.chicken_rice,
-        itemDesc = R.string.chicken_and_rice,
-        itemPrice = 6.00
-    ),
-    MenuItem(
-        imageRes = R.drawable.tomyammaggi,
-        itemName = R.string.tomyam_maggi,
-        itemDesc = R.string.tomyam_flavour_maggi_mee,
-        itemPrice = 8.00
-    ),
-    MenuItem(
-        imageRes = R.drawable.currymee,
-        itemName = R.string.curry_mee,
-        itemDesc = R.string.curry_and_mee,
-        itemPrice = 10.00
+        id = "5",
+        name = "Iced Coffee",
+        description = "Refreshing iced coffee with milk",
+        price = 5.00,
+        remainQuantity = 25,
+        imageUrl = ""
     )
 )
