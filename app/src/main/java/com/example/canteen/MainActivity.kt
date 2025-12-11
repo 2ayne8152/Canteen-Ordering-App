@@ -25,8 +25,12 @@ import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.MenuListPage
 import com.example.canteen.ui.screens.staffMenu.MenuListPagePreview
 import com.example.canteen.ui.screens.usermenu.UserMenu
+import com.example.canteen.ui.screens.reporting.ReportScreen
+
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.menumanagement.StaffDashboardScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.canteen.viewmodel.reporting.ReportViewModel
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -94,9 +98,20 @@ fun CanteenApp() {
             )
         }
 
-        // Staff Menu Screen
+        // Staff Menu Screen (Dashboard)
         composable("staff_menu") {
-            StaffDashboardScreen()
+            StaffDashboardScreen(
+                onNavigateToReports = {
+                    navController.navigate("reports")
+                }
+            )
+        }
+
+        // Reports Screen
+        composable("reports") {
+            ReportScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

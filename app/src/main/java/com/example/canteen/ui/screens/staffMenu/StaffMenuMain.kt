@@ -11,14 +11,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,7 +37,9 @@ val categories = listOf("All", "Chicken Rice", "Curry Mee", "Tomyam Maggi")
 // FULL DASHBOARD UI
 // ===========================================================
 @Composable
-fun StaffDashboardScreen() {
+fun StaffDashboardScreen(
+    onNavigateToReports: () -> Unit = {}
+) {
     var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
 
@@ -62,6 +64,35 @@ fun StaffDashboardScreen() {
                 Icons.Default.Logout,
                 contentDescription = "Logout",
                 tint = Color.Blue
+            )
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // ---------- Quick Actions Section ----------
+        Text("Quick Actions", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            QuickActionCard(
+                title = "Revenue Report",
+                subtitle = "View analytics",
+                icon = Icons.Default.TrendingUp,
+                backgroundColor = Color(0xFF4CAF50),
+                modifier = Modifier.weight(1f),
+                onClick = { onNavigateToReports() }
+            )
+
+            QuickActionCard(
+                title = "Orders",
+                subtitle = "Manage orders",
+                icon = Icons.Default.ShoppingCart,
+                backgroundColor = Color(0xFF2196F3),
+                modifier = Modifier.weight(1f),
+                onClick = { /* TODO: Navigate to orders */ }
             )
         }
 
@@ -126,6 +157,60 @@ fun StaffDashboardScreen() {
         ) {
             items(menuItems) { item ->
                 MenuItemCard(item)
+            }
+        }
+    }
+}
+
+// ===========================================================
+// QUICK ACTION CARD
+// ===========================================================
+@Composable
+fun QuickActionCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    backgroundColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    Card(
+        modifier = modifier
+            .height(100.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+
+            Column {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = subtitle,
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 12.sp
+                )
             }
         }
     }
