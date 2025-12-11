@@ -6,9 +6,8 @@ import com.google.firebase.firestore.CollectionReference
 import kotlinx.coroutines.tasks.await
 
 class RefundDao {
-
     private val db = FirebaseFirestore.getInstance()
-    private val refundCollection: CollectionReference = db.collection("refunds")
+    private val refundCollection: CollectionReference = db.collection("refund")
 
     // CREATE
     suspend fun createRefund(refund: RefundRequest): String {

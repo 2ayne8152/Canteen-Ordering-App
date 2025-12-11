@@ -14,8 +14,8 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class ReceiptRepository(
-    private val receiptDao: ReceiptDao,
-    private val refundDao: RefundDao // your existing DAO
+    private val receiptDao: ReceiptDao = ReceiptDao(),
+    private val refundDao: RefundDao = RefundDao()// your existing DAO
 ) {
 
     //READ (Receipt + Refund)

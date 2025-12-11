@@ -66,7 +66,8 @@ fun PaymentMethod(
     paymentMethodViewModel: PaymentMethodViewModel = viewModel(),
     phoneNumber: String,
     savedCard: String? = null,          // <-- ONLY ONE CARD
-    onCardSelected: () -> Unit = {}  // Navigate to Card Detail Page
+    onCardSelected: () -> Unit = {},  // Navigate to Card Detail Page
+    onMethodSelected: (String?) -> Unit
 ) {
     //val savedCard by cardDetailViewModel.savedCard.collectAsState()
     //var selectedMethod by remember { mutableStateOf<String?>(null) }
@@ -89,9 +90,9 @@ fun PaymentMethod(
             selected = selectedMethod == "card",
             onClick = {
                 //selectedMethod = if (selectedMethod == "card") null else "card"
-                paymentMethodViewModel.select(
-                    if (selectedMethod == "card") null else "card"
-                )
+                val newMethod = if (selectedMethod == "card") null else "card"
+                paymentMethodViewModel.select(newMethod)
+                onMethodSelected(newMethod)
             }
         )
 
@@ -179,9 +180,9 @@ fun PaymentMethod(
             selected = selectedMethod == "ewallet",
             onClick = {
                 //selectedMethod = if (selectedMethod == "ewallet") null else "ewallet"
-                paymentMethodViewModel.select(
-                    if (selectedMethod == "ewallet") null else "ewallet"
-                )
+                val newMethod = if (selectedMethod == "ewallet") null else "ewallet"
+                paymentMethodViewModel.select(newMethod)
+                onMethodSelected(newMethod)
             }
         )
 
@@ -310,6 +311,6 @@ fun PaymentOptionCard(
 @Composable
 fun PaymentOptionPreview() {
     CanteenTheme {
-        PaymentMethod(savedCard = "Visa ending 4321", phoneNumber = "0123456789", cardDetailViewModel = viewModel())
+        //PaymentMethod(savedCard = "Visa ending 4321", phoneNumber = "0123456789", cardDetailViewModel = viewModel())
     }
 }

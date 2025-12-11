@@ -1,5 +1,6 @@
 package com.example.canteen.ui.screens.payment
 
+import android.app.AlertDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,10 +26,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,46 +41,73 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.lightRed
+import com.example.canteen.viewmodel.payment.RefundViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
+fun Refund(
+    onBack: () -> Unit = {},
+    refundViewModel: RefundViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    val loading by refundViewModel.loading.collectAsState()
+    val error by refundViewModel.error.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Reason dropdown
-    val refundReasons = listOf(
-        "Payment Problem",
-        "Technical Problem",
-        "Change of Mind",
-        "Other"
-    )
+    // UI States
+    val refundReasons = listOf("Payment Problem", "Technical Problem", "Change of Mind", "Other")
 
     var expanded by remember { mutableStateOf(false) }
     var selectedReason by remember { mutableStateOf("") }
-
-    // Other inputs
     var refundDetails by remember { mutableStateOf("") }
     var textFieldWidth by remember { mutableStateOf(0.dp) }
-    val isValid = selectedReason.isNotBlank() && refundDetails.isNotBlank()
     var hasTouchedHolder by remember { mutableStateOf(false) }
 
+    val isValid = selectedReason.isNotBlank() && refundDetails.isNotBlank()
+
+    // Error Snackbar
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar("Error: $it")
+            refundViewModel.clearError()
+        }
+    }
+
+    // Success Snackbar
+    LaunchedEffect(refundViewModel.refundCreated.collectAsState().value) {
+        if (refundViewModel.refundCreated.value) {
+            snackbarHostState.showSnackbar("Refund request submitted")
+
+            // Reset form
+            selectedReason = ""
+            refundDetails = ""
+            hasTouchedHolder = false
+
+            refundViewModel.resetCreatedFlag()
+        }
+    }
+
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         topBar = {
-            Surface(shadowElevation = 6.dp) {
-                TopAppBar(
-                    title = { Text("Refund Request") },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
+            TopAppBar(
+                title = { Text("Refund Request") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                )
-            }
+                }
+            )
         }
     ) { padding ->
 
@@ -88,6 +121,7 @@ fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
 
             Column {
 
+                // --- HEADER ----
                 Text(
                     text = "Select Refund Reason",
                     style = MaterialTheme.typography.titleMedium,
@@ -96,7 +130,7 @@ fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
 
                 Spacer(Modifier.height(8.dp))
 
-                // Dropdown List
+                // --- DROPDOWN ----
                 Box {
                     val density = LocalDensity.current
                     OutlinedTextField(
@@ -106,24 +140,22 @@ fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
                         readOnly = true,
                         trailingIcon = {
                             Icon(
-                                if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                if (expanded) Icons.Default.KeyboardArrowUp
+                                else Icons.Default.KeyboardArrowDown,
                                 contentDescription = null,
                                 Modifier.clickable { expanded = true }
                             )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable{expanded = true}
+                            .clickable { expanded = true }
                             .onGloballyPositioned { coordinates ->
-                                textFieldWidth = with(density) {
-                                    coordinates.size.width.toDp()
-                                }
+                                textFieldWidth = with(density) { coordinates.size.width.toDp() }
                             }
-
                     )
 
                     DropdownMenu(
-                        modifier = Modifier.width(textFieldWidth) ,
+                        modifier = Modifier.width(textFieldWidth),
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
@@ -141,36 +173,33 @@ fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // Refund Details
+                // --- DETAILS FIELD ---
                 OutlinedTextField(
                     value = refundDetails,
                     onValueChange = { refundDetails = it },
                     label = { Text("Refund Details") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp).onFocusChanged{ focusState ->
-                            if (focusState.isFocused) {
-                                hasTouchedHolder = true
-                            }
+                        .height(150.dp)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) hasTouchedHolder = true
                         },
                     maxLines = 5,
                     supportingText = {
                         if (refundDetails.isEmpty() && hasTouchedHolder) {
-                            Text(
-                                "Cannot be empty",
-                                color = lightRed,
-                                fontSize = 12.sp
-                            )
+                            Text("Cannot be empty", color = lightRed, fontSize = 12.sp)
                         }
                     }
                 )
 
                 Spacer(Modifier.height(24.dp))
 
-                // Submit Button
+                // --- SUBMIT BUTTON ---
                 Button(
-                    onClick = onSubmit,
-                    enabled = isValid,
+                    onClick = {
+                        refundViewModel.createRefund(selectedReason, refundDetails)
+                    },
+                    enabled = isValid && !loading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -180,8 +209,18 @@ fun Refund(onBack: () -> Unit = {}, onSubmit: () -> Unit = {}) {
                 }
             }
         }
+
+        // --- LOADING DIALOG ---
+        if (loading) {
+            AlertDialog(
+                onDismissRequest = {},
+                confirmButton = {},
+                title = { Text("Submitting...") }
+            )
+        }
     }
 }
+
 
 
 

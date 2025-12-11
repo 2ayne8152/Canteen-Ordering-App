@@ -7,13 +7,15 @@ import com.example.canteen.data.Receipt
 import com.example.canteen.data.RefundRequest
 import androidx.compose.runtime.State
 import androidx.lifecycle.viewModelScope
+import com.example.canteen.Repository.RefundRepository
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ReceiptViewModel(
-    private val repository: ReceiptRepository
+    private val repository: ReceiptRepository = ReceiptRepository()
 ) : ViewModel() {
 
     private val _receipt = mutableStateOf<Receipt?>(null)
@@ -30,6 +32,9 @@ class ReceiptViewModel(
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+
+    private val _newReceiptId = MutableStateFlow<String?>(null)
+    val newReceiptId: StateFlow<String?> = _newReceiptId
 
     private var receiptListener: ListenerRegistration? = null
 
@@ -56,9 +61,12 @@ class ReceiptViewModel(
         amount: Double
     ) {
         viewModelScope.launch {
+            _newReceiptId.value = null
             _loading.value = true
             try {
-                repository.createReceipt(orderId, paymentMethod, amount)
+                val receipt =  repository.createReceipt(orderId, paymentMethod, amount)
+                _newReceiptId.value = receipt.receiptId
+
             } catch (e: Exception) {
                 _error.value = e.message
             } finally {

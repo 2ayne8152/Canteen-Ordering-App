@@ -4,7 +4,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.canteen.data.RefundRequest
 import androidx.lifecycle.viewModelScope
-import com.example.canteen.DAO.RefundDao
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,23 +25,45 @@ class RefundViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val _refundCreated = MutableStateFlow(false)
+    val refundCreated: StateFlow<Boolean> = _refundCreated
+
+    private val _newRefundId = MutableStateFlow<String?>(null)
+    val newRefundId: StateFlow<String?> = _newRefundId
+
+    fun clearError() {
+        _error.value = null
+    }
+
+    fun resetCreatedFlag() {
+        _refundCreated.value = false
+    }
+
     // CREATE
     fun createRefund(reason: String, detail: String) {
         viewModelScope.launch {
             try {
+                _newRefundId.value = null
+                _loading.value = true
+
                 val refund = RefundRequest(
-                    refundId = "",       // auto-generated later
+                    refundId = "",
                     reason = reason,
                     refundDetail = detail,
                     requestTime = System.currentTimeMillis(),
                     status = "pending"
                 )
 
-                repository.createRefund(refund)   // auto ID generated in DAO
+                val newId = repository.createRefund(refund)
+
+                _newRefundId.value = newId     // store ID
+                _refundCreated.value = true
                 loadRefunds()
 
             } catch (e: Exception) {
                 _error.value = e.message
+            } finally {
+                _loading.value = false
             }
         }
     }

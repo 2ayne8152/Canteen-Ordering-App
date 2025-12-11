@@ -8,7 +8,7 @@ import kotlinx.coroutines.tasks.await
 class ReceiptDao {
 
     private val receiptCollection = FirebaseFirestore.getInstance()
-        .collection("receipts")
+        .collection("receipt")
 
     suspend fun createReceipt(receipt: Receipt) {
         receiptCollection.document(receipt.receiptId).set(receipt.toMap()).await()

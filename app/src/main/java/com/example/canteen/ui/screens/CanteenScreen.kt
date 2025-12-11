@@ -5,6 +5,9 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,6 +32,7 @@ fun CanteenScreen(
 ){
     val navController = rememberNavController()
     val savedCard by cardDetailViewModel.savedCard.collectAsState()
+    var selectedMethod by remember { mutableStateOf<String?>(null) }
 
     NavHost(navController, startDestination = "paymentMethod") {
 
@@ -39,7 +43,11 @@ fun CanteenScreen(
                 onCardSelected = {
                     navController.navigate(CanteenScreen.PayByCard.name)
                 },
-                savedCard = savedCard?.maskedCard
+                savedCard = savedCard?.maskedCard,
+                onMethodSelected = { method ->
+                    selectedMethod = method
+                    println("Selected method = $method")
+                }
             )
         }
 
