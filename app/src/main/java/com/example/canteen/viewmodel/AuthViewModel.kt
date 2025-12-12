@@ -107,7 +107,7 @@ class AuthViewModel : ViewModel() {
                     Log.d("AuthViewModel", "User signed in successfully, UID: ${firebaseUser.uid}")
 
                     val userDoc = db.collection("users").document(firebaseUser.uid).get().await()
-                    val userRole = userDoc.getString("role")
+                    val userRole = userDoc.getString("Role")
 
                     Log.d("AuthViewModel", "User role from Firestore: $userRole, Expected role: $role")
 

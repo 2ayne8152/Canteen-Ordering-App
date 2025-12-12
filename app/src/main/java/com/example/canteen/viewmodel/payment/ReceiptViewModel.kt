@@ -110,18 +110,19 @@ class ReceiptViewModel(
             _loading.value = true
             try {
                 Log.w("Load", "start load")
-                val all = repository.loadReceiptList()
+                val list = repository.loadReceiptList()
                 Log.w("Load", "load Receipt list")
 
+                val all = list.sortedByDescending { it.first.payment_Date }
                 _receiptList.value = all
 
                 Log.w("Load", "filtering")
                 val withRefund = all.filter{ it.first.refundId != null}
 
                 // Separate by refund status
-                _pendingReceipts.value = withRefund.filter { it.second?.status == "pending" }
-                _approvedReceipts.value = withRefund.filter { it.second?.status == "approved" }
-                _rejectedReceipts.value = withRefund.filter { it.second?.status == "rejected" }
+                _pendingReceipts.value = withRefund.filter { it.second?.status == "Pending" }
+                _approvedReceipts.value = withRefund.filter { it.second?.status == "Approved" }
+                _rejectedReceipts.value = withRefund.filter { it.second?.status == "Rejected" }
 
             } catch (e: Exception) {
                 _error.value = e.message

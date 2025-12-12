@@ -41,9 +41,9 @@ fun MakePayment(
         Column {
             PaymentMethod(
                 cardDetailViewModel = cardDetailViewModel,
-                phoneNumber = "0123456789",
+                phoneNumber = "0113456789",
                 onCardSelected = {},
-                savedCard = "1234",
+                savedCard = "2234",
                 onMethodSelected = {
                     selectedMethod = it
                 }
@@ -51,7 +51,7 @@ fun MakePayment(
 
             Button(
                 onClick = {
-                    receiptViewModel.createReceipt("O0002", selectedMethod!!, 15.00)
+                    receiptViewModel.createReceipt("O0006", selectedMethod!!, 10.00)
                 },
                 modifier = Modifier,
                 shape = RoundedCornerShape(8.dp)

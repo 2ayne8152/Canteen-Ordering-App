@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -23,7 +22,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,52 +29,52 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.ui.theme.lightViolet
 import com.example.canteen.data.Receipt
 import com.example.canteen.data.RefundItem
 import com.example.canteen.data.RefundRequest
+import com.example.canteen.viewmodel.payment.ReceiptViewModel
+import com.example.menumanagement.BottomNavigationBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentHistory(
-    onBack: () -> Unit = {}
+    navController: NavController,
+    receiptViewModel: ReceiptViewModel
 ) {
+    val allReceipt by receiptViewModel.receiptList.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
-
-    // Sample data
-    val payments = listOf(
-        RefundItem(receipt = Receipt(receiptId = "R0001", orderId = "O0001", payment_Date = 1733985600L, pay_Amount = 15.00, payment_Method = "Credit Card"), refund = RefundRequest()),
-        RefundItem(receipt = Receipt(receiptId = "R0002", orderId = "O0002", payment_Date = 1733900000L, pay_Amount = 10.20, payment_Method = "TNG"), refund = RefundRequest(status = "pending"))
-    )
-
-    val filtered = payments.filter {
-        it.receipt.receiptId.contains(searchQuery, ignoreCase = true)
-    }
 
     // Store which item is expanded
     val expandedMap = remember { mutableStateMapOf<String, Boolean>() }
 
-    //val filtered = payments.filter { it.id.contains(searchQuery, ignoreCase = true) }
+    val filteredList = allReceipt.filter { pair ->
+        val receipt = pair.first
+        receipt.receiptId.contains(searchQuery.trim(), ignoreCase = true)
+    }
+
+    LaunchedEffect(Unit) {
+        receiptViewModel.loadAllReceipts()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Payment History") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
+                title = { Text("Payment History") }
             )
-        }
+        },
+        bottomBar = { BottomNavigationBar(navController) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -106,15 +104,15 @@ fun PaymentHistory(
                     .fillMaxSize()
                     .padding(12.dp)
             ) {
-                items(filtered) { receipt ->
+                items(filteredList) { receipt ->
 
-                    val expanded = expandedMap[receipt.receipt.receiptId] ?: false
+                    val expanded = expandedMap[receipt.first.receiptId] ?: false
 
                     PaymentHistoryCard(
                         data = receipt,
                         expanded = expanded,
                         onClick = {
-                            expandedMap[receipt.receipt.receiptId] = !expanded
+                            expandedMap[receipt.first.receiptId] = !expanded
                         }
                     )
                 }
@@ -125,7 +123,7 @@ fun PaymentHistory(
 
 @Composable
 fun PaymentHistoryCard(
-    data: RefundItem,
+    data: Pair<Receipt, RefundRequest?>,
     expanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -139,21 +137,21 @@ fun PaymentHistoryCard(
             .padding(vertical = 6.dp)
             .clickable { onClick() }
     ) {
-        val formatted = formatTime(data.receipt.payment_Date)
+        val formatted = formatTime(data.first.payment_Date)
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Receipt ${data.receipt.receiptId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Receipt ID : ${data.first.receiptId.take(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Text("${formatted}")
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Order ID :  ${data.receipt.orderId}")
-            Text("Total Payment : RM${String.format("%.2f", data.receipt.pay_Amount)}")
-            Text("Refund : ${data.refund.status}")
+            Text("Order ID :  ${data.first.orderId}")
+            Text("Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}")
+            Text("Refund : ${data.second?.status ?: "None"}")
 
             // ▼▼▼ ONLY SHOW WHEN EXPANDED ▼▼▼
             AnimatedVisibility(visible = expanded) {
@@ -164,7 +162,7 @@ fun PaymentHistoryCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Method : ${data.receipt.payment_Method}")
+                    Text("Method : ${data.first.payment_Method}")
                 }
             }
         }
@@ -175,6 +173,6 @@ fun PaymentHistoryCard(
 @Composable
 fun PaymentHistoryPreview() {
     CanteenTheme {
-        PaymentHistory()
+        //PaymentHistory(viewModel ())
     }
 }

@@ -164,15 +164,18 @@ fun Refund(
                                 if (expanded) Icons.Default.KeyboardArrowUp
                                 else Icons.Default.KeyboardArrowDown,
                                 contentDescription = null,
-                                Modifier.clickable { expanded = true }
                             )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { expanded = true }
                             .onGloballyPositioned { coordinates ->
                                 textFieldWidth = with(density) { coordinates.size.width.toDp() }
                             }
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { expanded = true }
                     )
 
                     DropdownMenu(

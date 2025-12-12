@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.ui.screens.payment.PayByCard
+import com.example.canteen.ui.screens.payment.PaymentHistory
 import com.example.canteen.ui.screens.payment.PaymentMethod
 import com.example.canteen.ui.screens.payment.RefundDetailPage
 import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
@@ -50,7 +51,40 @@ fun CanteenScreen(
     val savedCard by cardDetailViewModel.savedCard.collectAsState()
     var selectedMethod by remember { mutableStateOf<String?>(null) }
 
-    NavHost(navController, startDestination = CanteenScreen.StaffDashboard.name) {
+    NavHost(navController, startDestination = "login") {
+        composable("login") {
+            LoginScreen(
+                onStaffLoginClick = { navController.navigate("staff_login") },
+                onLoginSuccess = { role ->
+                    when (role) {
+                        "user" -> navController.navigate("user_menu") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                        "staff" -> navController.navigate(CanteenScreen.StaffDashboard.name) {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        // Staff Login Screen
+        composable("staff_login") {
+            StaffLoginScreen(
+                onUserLoginClick = { navController.navigate("login") },
+                onLoginSuccess = { role ->
+                    when (role) {
+                        "staff" -> navController.navigate(CanteenScreen.StaffDashboard.name) {
+                            popUpTo("staff_login") { inclusive = true }
+                        }
+                        "user" -> navController.navigate("user_menu") {
+                            popUpTo("staff_login") { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
         // -------------------- Staff Dashboard --------------------
         composable(CanteenScreen.StaffDashboard.name) {
             StaffDashboardScreen(navController)
@@ -77,6 +111,13 @@ fun CanteenScreen(
                 receiptViewModel = receiptViewModel,
                 refundViewModel = refundViewModel,
                 onBack = {navController.popBackStack()}
+            )
+        }
+
+        composable(CanteenScreen.PaymentHistory.name){
+            PaymentHistory(
+                navController = navController,
+                receiptViewModel = receiptViewModel
             )
         }
 

@@ -46,6 +46,7 @@ import com.example.canteen.ui.theme.Green
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.data.Receipt
 import com.example.canteen.data.RefundItem
+import com.example.canteen.ui.theme.veryLightRed
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.menumanagement.BottomNavigationBar
 import java.text.SimpleDateFormat
@@ -261,7 +262,7 @@ fun RejectedRefundCard(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Green,
+        color = veryLightRed,
         shadowElevation = 6.dp,
         modifier = modifier
             .fillMaxWidth()

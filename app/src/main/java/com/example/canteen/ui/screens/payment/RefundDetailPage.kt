@@ -213,7 +213,7 @@ fun RefundDetailPage(
                                     updates = mapOf(
                                         "refundBy" to responseBy,
                                         "remark" to responseRemark,
-                                        "status" to "approved",
+                                        "status" to "Approved",
                                     )
                                 )
                             },
@@ -235,7 +235,7 @@ fun RefundDetailPage(
                                     updates = mapOf(
                                         "refundBy" to responseBy,
                                         "remark" to responseRemark,
-                                        "status" to "rejected",
+                                        "status" to "Rejected",
                                         )
                                 )
                             },
