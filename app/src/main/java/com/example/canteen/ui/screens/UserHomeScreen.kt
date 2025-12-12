@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -19,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.canteen.data.MenuItem
 import com.example.canteen.viewmodel.usermenu.CartViewModel
@@ -28,7 +31,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun UserHomeScreen(
     menuItems: List<MenuItem>,
-    // pass no. and total for initial preview (live values will come from CartViewModel below)
     onItemClick: (MenuItem) -> Unit = {},
 ) {
     val cartViewModel: CartViewModel = viewModel()
@@ -36,9 +38,22 @@ fun UserHomeScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // collect totals for the floating bar
     val totalItems = cartViewModel.totalItems.collectAsState(initial = 0)
     val totalPrice = cartViewModel.totalPrice.collectAsState(initial = 0.0)
+
+    // track the current route
+    val navBackStackEntry = navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry.value?.destination?.route ?: "order"
+
+    // assign screen title dynamically
+    val topBarTitle = when (currentRoute) {
+        "order" -> "Order"
+        "cart" -> "Your Cart"
+        "history" -> "Order History"
+        else -> "Canteen"
+    }
+
+    val isCartScreen = currentRoute == "cart"
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -58,10 +73,19 @@ fun UserHomeScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Canteen") },
+                    title = { Text(topBarTitle) },
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        if (isCartScreen) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    Icons.Default.ArrowBack,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            }
                         }
                     }
                 )
@@ -89,7 +113,6 @@ fun UserHomeScreen(
                         cartViewModel = cartViewModel,
                         onBack = { navController.popBackStack() },
                         onCheckout = {
-                            // TODO: implement checkout flow (save order to cloud)
                             cartViewModel.clearCart()
                             navController.popBackStack()
                         }
@@ -97,8 +120,10 @@ fun UserHomeScreen(
                 }
 
                 composable("history") {
-                    // placeholder
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text("Order History (placeholder)", fontSize = 20.sp)
                     }
                 }
