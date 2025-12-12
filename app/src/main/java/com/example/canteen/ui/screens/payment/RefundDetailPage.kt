@@ -31,8 +31,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.ui.theme.lightGreen
@@ -40,13 +42,28 @@ import com.example.canteen.ui.theme.lightRed
 import com.example.canteen.ui.theme.lightViolet
 import com.example.canteen.ui.theme.softGreen
 import com.example.canteen.ui.theme.veryLightRed
+import com.example.canteen.viewmodel.payment.ReceiptViewModel
+import com.example.canteen.viewmodel.payment.RefundViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RefundDetailPage(onBack: () -> Unit = {}) {
+fun RefundDetailPage(
+    receiptViewModel: ReceiptViewModel,
+    refundViewModel: RefundViewModel,
+    onBack: () -> Unit = {}
+) {
+    val selected by receiptViewModel.selectedRefund.collectAsState()
     var responseBy by remember { mutableStateOf("") }
     var responseRemark by remember { mutableStateOf("") }
+
+    if (selected == null) {
+        Text("Loading...")
+        return
+    }
+
+    val receipt = selected!!.first
+    val refund = selected!!.second
 
     Scaffold(
         topBar = {
@@ -84,13 +101,12 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Order1234", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Text("12:00 12/4/2025")
+                        Text("Order ${receipt.orderId.take(6)}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text(text = formatTime(refund?.requestTime ?: 0L))
                     }
 
-                    Text("Student ID : student13")
                     Spacer(Modifier.height(4.dp))
-                    Text("Total : RM16.00", fontWeight = FontWeight.Bold)
+                    Text("Total : RM${receipt.pay_Amount}", fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -134,12 +150,12 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
 
                     Text("Refund Request :", fontWeight = FontWeight.Bold, fontSize = 20.sp)
 
-                    Text("Reason : Missing Item", fontWeight = FontWeight.SemiBold)
+                    Text("Reason : ${refund?.reason}", fontWeight = FontWeight.SemiBold)
 
                     Spacer(Modifier.height(4.dp))
                     Text("Detail :", fontWeight = FontWeight.SemiBold)
                     Text(
-                        "When receiving my order, I found out that my add-on rice is missing. ......",
+                        refund?.refundDetail ?: "",
                         lineHeight = 20.sp
                     )
                 }
@@ -190,7 +206,17 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
                     ) {
 
                         Button(
-                            onClick = { /* Approve logic */ },
+                            onClick = {
+                                onBack()
+                                refundViewModel.updateRefund(
+                                    id = receipt.refundId!!,
+                                    updates = mapOf(
+                                        "refundBy" to responseBy,
+                                        "remark" to responseRemark,
+                                        "status" to "approved",
+                                    )
+                                )
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightGreen
                             ),
@@ -202,7 +228,17 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
                         }
 
                         Button(
-                            onClick = { /* Reject logic */ },
+                            onClick = {
+                                onBack()
+                                refundViewModel.updateRefund(
+                                    id = receipt.refundId!!,
+                                    updates = mapOf(
+                                        "refundBy" to responseBy,
+                                        "remark" to responseRemark,
+                                        "status" to "rejected",
+                                        )
+                                )
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightRed// red
                             ),
@@ -225,6 +261,6 @@ fun RefundDetailPage(onBack: () -> Unit = {}) {
 @Composable
 fun RefundDetailPreview() {
     CanteenTheme {
-        RefundDetailPage()
+        RefundDetailPage(viewModel(), viewModel ())
     }
 }

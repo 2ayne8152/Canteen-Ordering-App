@@ -1,6 +1,7 @@
 package com.example.canteen.ui.screens.payment
 
 import android.app.AlertDialog
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,18 +50,22 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.lightRed
+import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Refund(
     onBack: () -> Unit = {},
-    refundViewModel: RefundViewModel = viewModel()
+    refundViewModel: RefundViewModel = viewModel(),
+    receiptViewModel: ReceiptViewModel
 ) {
     val context = LocalContext.current
     val loading by refundViewModel.loading.collectAsState()
     val error by refundViewModel.error.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val newReceiptId by receiptViewModel.newReceiptId.collectAsState()
+    val newRefundId by refundViewModel.newRefundId.collectAsState()
 
     // UI States
     val refundReasons = listOf("Payment Problem", "Technical Problem", "Change of Mind", "Other")
@@ -80,6 +85,22 @@ fun Refund(
             refundViewModel.clearError()
         }
     }
+
+    LaunchedEffect(Unit) {
+        refundViewModel.refundCreated.collect { refundId ->
+
+            val receiptId = newReceiptId
+            if (receiptId != null) {
+                receiptViewModel.updateReceipt(
+                    id = receiptId,
+                    updates = mapOf("refundId" to newRefundId)
+                )
+            } else {
+                Log.e("Refund", "newReceiptId is NULL!")
+            }
+        }
+    }
+
 
     // Success Snackbar
     LaunchedEffect(refundViewModel.refundCreated.collectAsState().value) {
@@ -229,6 +250,6 @@ fun Refund(
 @Composable
 fun RefundPreview() {
     CanteenTheme {
-        Refund()
+        //Refund()
     }
 }

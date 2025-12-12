@@ -232,20 +232,20 @@ fun BottomNavigationBar(navController: NavController) {
         )
         NavigationBarItem(
             selected = false,
-            onClick = { /* Refund */ },
-            icon = { Icon(Icons.Default.Edit, contentDescription = "Refund") },
+            onClick = { navController.navigate(CanteenScreen.RefundManagementScreenWrapper.name) },
+            icon = { Icon(Icons.Default.MonetizationOn, contentDescription = "Refund") },
             label = { Text("Refund") }
         )
         NavigationBarItem(
             selected = false,
-            onClick = { /* Payment History */ },
-            icon = { Icon(Icons.Default.Search, contentDescription = "Payment History") },
+            onClick = { navController.navigate(CanteenScreen.PaymentHistory.name) },
+            icon = { Icon(Icons.Default.History, contentDescription = "Payment History") },
             label = { Text("History") }
         )
         NavigationBarItem(
             selected = false,
             onClick = { /* Report */ },
-            icon = { Icon(Icons.Default.Person, contentDescription = "Report") },
+            icon = { Icon(Icons.Default.Assessment, contentDescription = "Report") },
             label = { Text("Report") }
         )
     }

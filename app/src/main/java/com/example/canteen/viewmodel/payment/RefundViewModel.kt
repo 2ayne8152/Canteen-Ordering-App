@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.example.canteen.Repository.RefundRepository
 import androidx.compose.runtime.State
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class RefundViewModel(
     private val repository: RefundRepository = RefundRepository()
@@ -28,6 +30,10 @@ class RefundViewModel(
     private val _refundCreated = MutableStateFlow(false)
     val refundCreated: StateFlow<Boolean> = _refundCreated
 
+    private val _refundCreatedEmit = MutableSharedFlow<String>()  // emits refundId
+    val refundCreatedEmit = _refundCreatedEmit.asSharedFlow()
+
+
     private val _newRefundId = MutableStateFlow<String?>(null)
     val newRefundId: StateFlow<String?> = _newRefundId
 
@@ -37,6 +43,7 @@ class RefundViewModel(
 
     fun resetCreatedFlag() {
         _refundCreated.value = false
+        _newRefundId.value = null
     }
 
     // CREATE
@@ -58,6 +65,7 @@ class RefundViewModel(
 
                 _newRefundId.value = newId     // store ID
                 _refundCreated.value = true
+                _refundCreatedEmit.emit(newId)
                 loadRefunds()
 
             } catch (e: Exception) {

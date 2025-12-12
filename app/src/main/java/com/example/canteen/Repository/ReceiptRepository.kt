@@ -79,7 +79,7 @@ class ReceiptRepository(
 
 
     // LOAD LIST (All receipts + refund)
-    suspend fun loadAllReceipts(): List<Pair<Receipt, RefundRequest?>> {
+    fun loadAllReceipts(): List<Pair<Receipt, RefundRequest?>> {
         val rawList = receiptDao
             .listenReceiptList {} // we only want the once-off, so ignore listener
         return emptyList()
@@ -87,7 +87,7 @@ class ReceiptRepository(
 
     suspend fun loadReceiptList(): List<Pair<Receipt, RefundRequest?>> {
         val snapshot = FirebaseFirestore.getInstance()
-            .collection("receipts")
+            .collection("receipt")
             .get()
             .await()
 

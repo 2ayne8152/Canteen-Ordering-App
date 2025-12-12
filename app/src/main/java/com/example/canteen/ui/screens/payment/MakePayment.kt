@@ -58,6 +58,8 @@ fun MakePayment(
             ) {
                 Text("Submit")
             }
+
+            Refund(receiptViewModel = receiptViewModel)
         }
     }
 }

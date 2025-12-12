@@ -18,9 +18,13 @@ import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.ui.screens.payment.PayByCard
 import com.example.canteen.ui.screens.payment.PaymentMethod
+import com.example.canteen.ui.screens.payment.RefundDetailPage
+import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
 import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.MenuListPage
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
+import com.example.canteen.viewmodel.payment.ReceiptViewModel
+import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.menumanagement.StaffDashboardScreen
 
 enum class CanteenScreen(val title: String) {
@@ -28,15 +32,19 @@ enum class CanteenScreen(val title: String) {
     PayByCard(title = "PayByCard"),
     StaffDashboard(title = "StaffDashboard"),
     MenuItemForm(title = "MenuItemForm"),
-
-    MenuListPage(title = "MenuListPage")
+    MenuListPage(title = "MenuListPage"),
+    PaymentHistory(title = "PaymentHistory"),
+    RefundManagementScreenWrapper(title = "RefundManagement"),
+    RefundDetailPage(title = "RefundDetail")
 
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CanteenScreen(
-    cardDetailViewModel: CardDetailViewModel = viewModel()
+    cardDetailViewModel: CardDetailViewModel = viewModel(),
+    receiptViewModel: ReceiptViewModel = viewModel(),
+    refundViewModel: RefundViewModel = viewModel()
 ) {
     val navController = rememberNavController()
     val savedCard by cardDetailViewModel.savedCard.collectAsState()
@@ -54,6 +62,22 @@ fun CanteenScreen(
 
         composable (CanteenScreen.MenuListPage.name){
             MenuListPage(navController)
+        }
+
+        composable (CanteenScreen.RefundManagementScreenWrapper.name){
+            RefundManagementScreenWrapper (
+                receiptViewModel = receiptViewModel,
+                navController = navController,
+                onClick = {navController.navigate(CanteenScreen.RefundDetailPage.name)}
+            )
+        }
+
+        composable(CanteenScreen.RefundDetailPage.name){
+            RefundDetailPage(
+                receiptViewModel = receiptViewModel,
+                refundViewModel = refundViewModel,
+                onBack = {navController.popBackStack()}
+            )
         }
 
         composable(CanteenScreen.PaymentMethod.name) {
@@ -131,7 +155,7 @@ fun CanteenApp() {
 
         // Staff Menu Screen
         composable("staff_menu") {
-            StaffDashboardScreen()
+            StaffDashboardScreen(navController)
         }
     }
 }

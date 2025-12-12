@@ -1,5 +1,6 @@
 package com.example.canteen.viewmodel.payment
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.canteen.Repository.ReceiptRepository
@@ -35,6 +36,22 @@ class ReceiptViewModel(
 
     private val _newReceiptId = MutableStateFlow<String?>(null)
     val newReceiptId: StateFlow<String?> = _newReceiptId
+
+    private val _pendingReceipts = MutableStateFlow<List<Pair<Receipt, RefundRequest?>>>(emptyList())
+    val pendingReceipts = _pendingReceipts.asStateFlow()
+
+    private val _approvedReceipts = MutableStateFlow<List<Pair<Receipt, RefundRequest?>>>(emptyList())
+    val approvedReceipts = _approvedReceipts.asStateFlow()
+
+    private val _rejectedReceipts = MutableStateFlow<List<Pair<Receipt, RefundRequest?>>>(emptyList())
+    val rejectedReceipts = _rejectedReceipts.asStateFlow()
+
+    private val _selectedRefund = MutableStateFlow<Pair<Receipt, RefundRequest?>?>(null)
+    val selectedRefund = _selectedRefund.asStateFlow()
+
+    fun selectRefundItem(item: Pair<Receipt, RefundRequest?>) {
+        _selectedRefund.value = item
+    }
 
     private var receiptListener: ListenerRegistration? = null
 
@@ -92,14 +109,29 @@ class ReceiptViewModel(
         viewModelScope.launch {
             _loading.value = true
             try {
-                _receiptList.value = repository.loadReceiptList()
+                Log.w("Load", "start load")
+                val all = repository.loadReceiptList()
+                Log.w("Load", "load Receipt list")
+
+                _receiptList.value = all
+
+                Log.w("Load", "filtering")
+                val withRefund = all.filter{ it.first.refundId != null}
+
+                // Separate by refund status
+                _pendingReceipts.value = withRefund.filter { it.second?.status == "pending" }
+                _approvedReceipts.value = withRefund.filter { it.second?.status == "approved" }
+                _rejectedReceipts.value = withRefund.filter { it.second?.status == "rejected" }
+
             } catch (e: Exception) {
                 _error.value = e.message
+                Log.e("Load", "${ e.message }")
             } finally {
                 _loading.value = false
             }
         }
     }
+
 
 
     // ---------------------------------------------------------

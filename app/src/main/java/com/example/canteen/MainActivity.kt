@@ -23,6 +23,7 @@ import com.example.canteen.ui.screens.CanteenApp
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.ui.screens.payment.MakePayment
+import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
 import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.MenuListPage
 import com.example.canteen.ui.screens.staffMenu.MenuListPagePreview
@@ -41,7 +42,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MakePayment()
+                    //RefundManagementScreenWrapper()
+                    //MakePayment()
+                    CanteenScreen()
                 }
             }
         }
