@@ -33,6 +33,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -71,7 +73,8 @@ fun PaymentHistory(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Payment History") }
+                title = { Text("Payment History") },
+                modifier = Modifier.shadow(6.dp)
             )
         },
         bottomBar = { BottomNavigationBar(navController) }
@@ -81,7 +84,7 @@ fun PaymentHistory(
                 .padding(padding)
                 .padding(8.dp)
         ) {
-
+            Spacer(Modifier.height(6.dp))
             // -----------------------------------------------------
             // Search Bar
             // -----------------------------------------------------
@@ -101,8 +104,7 @@ fun PaymentHistory(
 
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp)
+                    .fillMaxSize().padding(start = 12.dp, top = 2.dp, end = 12.dp)
             ) {
                 items(filteredList) { receipt ->
 
@@ -152,6 +154,13 @@ fun PaymentHistoryCard(
             Text("Order ID :  ${data.first.orderId}")
             Text("Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}")
             Text("Refund : ${data.second?.status ?: "None"}")
+            if (!expanded) {
+                Text(
+                    text = "Tap to view more",
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
 
             // ▼▼▼ ONLY SHOW WHEN EXPANDED ▼▼▼
             AnimatedVisibility(visible = expanded) {
@@ -162,7 +171,7 @@ fun PaymentHistoryCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Method : ${data.first.payment_Method}")
+                    Text("Payment Method : ${data.first.payment_Method}")
                 }
             }
         }

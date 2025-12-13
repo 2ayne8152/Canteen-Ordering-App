@@ -49,6 +49,9 @@ class ReceiptViewModel(
     private val _selectedRefund = MutableStateFlow<Pair<Receipt, RefundRequest?>?>(null)
     val selectedRefund = _selectedRefund.asStateFlow()
 
+    private val _receiptLoadById = MutableStateFlow<Pair<Receipt, RefundRequest?>?>(null)
+    val receiptLoadById = _receiptLoadById.asStateFlow()
+
     fun selectRefundItem(item: Pair<Receipt, RefundRequest?>) {
         _selectedRefund.value = item
     }
@@ -59,11 +62,7 @@ class ReceiptViewModel(
         viewModelScope.launch {
             _loading.value = true
             try {
-                val pair = repository.getReceiptWithRefund(id)
-                if (pair != null) {
-                    _receipt.value = pair.first
-                    _refund.value = pair.second
-                }
+                _receiptLoadById.value = repository.getReceiptWithRefund(id)
             } catch (e: Exception) {
                 _error.value = e.message
             } finally {

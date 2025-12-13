@@ -2,7 +2,10 @@ package com.example.canteen.ui.screens.payment
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,12 +23,14 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,6 +39,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -98,13 +105,15 @@ fun RefundManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Refund Management") }
+                title = { Text("Refund Management") },
+                modifier = Modifier.shadow(6.dp)
             )
         },
         bottomBar = { BottomNavigationBar(navController) }
     ) { padding ->
 
         Column(modifier = Modifier.padding(padding)) {
+            Spacer(Modifier.height(4.dp))
 
             TabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->
@@ -124,8 +133,7 @@ fun RefundManagementScreen(
 
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp)
+                    .fillMaxSize().padding(start = 12.dp, top = 8.dp, end = 12.dp)
             ) {
                 items(listToDisplay) { refundItem ->
                     when (selectedTab) {
@@ -211,7 +219,9 @@ fun ApprovedRefundCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
-            .clickable { onClick() }
+            .clickable(
+                indication = if (expanded) LocalIndication.current else null,
+                interactionSource = remember { MutableInteractionSource() }) { onClick() }
     ) {
 
         Column(modifier = Modifier.padding(16.dp)) {
@@ -227,6 +237,13 @@ fun ApprovedRefundCard(
 
             Text("Total Refunded : RM${String.format("%.2f", data.first.pay_Amount)}")
             Text("Reason : ${data.second?.reason}")
+            if (!expanded) {
+                Text(
+                    text = "Tap to view more",
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
 
             // ▼▼▼ ONLY SHOW WHEN EXPANDED ▼▼▼
             AnimatedVisibility(visible = expanded) {
@@ -267,7 +284,10 @@ fun RejectedRefundCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
-            .clickable{onClick()}
+            .clickable(
+                indication = if (expanded) LocalIndication.current else null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) {onClick()}
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
@@ -280,8 +300,15 @@ fun RejectedRefundCard(
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Total : RM${String.format("%.2f", data.first.pay_Amount)}")
-            Text("Refund Reason : ${data.second?.reason}")
+            Text("Total Refunded : RM${String.format("%.2f", data.first.pay_Amount)}")
+            Text("Reason : ${data.second?.reason}")
+            if (!expanded) {
+                Text(
+                    text = "Tap to view more",
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
 
             AnimatedVisibility(visible = expanded) {
 

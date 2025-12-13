@@ -112,7 +112,10 @@ class AuthViewModel : ViewModel() {
                     Log.d("AuthViewModel", "User role from Firestore: $userRole, Expected role: $role")
 
                     if (userRole == role) {
-                        _authState.value = AuthState.LoggedIn(role)
+                        _authState.value = AuthState.LoggedIn(
+                            userId = firebaseUser.uid,
+                            role = role
+                        )
                         Log.d("AuthViewModel", "Login state set to LoggedIn with role: $role")
                     } else {
                         Log.e("AuthViewModel", "Role mismatch: $userRole != $role")
@@ -149,7 +152,7 @@ class AuthViewModel : ViewModel() {
 
 // Enhanced AuthState sealed class
 sealed class AuthState {
-    data class LoggedIn(val role: String) : AuthState()
+    data class LoggedIn(val userId: String, val role: String) : AuthState()
     data class RegistrationSuccess(val message: String = "Registration successful!") : AuthState()
     object LoggedOut : AuthState()
     object Loading : AuthState()

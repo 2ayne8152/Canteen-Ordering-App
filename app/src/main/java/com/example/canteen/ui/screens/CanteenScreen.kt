@@ -23,6 +23,8 @@ import com.example.canteen.ui.screens.payment.RefundDetailPage
 import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
 import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.MenuListPage
+import com.example.canteen.viewmodel.AuthState
+import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
@@ -45,11 +47,14 @@ enum class CanteenScreen(val title: String) {
 fun CanteenScreen(
     cardDetailViewModel: CardDetailViewModel = viewModel(),
     receiptViewModel: ReceiptViewModel = viewModel(),
-    refundViewModel: RefundViewModel = viewModel()
+    refundViewModel: RefundViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
 ) {
     val navController = rememberNavController()
     val savedCard by cardDetailViewModel.savedCard.collectAsState()
     var selectedMethod by remember { mutableStateOf<String?>(null) }
+    val authState by authViewModel.authState.collectAsState()
+    val userId = (authState as? AuthState.LoggedIn)?.userId
 
     NavHost(navController, startDestination = "login") {
         composable("login") {

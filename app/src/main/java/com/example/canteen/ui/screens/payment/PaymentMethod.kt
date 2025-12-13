@@ -87,16 +87,16 @@ fun PaymentMethod(
         PaymentOptionCard(
             title = "Credit/Debit Card",
             icon = Icons.Outlined.CreditCard,
-            selected = selectedMethod == "card",
+            selected = selectedMethod == "Card",
             onClick = {
                 //selectedMethod = if (selectedMethod == "card") null else "card"
-                val newMethod = if (selectedMethod == "card") null else "card"
+                val newMethod = if (selectedMethod == "Card") null else "Card"
                 paymentMethodViewModel.select(newMethod)
                 onMethodSelected(newMethod)
             }
         )
 
-        AnimatedVisibility(visible = selectedMethod == "card") {
+        AnimatedVisibility(visible = selectedMethod == "Card") {
             Column(modifier = Modifier.padding(start = 12.dp, top = 10.dp)) {
 
                 // Show saved card if exists
@@ -177,17 +177,17 @@ fun PaymentMethod(
         PaymentOptionCard(
             title = "E-Wallet",
             icon = Icons.Outlined.Wallet,
-            selected = selectedMethod == "ewallet",
+            selected = selectedMethod == "E-wallet",
             onClick = {
                 //selectedMethod = if (selectedMethod == "ewallet") null else "ewallet"
-                val newMethod = if (selectedMethod == "ewallet") null else "ewallet"
+                val newMethod = if (selectedMethod == "E-wallet") null else "E-wallet"
                 paymentMethodViewModel.select(newMethod)
                 onMethodSelected(newMethod)
             }
         )
 
         // Expand section for E-Wallet
-        AnimatedVisibility(visible = selectedMethod == "ewallet") {
+        AnimatedVisibility(visible = selectedMethod == "E-wallet") {
             /*val isValid = remember(phoneNumber) { isValidPhoneNumber(phoneNumber) }
             val showError = phoneNumber.isNotEmpty() && !isValid
             var showTrailingIcon by remember { mutableStateOf(false) }

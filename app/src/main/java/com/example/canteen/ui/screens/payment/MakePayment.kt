@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.screens.CanteenScreen
 import com.example.canteen.ui.theme.CanteenTheme
+import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
@@ -32,16 +33,26 @@ import com.example.canteen.viewmodel.payment.RefundViewModel
 @Composable
 fun MakePayment(
     receiptViewModel: ReceiptViewModel = viewModel(),
-    cardDetailViewModel : CardDetailViewModel = viewModel()
+    cardDetailViewModel : CardDetailViewModel = viewModel(),
+    userViewModel: UserViewModel = viewModel()
 ){
     //val savedCard by cardDetailViewModel.savedCard.collectAsState()
     var selectedMethod by remember { mutableStateOf<String?>(null) }
+    val user by userViewModel.selectedUser.collectAsState()
+    // need to get the userId from the canteenScreen NavHost
+    val userId = "AMyzJmi2PrhlSz9jVNx7UJTlCeh2"
+
+    LaunchedEffect(userId) {
+        userId.let {
+            userViewModel.loadUserById(it)
+        }
+    }
 
     Surface {
         Column {
             PaymentMethod(
                 cardDetailViewModel = cardDetailViewModel,
-                phoneNumber = "0113456789",
+                phoneNumber = user?.PhoneNumber ?: "",
                 onCardSelected = {},
                 savedCard = "2234",
                 onMethodSelected = {
