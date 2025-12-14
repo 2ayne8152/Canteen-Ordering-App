@@ -1,6 +1,5 @@
 package com.example.menumanagement
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -17,131 +16,70 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.canteen.data.MenuItem
-import com.example.canteen.data.menuItems
+import coil.compose.AsyncImage
+import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.ui.screens.CanteenScreen
+import com.example.canteen.viewmodel.login.FirestoreMenuItem
 
 @Composable
-fun StaffDashboardScreen(navController: NavController) {
+fun StaffDashboardScreen(
+    navController: NavController,
+    viewModel: MenuViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
 
-    // Mapping display name → categoryId
-    val categoryMap = mapOf(
-        "Chicken Rice" to "C0001",
-        "Curry Mee" to "C0003",
-        "Tomyam Maggi" to "C0002"
-    )
-    val categories = listOf("All") + categoryMap.keys.toList()
+    val menuItems by viewModel.menuItems.collectAsState()
 
-    // Filtered menu items
+    // Extract unique category IDs from menu items
+    val categories = listOf("All") + menuItems.map { it.categoryId }.distinct()
+
     val filteredMenuItems = menuItems.filter { item ->
-        val matchesCategory = selectedCategory == "All" ||
-                item.categoryId == categoryMap[selectedCategory]
-        val matchesSearch = stringResource(id = item.itemName)
-            .contains(search.trim(), ignoreCase = true)
+        val matchesCategory = selectedCategory == "All" || item.categoryId == selectedCategory
+        val matchesSearch = item.name.contains(search.trim(), ignoreCase = true)
         matchesCategory && matchesSearch
     }
 
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) }
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
                 .padding(paddingValues)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("Staff Dashboard", fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                    Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
-                }
-                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue)
-            }
 
-            Spacer(Modifier.height(20.dp))
+            Text("Menu Items", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Total Items: ${filteredMenuItems.size}", fontSize = 13.sp)
 
-            // Section Title
-            Text("Menu Items", fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-            Text("Total Items: ${filteredMenuItems.size}", fontSize = 13.sp, color = Color.Gray)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // Add New + Edit
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A3D91)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("+ Add New Item", fontSize = 15.sp, color = Color.White)
-                }
-
-                Spacer(Modifier.width(12.dp))
-
-                IconButton(
-                    onClick = { navController.navigate(CanteenScreen.MenuListPage.name) },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit Menu", tint = Color.Blue)
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Search Bar
-            OutlinedTextField(
-                value = search,
-                onValueChange = { search = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search menu items...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Blue) },
-                shape = RoundedCornerShape(14.dp)
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Scrollable Category Chips
+            // Category chips
             Row(
                 modifier = Modifier
                     .horizontalScroll(rememberScrollState())
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 categories.forEach { category ->
                     CategoryChip(
                         text = category,
-                        selected = category == selectedCategory,
+                        selected = selectedCategory == category,
                         onClick = { selectedCategory = category }
                     )
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
-
-            // Menu List
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(filteredMenuItems) { item ->
@@ -170,16 +108,15 @@ fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun MenuItemCard(item: MenuItem) {
+fun MenuItemCard(item: FirestoreMenuItem) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = item.imageRes),
-            contentDescription = null,
+
+        AsyncImage(
+            model = item.imageUrl,
+            contentDescription = item.name,
             modifier = Modifier
                 .size(60.dp)
                 .clip(RoundedCornerShape(12.dp))
@@ -188,30 +125,20 @@ fun MenuItemCard(item: MenuItem) {
         Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
+            Text(item.name, fontWeight = FontWeight.Bold)
             Text(
-                text = stringResource(id = item.itemName),
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Text(
-                text = stringResource(id = item.itemDesc),
+                item.description,
                 fontSize = 13.sp,
                 color = Color.Gray,
                 maxLines = 1
             )
         }
 
-        Box(
-            modifier = Modifier
-                .background(Color(0xFFFFE0C2), RoundedCornerShape(12.dp))
-                .padding(horizontal = 10.dp, vertical = 4.dp)
-        ) {
-            Text(
-                "RM %.2f".format(item.itemPrice),
-                color = Color(0xFFFF6F3C),
-                fontSize = 12.sp
-            )
-        }
+        Text(
+            "RM %.2f".format(item.price),
+            color = Color(0xFFFF6F3C),
+            fontSize = 12.sp
+        )
     }
 }
 
@@ -227,9 +154,7 @@ fun BottomNavigationBar(navController: NavController) {
             selected = currentRoute == CanteenScreen.StaffDashboard.name,
             onClick = {
                 navController.navigate(CanteenScreen.StaffDashboard.name) {
-                    popUpTo(navController.graph.startDestinationId) {
-                        saveState = true
-                    }
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
                 }
             },
@@ -278,7 +203,6 @@ fun BottomNavigationBar(navController: NavController) {
         )
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

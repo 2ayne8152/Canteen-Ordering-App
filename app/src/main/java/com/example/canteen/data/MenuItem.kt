@@ -4,97 +4,46 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.example.canteen.R
 
+
 data class MenuItem(
-    val menuId: String,
-    val categoryId : String,
-    @DrawableRes val imageRes: Int,
-    @StringRes val itemName: Int,
-    @StringRes val itemDesc: Int,
-    val itemPrice: Double,
-    val remainQuantity: Int
+    val id: String = "",
+    val categoryId: String = "",
+    val name: String = "",
+    val description: String = "",
+    val price: Double = 0.0,
+    val remainQuantity: Int = 0,
+    val imageUrl: String = ""
 )
 
-// For Testing Only, will retrieve from database in future
+
+
+// For Testing Only, will retrieve from Firebase in future
 val menuItems = listOf(
     MenuItem(
-        menuId = "M0001",
+        id = "M0001",
         categoryId = "C0001",
-        imageRes = R.drawable.chickenrice,
-        itemName = R.string.chicken_rice,
-        itemDesc = R.string.chicken_and_rice,
-        itemPrice = 6.00,
-        remainQuantity = 5
+        name = "Chicken Rice",
+        description = "Steamed chicken served with fragrant rice",
+        price = 6.00,
+        remainQuantity = 5,
+        imageUrl = "https://example.com/images/chicken_rice.jpg"
     ),
     MenuItem(
-        menuId = "M0002",
+        id = "M0002",
         categoryId = "C0002",
-        imageRes = R.drawable.tomyammaggi,
-        itemName = R.string.tomyam_maggi,
-        itemDesc = R.string.tomyam_flavour_maggi_mee,
-        itemPrice = 8.00,
-        remainQuantity = 5
+        name = "Tomyam Maggi",
+        description = "Spicy tomyam flavoured Maggi mee",
+        price = 8.00,
+        remainQuantity = 5,
+        imageUrl = "https://example.com/images/tomyam_maggi.jpg"
     ),
     MenuItem(
-        menuId = "M0003",
+        id = "M0003",
         categoryId = "C0003",
-        imageRes = R.drawable.currymee,
-        itemName = R.string.curry_mee,
-        itemDesc = R.string.curry_and_mee,
-        itemPrice = 10.00,
-        remainQuantity = 5
-    ),
-    MenuItem(
-        menuId = "M0004",
-        categoryId = "C0001",
-        imageRes = R.drawable.chickenrice,
-        itemName = R.string.chicken_rice,
-        itemDesc = R.string.chicken_and_rice,
-        itemPrice = 6.00,
-        remainQuantity = 5
-    ),
-    MenuItem(
-        menuId = "M0005",
-        categoryId = "C0002",
-        imageRes = R.drawable.tomyammaggi,
-        itemName = R.string.tomyam_maggi,
-        itemDesc = R.string.tomyam_flavour_maggi_mee,
-        itemPrice = 8.00,
-        remainQuantity = 5
-    ),
-    MenuItem(
-        menuId = "M0006",
-        categoryId = "C0003",
-        imageRes = R.drawable.currymee,
-        itemName = R.string.curry_mee,
-        itemDesc = R.string.curry_and_mee,
-        itemPrice = 10.00,
-        remainQuantity = 5
-    ),
-    MenuItem(
-        menuId = "M0007",
-        categoryId = "C0001",
-        imageRes = R.drawable.chickenrice,
-        itemName = R.string.chicken_rice,
-        itemDesc = R.string.chicken_and_rice,
-        itemPrice = 6.00,
-        remainQuantity = 5
-    ),
-    MenuItem(
-        menuId = "M0008",
-        categoryId = "C0002",
-        imageRes = R.drawable.tomyammaggi,
-        itemName = R.string.tomyam_maggi,
-        itemDesc = R.string.tomyam_flavour_maggi_mee,
-        itemPrice = 8.00,
-        remainQuantity = 5
-    ),
-    MenuItem(
-        menuId = "M0009",
-        categoryId = "C0003",
-        imageRes = R.drawable.currymee,
-        itemName = R.string.curry_mee,
-        itemDesc = R.string.curry_and_mee,
-        itemPrice = 10.00,
-        remainQuantity = 5
+        name = "Curry Mee",
+        description = "Curry soup with noodles",
+        price = 10.00,
+        remainQuantity = 5,
+        imageUrl = "https://example.com/images/curry_mee.jpg"
     )
 )

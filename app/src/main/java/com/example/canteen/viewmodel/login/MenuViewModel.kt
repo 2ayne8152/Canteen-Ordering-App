@@ -15,11 +15,14 @@ import kotlinx.coroutines.tasks.await
 // Data class for Firestore documents
 data class FirestoreMenuItem(
     val id: String = "",
+    val categoryId: String = "",
     val name: String = "",
     val description: String = "",
     val price: Double = 0.0,
+    val remainQuantity: Int = 0,
     val imageUrl: String = ""
 )
+
 
 class MenuViewModel : ViewModel() {
 

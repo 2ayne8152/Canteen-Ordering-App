@@ -23,8 +23,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.canteen.data.MenuItem
 import com.example.canteen.viewmodel.staffMenu.CategoryData
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.storage.ktx.storage
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.util.UUID
+
 
 @Composable
 fun MenuItemForm(navController: NavController) {
@@ -36,17 +42,17 @@ fun MenuItemForm(navController: NavController) {
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var itemName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-
     var unitPrice by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
-
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-
     var validationMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri -> imageUri = uri }
+
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -68,7 +74,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(8.dp))
 
-        // -------------------- MENU ID INPUT --------------------
+        // -------------------- MENU ID --------------------
         TextField(
             value = menuId,
             onValueChange = { menuId = it },
@@ -90,7 +96,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- ITEM NAME INPUT --------------------
+        // -------------------- ITEM NAME --------------------
         TextField(
             value = itemName,
             onValueChange = { itemName = it },
@@ -101,7 +107,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- DESCRIPTION INPUT --------------------
+        // -------------------- DESCRIPTION --------------------
         TextField(
             value = description,
             onValueChange = { description = it },
@@ -117,7 +123,6 @@ fun MenuItemForm(navController: NavController) {
 
         // -------------------- PRICE + QUANTITY --------------------
         Row(modifier = Modifier.fillMaxWidth()) {
-
             TextField(
                 value = unitPrice,
                 onValueChange = { input ->
@@ -169,9 +174,7 @@ fun MenuItemForm(navController: NavController) {
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-
             Column(modifier = Modifier.padding(12.dp)) {
-
                 Box(
                     modifier = Modifier
                         .height(150.dp)
@@ -217,50 +220,74 @@ fun MenuItemForm(navController: NavController) {
         // -------------------- SUBMIT BUTTON --------------------
         Button(
             onClick = {
+                coroutineScope.launch {
+                    val priceDouble = unitPrice.toDoubleOrNull()
+                    val quantityInt = quantity.toIntOrNull()
 
-                // -------- VALIDATION --------
-                val priceDouble = unitPrice.toDoubleOrNull()
-                val quantityInt = quantity.toIntOrNull()
+                    when {
+                        menuId.isBlank() || itemName.isBlank() || description.isBlank() -> {
+                            validationMessage = "All text fields must be filled."
+                            return@launch
+                        }
 
-                when {
-                    menuId.isBlank() || itemName.isBlank() || description.isBlank() -> {
-                        validationMessage = "All text fields must be filled."
-                        return@Button
+                        priceDouble == null -> {
+                            validationMessage = "Unit Price must be a valid number."
+                            return@launch
+                        }
+
+                        quantityInt == null -> {
+                            validationMessage = "Quantity must be an integer."
+                            return@launch
+                        }
+
+                        imageUri == null -> {
+                            validationMessage = "Please upload an image."
+                            return@launch
+                        }
                     }
 
-                    priceDouble == null -> {
-                        validationMessage = "Unit Price must be a valid number."
-                        return@Button
-                    }
+                    validationMessage = ""
+                    isLoading = true
 
-                    quantityInt == null -> {
-                        validationMessage = "Quantity must be an integer."
-                        return@Button
-                    }
+                    try {
+                        // Upload image to Firebase Storage
+                        val storageRef = Firebase.storage.reference
+                        val fileName = "menu_images/${UUID.randomUUID()}"
+                        val imageRef = storageRef.child(fileName)
+                        imageRef.putFile(imageUri!!).await()
+                        val imageUrl = imageRef.downloadUrl.await().toString()
 
-                    imageUri == null -> {
-                        validationMessage = "Please upload an image."
-                        return@Button
+                        // Save menu item to Firestore
+                        val newMenuItem = mapOf(
+                            "id" to menuId,
+                            "name" to itemName,
+                            "description" to description,
+                            "price" to priceDouble,
+                            "remainQuantity" to quantityInt,
+                            "categoryId" to selectedCategory,
+                            "imageUrl" to imageUrl
+                        )
+
+                        Firebase.firestore.collection("menu_items")
+                            .document(menuId)
+                            .set(newMenuItem)
+                            .await()
+
+                        validationMessage = "Menu item added successfully!"
+                        // Optionally, clear form fields here
+                        menuId = ""
+                        itemName = ""
+                        description = ""
+                        unitPrice = ""
+                        quantity = ""
+                        imageUri = null
+
+                    } catch (e: Exception) {
+                        validationMessage = "Error: ${e.message}"
+                    } finally {
+                        isLoading = false
                     }
                 }
-
-                // ----- CLEAR VALIDATION MESSAGE -----
-                validationMessage = ""
-
-                // ----- CREATE DATA CLASS OBJECT -----
-                val newMenuItem = MenuItem(
-                    menuId = menuId,
-                    categoryId = selectedCategory,
-                    imageRes = 0,  // or use default drawable if you want
-                    itemName = 0,  // if using string resource, else adjust type
-                    itemDesc = 0,  // if using string resource, else adjust type
-                    itemPrice = priceDouble,
-                    remainQuantity = quantityInt
-                )
-
-                // TODO: Save newMenuItem to database
-                println("New MenuItem created: $newMenuItem")
-
             },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1)),
             modifier = Modifier
@@ -268,12 +295,20 @@ fun MenuItemForm(navController: NavController) {
                 .height(50.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Submit", color = Color.White, fontSize = 16.sp)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Submit", color = Color.White, fontSize = 16.sp)
+            }
         }
     }
 }
 
-        @Composable
+@Composable
 fun PreviewTextRow(label: String, value: String) {
     Row(modifier = Modifier.padding(vertical = 2.dp)) {
         Text("$label: ", fontSize = 14.sp, color = Color.DarkGray)

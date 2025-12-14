@@ -1,5 +1,7 @@
 package com.example.canteen.viewmodel.staffMenu
 
+import com.example.canteen.data.Category
+
 object CategoryData {
     val category= mutableListOf(
         Category(1, "Beverages"),
