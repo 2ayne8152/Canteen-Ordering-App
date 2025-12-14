@@ -12,35 +12,30 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-// Data class for Firestore documents
+// Full FirestoreMenuItem including staff-editable fields
 data class FirestoreMenuItem(
     val id: String = "",
-    val categoryId: String = "",
     val name: String = "",
     val description: String = "",
     val price: Double = 0.0,
+    val categoryId: String = "",
     val remainQuantity: Int = 0,
     val imageUrl: String = ""
 )
-
 
 class MenuViewModel : ViewModel() {
 
     private val db = Firebase.firestore
 
-    // Holds the list of all menu items fetched from Firestore
+    // Menu items
     private val _menuItems = MutableStateFlow<List<FirestoreMenuItem>>(emptyList())
     val menuItems = _menuItems.asStateFlow()
 
-    // Holds the items in the shopping cart (MenuItem to quantity)
+    // Cart related
     private val _cart = MutableStateFlow<Map<FirestoreMenuItem, Int>>(emptyMap())
     val cart = _cart.asStateFlow()
-
-    // Holds the total number of items in the cart
     private val _numOfItem = MutableStateFlow(0)
     val numOfItem = _numOfItem.asStateFlow()
-
-    // Holds the total price of items in the cart
     private val _totalPrice = MutableStateFlow(0.0)
     val totalPrice = _totalPrice.asStateFlow()
 
@@ -48,17 +43,39 @@ class MenuViewModel : ViewModel() {
         fetchMenuItems()
     }
 
+    // Fetch menu items from Firestore
     private fun fetchMenuItems() {
         viewModelScope.launch {
             try {
                 val snapshot = db.collection("menu_items").get().await()
-                _menuItems.value = snapshot.toObjects<FirestoreMenuItem>()
+                // include document ID for updates
+                _menuItems.value = snapshot.documents.map { doc ->
+                    doc.toObject(FirestoreMenuItem::class.java)!!.copy(id = doc.id)
+                }
             } catch (e: Exception) {
                 Log.e("MenuViewModel", "Error fetching menu items", e)
             }
         }
     }
 
+    // Update menu item (staff edit)
+    fun updateMenuItem(item: FirestoreMenuItem, onComplete: (Boolean, String?) -> Unit) {
+        if (item.id.isBlank()) {
+            onComplete(false, "Document ID is empty")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                db.collection("menu_items").document(item.id).set(item).await()
+                fetchMenuItems() // refresh after update
+                onComplete(true, null)
+            } catch (e: Exception) {
+                onComplete(false, e.message)
+            }
+        }
+    }
+
+    // Cart operations
     fun addToCart(item: FirestoreMenuItem) {
         _cart.update { currentCart ->
             val newCart = currentCart.toMutableMap()
