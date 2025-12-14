@@ -1,9 +1,11 @@
 package com.example.canteen.ui.screens
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +27,7 @@ import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.MenuListPage
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
+import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
@@ -48,13 +51,36 @@ fun CanteenScreen(
     cardDetailViewModel: CardDetailViewModel = viewModel(),
     receiptViewModel: ReceiptViewModel = viewModel(),
     refundViewModel: RefundViewModel = viewModel(),
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    userViewModel: UserViewModel = viewModel()
 ) {
     val navController = rememberNavController()
     val savedCard by cardDetailViewModel.savedCard.collectAsState()
     var selectedMethod by remember { mutableStateOf<String?>(null) }
     val authState by authViewModel.authState.collectAsState()
     val userId = (authState as? AuthState.LoggedIn)?.userId
+    val role = (authState as? AuthState.LoggedIn)?.role
+
+    LaunchedEffect(role) {
+        Log.w("Log", "role")
+        if (role == "staff"){
+            receiptViewModel.startListeningOnce()
+            Log.w("Log", "role = staff")
+            Log.w("Log", "${userId}")
+        }
+    }
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.LoggedOut) {
+            receiptViewModel.stopListening()
+        }
+    }
+
+    LaunchedEffect(userId) {
+        if (userId != null) {
+            userViewModel.loadUserById(userId)
+        }
+    }
 
     NavHost(navController, startDestination = "login") {
         composable("login") {
@@ -69,7 +95,8 @@ fun CanteenScreen(
                             popUpTo("login") { inclusive = true }
                         }
                     }
-                }
+                },
+                authViewModel = authViewModel
             )
         }
 
@@ -86,7 +113,8 @@ fun CanteenScreen(
                             popUpTo("staff_login") { inclusive = true }
                         }
                     }
-                }
+                },
+                authViewModel = authViewModel
             )
         }
 
@@ -115,7 +143,8 @@ fun CanteenScreen(
             RefundDetailPage(
                 receiptViewModel = receiptViewModel,
                 refundViewModel = refundViewModel,
-                onBack = {navController.popBackStack()}
+                onBack = {navController.popBackStack()},
+                userViewModel = userViewModel
             )
         }
 
@@ -152,7 +181,7 @@ fun CanteenScreen(
 }
 
 @Composable
-fun CanteenApp() {
+fun CanteenApp(authViewModel: AuthViewModel = viewModel()) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "login") {
@@ -169,7 +198,8 @@ fun CanteenApp() {
                             popUpTo("login") { inclusive = true }
                         }
                     }
-                }
+                },
+                authViewModel = authViewModel
             )
         }
 
@@ -186,7 +216,8 @@ fun CanteenApp() {
                             popUpTo("staff_login") { inclusive = true }
                         }
                     }
-                }
+                },
+                authViewModel = authViewModel
             )
         }
 

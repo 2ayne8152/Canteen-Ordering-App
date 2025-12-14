@@ -35,10 +35,3 @@ data class RefundRequest(
         }
     }
 }
-
-
-
-data class RefundItem(
-    val refund: RefundRequest,
-    val receipt: Receipt
-)

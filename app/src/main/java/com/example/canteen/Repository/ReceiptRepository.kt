@@ -103,4 +103,46 @@ class ReceiptRepository(
         return result
     }
 
+    private var receiptListener: ListenerRegistration? = null
+    private var refundListener: ListenerRegistration? = null
+
+    fun listenReceiptWithRefund(
+        onUpdate: (List<Pair<Receipt, RefundRequest?>>) -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        var receipts: List<Receipt> = emptyList()
+        var refunds: List<RefundRequest> = emptyList()
+
+        fun emit() {
+            val refundMap = refunds.associateBy { it.refundId }
+
+            val combined = receipts.map { receipt ->
+                receipt to refundMap[receipt.refundId]
+            }
+
+            onUpdate(combined)
+        }
+
+        receiptListener = receiptDao.listenReceipts(
+            onUpdate = {
+                receipts = it
+                emit()
+            },
+            onError = onError
+        )
+
+        refundListener = refundDao.listenRefund(
+            onUpdate = {
+                refunds = it
+                emit()
+            },
+            onError = onError
+        )
+    }
+
+    fun removeListeners() {
+        receiptListener?.remove()
+        refundListener?.remove()
+    }
+
 }

@@ -13,7 +13,7 @@ class UserViewModel(
 ) : ViewModel() {
 // Created by ET to load the user phone number from firebase
 // For list
-private val _users = MutableStateFlow<List<User>>(emptyList())
+    private val _users = MutableStateFlow<List<User>>(emptyList())
     val users = _users.asStateFlow()
 
     // ✅ For single user

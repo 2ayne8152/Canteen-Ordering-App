@@ -59,6 +59,7 @@ import com.example.canteen.ui.theme.lightRed
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.PaymentMethodViewModel
 import kotlin.math.sin
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun PaymentMethod(
@@ -102,7 +103,7 @@ fun PaymentMethod(
                 // Show saved card if exists
                 if (savedCard != null) {
 
-                    Text("Saved Card", fontWeight = FontWeight.Bold)
+                    Text("Saved Card", fontWeight = FontWeight.Bold, color = Color.Black)
                     Spacer(Modifier.height(8.dp))
 
                     // Example UI for saved card
@@ -130,7 +131,7 @@ fun PaymentMethod(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.CheckBox,
-                                        contentDescription = null
+                                        contentDescription = null, tint = Color.Black
                                     )
 
                                     Spacer(Modifier.width(10.dp))
@@ -138,7 +139,7 @@ fun PaymentMethod(
                                     Text(
                                         text = "Visa ending $savedCard",
                                         fontSize = 18.sp,
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.SemiBold, color = Color.Black
                                     )
                                 }
 
@@ -148,14 +149,14 @@ fun PaymentMethod(
                                     onClick = {cardDetailViewModel.deleteCard()},
                                     elevation = ButtonDefaults.buttonElevation(8.dp)
                                 ) {
-                                    Text("Delete")
+                                    Text("Delete", color = Color.Black)
                                 }
                             }
                         }
                     }
                 } else {
                     // No saved card → Allow user to add one
-                    Text("No saved card found.")
+                    Text("No saved card found.", color = Color.Black)
                     Spacer(Modifier.height(12.dp))
 
                     Button(
@@ -165,7 +166,7 @@ fun PaymentMethod(
                         shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(8.dp)
                     ) {
-                        Text("Add New Card")
+                        Text("Add New Card", color = Color.Black)
                     }
                 }
             }
@@ -199,7 +200,7 @@ fun PaymentMethod(
             Column(modifier = Modifier.padding(top = 12.dp)) {
                 val formattedNumber = "${phoneNumber.substring(0, 3)}-${phoneNumber.substring(3, 6)} ${phoneNumber.substring(6)}"
 
-                Text("E-Wallet Phone Number")
+                Text("E-Wallet Phone Number", color = Color.Black)
 
                 Spacer(Modifier.height(8.dp))
 
@@ -218,7 +219,7 @@ fun PaymentMethod(
                                 contentDescription = null
                             )
                             Spacer(Modifier.width(10.dp))
-                            Text(text = formattedNumber, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                            Text(text = formattedNumber, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                             //Text("Tap to use this card", fontSize = 14.sp, color = gray)
                         }
                     }
@@ -301,7 +302,7 @@ fun PaymentOptionCard(
 
             Spacer(Modifier.width(10.dp))
 
-            Text(title, fontSize = 18.sp)
+            Text(title, fontSize = 18.sp, color = Color.Black)
         }
     }
 }

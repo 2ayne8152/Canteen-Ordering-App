@@ -3,6 +3,7 @@ package com.example.canteen.DAO
 import com.example.canteen.data.RefundRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
 
 class RefundDao {
@@ -47,5 +48,24 @@ class RefundDao {
                 onChange(list)
             }
         }
+    }
+
+    fun listenRefund(
+        onUpdate: (List<RefundRequest>) -> Unit,
+        onError: (Exception) -> Unit
+    ): ListenerRegistration {
+        return refundCollection
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    onError(e)
+                    return@addSnapshotListener
+                }
+
+                val refunds = snapshot?.documents?.mapNotNull {
+                    RefundRequest.fromMap(it.data)
+                }.orEmpty()
+
+                onUpdate(refunds)
+            }
     }
 }

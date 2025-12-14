@@ -58,6 +58,8 @@ class ReceiptViewModel(
 
     private var receiptListener: ListenerRegistration? = null
 
+    private var isListening = false
+
     fun loadReceipt(id: String) {
         viewModelScope.launch {
             _loading.value = true
@@ -161,14 +163,51 @@ class ReceiptViewModel(
         }
     }
 
+    fun startListening() {
+        _loading.value = true
 
-    // ---------------------------------------------------------
-    // Cleanup listener when ViewModel destroyed
-    // ---------------------------------------------------------
+        repository.listenReceiptWithRefund(
+            onUpdate = { list ->
+                val sorted = list.sortedByDescending { it.first.payment_Date }
+                _receiptList.value = sorted
+
+                val withRefund = sorted.filter { it.first.refundId != null }
+
+                _pendingReceipts.value =
+                    withRefund.filter { it.second?.status == "Pending" }
+
+                _approvedReceipts.value =
+                    withRefund.filter { it.second?.status == "Approved" }
+
+                _rejectedReceipts.value =
+                    withRefund.filter { it.second?.status == "Rejected" }
+
+                _loading.value = false
+            },
+            onError = {
+                _error.value = it.message
+                _loading.value = false
+            }
+        )
+    }
+
+    fun startListeningOnce() {
+        if (isListening) return
+        isListening = true
+        startListening()
+    }
+
     override fun onCleared() {
         super.onCleared()
-        receiptListener?.remove()
+        repository.removeListeners()
+        isListening = false
     }
+
+    fun stopListening() {
+        repository.removeListeners()
+        isListening = false
+    }
+
 }
 
 /*

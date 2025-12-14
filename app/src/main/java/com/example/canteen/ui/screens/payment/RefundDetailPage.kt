@@ -1,16 +1,22 @@
 package com.example.canteen.ui.screens.payment
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
@@ -44,6 +52,10 @@ import com.example.canteen.ui.theme.softGreen
 import com.example.canteen.ui.theme.veryLightRed
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import com.example.canteen.viewmodel.login.UserViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,14 +63,19 @@ import com.example.canteen.viewmodel.payment.RefundViewModel
 fun RefundDetailPage(
     receiptViewModel: ReceiptViewModel,
     refundViewModel: RefundViewModel,
+    userViewModel: UserViewModel,
     onBack: () -> Unit = {}
 ) {
+    val user by userViewModel.selectedUser.collectAsState()
     val selected by receiptViewModel.selectedRefund.collectAsState()
     var responseBy by remember { mutableStateOf("") }
     var responseRemark by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    var textFieldWidth by remember { mutableStateOf(0.dp) }
+    val isValid = responseBy.isNotBlank() && responseRemark.isNotBlank()
 
     if (selected == null) {
-        Text("Loading...")
+        Text("Loading...", color = Color.Black)
         return
     }
 
@@ -101,12 +118,12 @@ fun RefundDetailPage(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Order ${receipt.orderId.take(6)}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Text(text = formatTime(refund?.requestTime ?: 0L))
+                        Text("Order ${receipt.orderId.take(6)}", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
+                        Text(text = formatTime(refund?.requestTime ?: 0L), color = Color.Black)
                     }
 
                     Spacer(Modifier.height(4.dp))
-                    Text("Total : RM${receipt.pay_Amount}", fontWeight = FontWeight.Bold)
+                    Text("Total : RM${receipt.pay_Amount}", fontWeight = FontWeight.Bold, color = Color.Black)
                 }
             }
 
@@ -122,16 +139,16 @@ fun RefundDetailPage(
             ) {
                 Column(Modifier.padding(16.dp)) {
 
-                    Text("Order Items :", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("Order Items :", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
 
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Set A x1")
-                        Text("RM 15.00")
+                        Text("Set A x1", color = Color.Black)
+                        Text("RM 15.00", color = Color.Black)
                     }
 
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Add On Rice x1")
-                        Text("RM 1.00")
+                        Text("Add On Rice x1", color = Color.Black)
+                        Text("RM 1.00", color = Color.Black)
                     }
                 }
             }
@@ -148,15 +165,15 @@ fun RefundDetailPage(
             ) {
                 Column(Modifier.padding(16.dp)) {
 
-                    Text("Refund Request :", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("Refund Request :", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
 
-                    Text("Reason : ${refund?.reason}", fontWeight = FontWeight.SemiBold)
+                    Text("Reason : ${refund?.reason}", fontWeight = FontWeight.SemiBold, color = Color.Black)
 
                     Spacer(Modifier.height(4.dp))
-                    Text("Detail :", fontWeight = FontWeight.SemiBold)
+                    Text("Detail :", fontWeight = FontWeight.SemiBold, color = Color.Black)
                     Text(
                         refund?.refundDetail ?: "",
-                        lineHeight = 20.sp
+                        lineHeight = 20.sp, color = Color.Black
                     )
                 }
             }
@@ -173,24 +190,66 @@ fun RefundDetailPage(
             ) {
                 Column(Modifier.padding(16.dp)) {
 
-                    Text("Refund Response :", fontWeight = FontWeight.Bold)
+                    Text("Refund Response :", fontWeight = FontWeight.Bold, color = Color.Black)
 
                     Spacer(Modifier.height(4.dp))
 
-                    OutlinedTextField(
+                    /*OutlinedTextField(
                         value = responseBy,
                         onValueChange = { responseBy = it },
-                        label = { Text("Response By") },
+                        label = { Text("Response By", color = Color.Black) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
-                    )
+                    )*/
+
+                    Box {
+                        val density = LocalDensity.current
+                        OutlinedTextField(
+                            value = responseBy,
+                            onValueChange = {
+                                responseBy = it
+                                            },
+                            label = { Text("Response By", color = Color.Black) },
+                            singleLine = true,
+                            trailingIcon = {
+                                Icon(
+                                    if (expanded) Icons.Default.KeyboardArrowUp
+                                    else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.clickable {
+                                        expanded = !expanded
+                                    }
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onGloballyPositioned { coordinates ->
+                                    textFieldWidth = with(density) { coordinates.size.width.toDp() }
+                                },
+                            keyboardActions = KeyboardActions(onDone = {expanded = false})
+                        )
+
+                        DropdownMenu(
+                            modifier = Modifier.width(textFieldWidth),
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(text = user?.Name.orEmpty(), color = Color.Black) },
+                                onClick = {
+                                    responseBy = user?.Name.orEmpty()
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
 
                     Spacer(Modifier.height(8.dp))
 
                     OutlinedTextField(
                         value = responseRemark,
                         onValueChange = { responseRemark = it },
-                        label = { Text("Remark") },
+                        label = { Text("Remark", color = Color.Black) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
@@ -220,11 +279,12 @@ fun RefundDetailPage(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightGreen
                             ),
-                            elevation = ButtonDefaults.buttonElevation(8.dp)
+                            elevation = ButtonDefaults.buttonElevation(8.dp),
+                            enabled = isValid
                         ) {
                             /*Icon(Icons.Default.CheckCircle, contentDescription = null)
                             Spacer(Modifier.width(6.dp))*/
-                            Text("Approve Refund")
+                            Text("Approve Refund", color = Color.White)
                         }
 
                         Button(
@@ -242,11 +302,12 @@ fun RefundDetailPage(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightRed// red
                             ),
-                            elevation = ButtonDefaults.buttonElevation(8.dp)
+                            elevation = ButtonDefaults.buttonElevation(8.dp),
+                            enabled = isValid
                         ) {
                             /*Icon(Icons.Default.Close, contentDescription = null)
                             Spacer(Modifier.width(6.dp))*/
-                            Text("Reject Refund")
+                            Text("Reject Refund", color = Color.White)
                         }
                     }
                 }
@@ -261,6 +322,6 @@ fun RefundDetailPage(
 @Composable
 fun RefundDetailPreview() {
     CanteenTheme {
-        RefundDetailPage(viewModel(), viewModel ())
+        RefundDetailPage(viewModel(), viewModel (), viewModel())
     }
 }

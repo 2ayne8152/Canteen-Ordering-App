@@ -47,4 +47,23 @@ class ReceiptDao {
             onUpdate(list)
         }
     }
+
+    fun listenReceipts(
+        onUpdate: (List<Receipt>) -> Unit,
+        onError: (Exception) -> Unit
+    ): ListenerRegistration {
+        return receiptCollection
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    onError(e)
+                    return@addSnapshotListener
+                }
+
+                val receipts = snapshot?.documents?.mapNotNull {
+                    it.data?.let(Receipt::fromMap)
+                }.orEmpty()
+
+                onUpdate(receipts)
+            }
+    }
 }

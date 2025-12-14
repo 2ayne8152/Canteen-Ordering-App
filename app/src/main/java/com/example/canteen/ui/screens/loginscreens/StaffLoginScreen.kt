@@ -22,7 +22,7 @@ import com.example.canteen.viewmodel.AuthState
 
 @Composable
 fun StaffLoginScreen(
-    authViewModel: AuthViewModel = viewModel(),
+    authViewModel: AuthViewModel,
     onUserLoginClick: () -> Unit,
     onLoginSuccess: (String) -> Unit
 ) {
@@ -266,6 +266,6 @@ fun StaffLoginScreen(
 @Composable
 fun StaffLoginScreenPreview() {
     CanteenTheme {
-        StaffLoginScreen(onUserLoginClick = {}, onLoginSuccess = {})
+        StaffLoginScreen(onUserLoginClick = {}, onLoginSuccess = {}, authViewModel = viewModel())
     }
 }

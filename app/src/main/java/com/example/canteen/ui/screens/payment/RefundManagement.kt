@@ -52,7 +52,6 @@ import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.Green
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.data.Receipt
-import com.example.canteen.data.RefundItem
 import com.example.canteen.ui.theme.veryLightRed
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.menumanagement.BottomNavigationBar
@@ -70,10 +69,6 @@ fun RefundManagementScreenWrapper(
     val pending by receiptViewModel.pendingReceipts.collectAsState()
     val approved by receiptViewModel.approvedReceipts.collectAsState()
     val rejected by receiptViewModel.rejectedReceipts.collectAsState()
-
-    LaunchedEffect(Unit) {
-        receiptViewModel.loadAllReceipts()
-    }
 
     RefundManagementScreen(
         receiptViewModel = receiptViewModel,
@@ -193,14 +188,14 @@ fun RefundCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order${data.first.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text(text = formatTime(data.second?.requestTime ?: 0L) , fontSize = 14.sp)
+                Text("Order${data.first.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text(text = formatTime(data.second?.requestTime ?: 0L) , fontSize = 14.sp, color = Color.Black)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Total : RM${String.format("%.2f", data.first.pay_Amount)}")
-            Text("Refund Reason : ${data.second?.reason}")
+            Text("Total : RM${String.format("%.2f", data.first.pay_Amount)}", color = Color.Black)
+            Text("Refund Reason : ${data.second?.reason}", color = Color.Black)
         }
     }
 }
@@ -230,13 +225,13 @@ fun ApprovedRefundCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order ${data.first.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Order ${data.first.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Total Refunded : RM${String.format("%.2f", data.first.pay_Amount)}")
-            Text("Reason : ${data.second?.reason}")
+            Text("Total Refunded : RM${String.format("%.2f", data.first.pay_Amount)}", color = Color.Black)
+            Text("Reason : ${data.second?.reason}", color = Color.Black)
             if (!expanded) {
                 Text(
                     text = "Tap to view more",
@@ -255,14 +250,15 @@ fun ApprovedRefundCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Admin: ${data.second?.refundBy}")
+                    Text("Admin: ${data.second?.refundBy}", color = Color.Black)
 
                     Spacer(Modifier.height(4.dp))
 
-                    Text("Additional Notes:")
+                    Text("Additional Notes:", color = Color.Black)
                     Text(
                         text = data.second?.remark ?: "",
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        color = Color.Black
                     )
                 }
             }
@@ -295,13 +291,13 @@ fun RejectedRefundCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order${data.first.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Order${data.first.orderId}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Total Refunded : RM${String.format("%.2f", data.first.pay_Amount)}")
-            Text("Reason : ${data.second?.reason}")
+            Text("Total Refunded : RM${String.format("%.2f", data.first.pay_Amount)}", color = Color.Black)
+            Text("Reason : ${data.second?.reason}", color = Color.Black)
             if (!expanded) {
                 Text(
                     text = "Tap to view more",
@@ -319,14 +315,14 @@ fun RejectedRefundCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Admin: ${data.second?.refundBy}")
+                    Text("Admin: ${data.second?.refundBy}", color = Color.Black)
 
                     Spacer(Modifier.height(4.dp))
 
-                    Text("Reject Reason:")
+                    Text("Reject Reason:", color = Color.Black)
                     Text(
                         text = data.second?.remark ?: "",
-                        fontSize = 14.sp
+                        fontSize = 14.sp, color = Color.Black
                     )
                 }
             }

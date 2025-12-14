@@ -52,6 +52,7 @@ import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.lightRed
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +61,6 @@ fun Refund(
     refundViewModel: RefundViewModel = viewModel(),
     receiptViewModel: ReceiptViewModel
 ) {
-    val context = LocalContext.current
     val loading by refundViewModel.loading.collectAsState()
     val error by refundViewModel.error.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -146,7 +146,7 @@ fun Refund(
                 Text(
                     text = "Select Refund Reason",
                     style = MaterialTheme.typography.titleMedium,
-                    fontSize = 25.sp
+                    fontSize = 25.sp, color = Color.Black
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -157,7 +157,7 @@ fun Refund(
                     OutlinedTextField(
                         value = selectedReason,
                         onValueChange = {},
-                        label = { Text("Refund Reason") },
+                        label = { Text("Refund Reason", color = Color.Black) },
                         readOnly = true,
                         trailingIcon = {
                             Icon(
@@ -185,7 +185,7 @@ fun Refund(
                     ) {
                         refundReasons.forEach { reason ->
                             DropdownMenuItem(
-                                text = { Text(reason) },
+                                text = { Text(reason, color = Color.Black) },
                                 onClick = {
                                     selectedReason = reason
                                     expanded = false
@@ -201,7 +201,7 @@ fun Refund(
                 OutlinedTextField(
                     value = refundDetails,
                     onValueChange = { refundDetails = it },
-                    label = { Text("Refund Details") },
+                    label = { Text("Refund Details", color = Color.Black) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(150.dp)
@@ -229,7 +229,7 @@ fun Refund(
                         .height(50.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Submit")
+                    Text("Submit", color = Color.Black)
                 }
             }
         }
@@ -239,7 +239,7 @@ fun Refund(
             AlertDialog(
                 onDismissRequest = {},
                 confirmButton = {},
-                title = { Text("Submitting...") }
+                title = { Text("Submitting...", color = Color.Black) }
             )
         }
     }

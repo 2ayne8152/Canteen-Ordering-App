@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.canteen.data.MenuItem
 import com.example.canteen.data.menuItems
@@ -56,7 +57,6 @@ fun StaffDashboardScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF7F7F7))
                 .padding(16.dp)
                 .padding(paddingValues)
         ) {
@@ -217,39 +217,68 @@ fun MenuItemCard(item: MenuItem) {
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
     NavigationBar {
+
         NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(CanteenScreen.StaffDashboard.name) },
+            selected = currentRoute == CanteenScreen.StaffDashboard.name,
+            onClick = {
+                navController.navigate(CanteenScreen.StaffDashboard.name) {
+                    popUpTo(navController.graph.startDestinationId) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                }
+            },
             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-            label = { androidx.compose.material3.Text("Home") }
+            label = { Text("Home") }
         )
+
         NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
+            selected = currentRoute == CanteenScreen.MenuItemForm.name,
+            onClick = {
+                navController.navigate(CanteenScreen.MenuItemForm.name) {
+                    launchSingleTop = true
+                }
+            },
             icon = { Icon(Icons.Default.Add, contentDescription = "Add Item") },
-            label = { androidx.compose.material3.Text("Add Item") }
+            label = { Text("Add Item") }
         )
+
         NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(CanteenScreen.RefundManagementScreenWrapper.name) },
+            selected = currentRoute == CanteenScreen.RefundManagementScreenWrapper.name,
+            onClick = {
+                navController.navigate(CanteenScreen.RefundManagementScreenWrapper.name) {
+                    launchSingleTop = true
+                }
+            },
             icon = { Icon(Icons.Default.MonetizationOn, contentDescription = "Refund") },
             label = { Text("Refund") }
         )
+
         NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(CanteenScreen.PaymentHistory.name) },
+            selected = currentRoute == CanteenScreen.PaymentHistory.name,
+            onClick = {
+                navController.navigate(CanteenScreen.PaymentHistory.name) {
+                    launchSingleTop = true
+                }
+            },
             icon = { Icon(Icons.Default.History, contentDescription = "Payment History") },
             label = { Text("History") }
         )
+
         NavigationBarItem(
             selected = false,
-            onClick = { /* Report */ },
+            onClick = {/* Report */},
             icon = { Icon(Icons.Default.Assessment, contentDescription = "Report") },
             label = { Text("Report") }
         )
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable

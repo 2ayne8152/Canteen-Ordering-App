@@ -44,7 +44,6 @@ import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.ui.theme.lightViolet
 import com.example.canteen.data.Receipt
-import com.example.canteen.data.RefundItem
 import com.example.canteen.data.RefundRequest
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.menumanagement.BottomNavigationBar
@@ -64,10 +63,6 @@ fun PaymentHistory(
     val filteredList = allReceipt.filter { pair ->
         val receipt = pair.first
         receipt.receiptId.contains(searchQuery.trim(), ignoreCase = true)
-    }
-
-    LaunchedEffect(Unit) {
-        receiptViewModel.loadAllReceipts()
     }
 
     Scaffold(
@@ -92,9 +87,9 @@ fun PaymentHistory(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null)
+                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.Black)
                 },
-                placeholder = { Text("Search by Receipt ID") },
+                placeholder = { Text("Search by Receipt ID", color = Color.Black) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(lightViolet, shape = RoundedCornerShape(16))
@@ -145,15 +140,15 @@ fun PaymentHistoryCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Receipt ID : ${data.first.receiptId.take(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text("${formatted}")
+                Text("Receipt ID : ${data.first.receiptId.take(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text("${formatted}", color = Color.Black)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Order ID :  ${data.first.orderId}")
-            Text("Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}")
-            Text("Refund : ${data.second?.status ?: "None"}")
+            Text("Order ID :  ${data.first.orderId}", color = Color.Black)
+            Text("Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}", color = Color.Black)
+            Text("Refund : ${data.second?.status ?: "None"}", color = Color.Black)
             if (!expanded) {
                 Text(
                     text = "Tap to view more",
@@ -171,7 +166,7 @@ fun PaymentHistoryCard(
 
                     Spacer(Modifier.height(8.dp))
 
-                    Text("Payment Method : ${data.first.payment_Method}")
+                    Text("Payment Method : ${data.first.payment_Method}", color = Color.Black)
                 }
             }
         }

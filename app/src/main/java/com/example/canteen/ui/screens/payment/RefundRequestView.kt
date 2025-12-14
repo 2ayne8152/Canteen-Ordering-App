@@ -127,7 +127,7 @@ fun RefundRequestCard(
                 Text(
                     text = "Refund Request",
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold, color = Color.Black
                 )
 
                 RefundStatusChip(status = status)
