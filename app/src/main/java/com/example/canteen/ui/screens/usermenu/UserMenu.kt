@@ -1,6 +1,5 @@
 package com.example.canteen.ui.screens
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +38,14 @@ fun UserMenu(
     var selectedItem by remember { mutableStateOf<MenuItem?>(null) }
     var isSheetOpen by remember { mutableStateOf(false) }
 
+    // 🔍 Search state
+    var searchQuery by remember { mutableStateOf("") }
+
+    // 🔍 Filtered menu items
+    val filteredMenuItems = menuItems.filter {
+        it.name.contains(searchQuery, ignoreCase = true)
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
 
         LazyColumn(
@@ -45,16 +53,34 @@ fun UserMenu(
             contentPadding = PaddingValues(bottom = 120.dp, start = 16.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
+            // 🔍 SEARCH BAR
+            item {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    placeholder = { Text("Search food...") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+
             item {
                 Text(
                     text = "Main Menu",
                     style = MaterialTheme.typography.titleLarge,
                     fontSize = 30.sp,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
                 )
             }
 
-            items(menuItems) { item ->
+            items(filteredMenuItems) { item ->
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -84,7 +110,7 @@ fun UserMenu(
             )
         }
 
-        // Show bottom sheet customization if requested
+        // Bottom sheet
         if (isSheetOpen && selectedItem != null) {
             MenuItemCustomization(
                 item = selectedItem!!,
@@ -110,11 +136,13 @@ fun MenuItemCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .clickable { onClick() },
+        modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (menuItem.imageUrl.isNotBlank()) {
                 AsyncImage(
                     model = menuItem.imageUrl,
@@ -136,6 +164,7 @@ fun MenuItemCard(
             }
 
             Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(menuItem.name, style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(4.dp))
@@ -186,7 +215,6 @@ fun MenuItemCustomization(
                 .padding(20.dp)
         ) {
 
-            // ITEM TITLE
             Text(
                 text = item.name,
                 style = MaterialTheme.typography.headlineSmall,
@@ -195,7 +223,6 @@ fun MenuItemCustomization(
 
             Spacer(Modifier.height(6.dp))
 
-            // DESCRIPTION
             Text(
                 text = item.description,
                 color = Color.Gray,
@@ -204,21 +231,18 @@ fun MenuItemCustomization(
 
             Spacer(Modifier.height(16.dp))
 
-            // PRICE + QUANTITY CONTROLS
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
-                // PRICE
                 Text(
                     text = "RM %.2f".format(item.price),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
                 )
 
-                // Clean quantity selector
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -249,7 +273,6 @@ fun MenuItemCustomization(
 
             Spacer(Modifier.height(20.dp))
 
-            // SUBTOTAL
             Text(
                 text = "Subtotal: RM ${(item.price * quantity).format(2)}",
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
@@ -258,20 +281,15 @@ fun MenuItemCustomization(
 
             Spacer(Modifier.height(24.dp))
 
-            // ACTIONS
             Column {
-                // Add to cart (shows subtotal in label too)
                 Button(
-                    onClick = {
-                        onAddToCart(quantity)
-                    },
+                    onClick = { onAddToCart(quantity) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                 ) {
                     Text("Add to Cart • RM ${(item.price * quantity).format(2)}")
                 }
 
-                // Show view cart if there are already items in cart
                 if (cartItemCount > 0) {
                     Spacer(Modifier.height(12.dp))
 
@@ -290,5 +308,5 @@ fun MenuItemCustomization(
     }
 }
 
-// small helper
+// helper
 fun Double.format(digits: Int) = "%.${digits}f".format(this)
