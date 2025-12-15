@@ -3,11 +3,14 @@ package com.example.canteen.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -19,6 +22,14 @@ class AuthViewModel : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.LoggedOut)
     val authState = _authState.asStateFlow()
+
+    // --- State for Password Reset ---
+    private val _passwordResetStatus = MutableStateFlow<String?>(null)
+    val passwordResetStatus: StateFlow<String?> = _passwordResetStatus.asStateFlow()
+
+    private val _isLoadingPasswordReset = MutableStateFlow(false)
+    val isLoadingPasswordReset: StateFlow<Boolean> = _isLoadingPasswordReset.asStateFlow()
+    // ---
 
     fun register(email: String, password: String, username: String, role: String, phoneNumber: String) {
         viewModelScope.launch {
@@ -142,6 +153,41 @@ class AuthViewModel : ViewModel() {
                 Log.d("AuthViewModel", "Login state set to Error: $errorMessage")
             }
         }
+    }
+    fun sendPasswordResetEmail(email: String) {
+        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _passwordResetStatus.value = "Please enter a valid email address to reset password."
+            return
+        }
+
+        _isLoadingPasswordReset.value = true
+        _passwordResetStatus.value = null // Clear previous status
+
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                _isLoadingPasswordReset.value = false
+                if (task.isSuccessful) {
+                    _passwordResetStatus.value = "Password reset email sent to $email. Please check your inbox (and spam folder)."
+                } else {
+                    val exception = task.exception
+                    when (exception) {
+                        is FirebaseAuthInvalidUserException -> {
+                            _passwordResetStatus.value = "No account found with this email address."
+                        }
+                        is FirebaseNetworkException -> {
+                            _passwordResetStatus.value = "Network error. Please check your connection."
+                        }
+                        // Add more specific error handling if needed
+                        else -> {
+                            _passwordResetStatus.value = "Failed to send password reset email. Please try again. (${exception?.message ?: "Unknown error"})"
+                        }
+                    }
+                }
+            }
+    }
+
+    fun clearPasswordResetStatus() {
+        _passwordResetStatus.value = null
     }
 
     fun resetAuthState() {

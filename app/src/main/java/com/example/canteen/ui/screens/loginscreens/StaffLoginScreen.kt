@@ -24,7 +24,8 @@ import com.example.canteen.viewmodel.AuthState
 fun StaffLoginScreen(
     authViewModel: AuthViewModel,
     onUserLoginClick: () -> Unit,
-    onLoginSuccess: (String) -> Unit
+    onLoginSuccess: (String) -> Unit,
+    onForgotPasswordClick: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -185,6 +186,14 @@ fun StaffLoginScreen(
                     enabled = authState !is AuthState.Loading
                 )
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Forgot Password?",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { onForgotPasswordClick() }.align(Alignment.End)
+                )
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Show loading text on button if loading, otherwise show normal button text
@@ -266,6 +275,6 @@ fun StaffLoginScreen(
 @Composable
 fun StaffLoginScreenPreview() {
     CanteenTheme {
-        StaffLoginScreen(onUserLoginClick = {}, onLoginSuccess = {}, authViewModel = viewModel())
+        StaffLoginScreen(onUserLoginClick = {}, onLoginSuccess = {}, authViewModel = viewModel(), onForgotPasswordClick = {})
     }
 }
