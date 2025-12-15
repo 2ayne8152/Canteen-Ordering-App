@@ -16,6 +16,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.canteen.ui.screens.loginscreens.ForgotPasswordScreen
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.ui.screens.payment.PayByCard
@@ -91,12 +92,14 @@ fun CanteenScreen(
                         "user" -> navController.navigate("user_menu") {
                             popUpTo("login") { inclusive = true }
                         }
+
                         "staff" -> navController.navigate(CanteenScreen.StaffDashboard.name) {
                             popUpTo("login") { inclusive = true }
                         }
                     }
                 },
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                onForgotPasswordClick = { navController.navigate("forgot_password")}
             )
         }
 
@@ -114,7 +117,18 @@ fun CanteenScreen(
                         }
                     }
                 },
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                onForgotPasswordClick = { navController.navigate("forgot_password")}
+            )
+        }
+
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                authViewModel = authViewModel,
+                onBackToLoginClick = {
+                    // Go back to login screen
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -199,7 +213,17 @@ fun CanteenApp(authViewModel: AuthViewModel = viewModel()) {
                         }
                     }
                 },
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                onForgotPasswordClick = { navController.navigate("forgot_password")}
+            )
+        }
+
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                authViewModel = authViewModel,
+                onBackToLoginClick = {
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -217,7 +241,8 @@ fun CanteenApp(authViewModel: AuthViewModel = viewModel()) {
                         }
                     }
                 },
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                onForgotPasswordClick = { navController.navigate("forgot_password")}
             )
         }
 
