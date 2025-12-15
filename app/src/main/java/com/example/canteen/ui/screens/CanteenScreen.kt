@@ -35,15 +35,13 @@ import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.menumanagement.StaffDashboardScreen
 
 enum class CanteenScreen(val title: String) {
-    PaymentMethod(title = "PaymentMethod"),
-    PayByCard(title = "PayByCard"),
     StaffDashboard(title = "StaffDashboard"),
     MenuItemForm(title = "MenuItemForm"),
     MenuListPage(title = "MenuListPage"),
     PaymentHistory(title = "PaymentHistory"),
     RefundManagementScreenWrapper(title = "RefundManagement"),
-    RefundDetailPage(title = "RefundDetail")
-
+    RefundDetailPage(title = "RefundDetail"),
+    MakePayment(title = "MakePayment")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -169,7 +167,7 @@ fun CanteenScreen(
             )
         }
 
-        composable(CanteenScreen.PaymentMethod.name) {
+        /*composable(CanteenScreen.PaymentMethod.name) {
             PaymentMethod(
                 cardDetailViewModel = cardDetailViewModel,
                 phoneNumber = "0123456789",
@@ -182,14 +180,7 @@ fun CanteenScreen(
                     println("Selected method = $method")
                 }
             )
-        }
-
-        composable(CanteenScreen.PayByCard.name) {
-            PayByCard(
-                viewModel = cardDetailViewModel,
-                onBack = { navController.popBackStack() }
-            )
-        }
+        }*/
 
     }
 }

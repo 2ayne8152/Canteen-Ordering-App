@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,8 +56,7 @@ import androidx.compose.ui.graphics.Color
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PayByCard(
-    onBack: () -> Unit = {},
-    viewModel: CardDetailViewModel
+    onValidityChange: (Boolean) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -79,252 +79,150 @@ fun PayByCard(
 
     val isValid = !isExpiryError && !isCardNumberError && !isCVVError && cardHolder.isNotBlank() && cardNumber.text.isNotEmpty() && expiry.text.isNotEmpty() && cvv.text.isNotEmpty()
 
+    LaunchedEffect(isValid) {
+        onValidityChange(isValid)
+    }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Add credit or debit card") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) {
+                focusManager.clearFocus()
+            }
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxWidth()
+        ) {
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                text = "Card Detail",
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 25.sp, color = Color.Black
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Card Number Input
+
+            OutlinedTextField(
+                value = cardNumber,
+                onValueChange = { newValue ->
+
+                    val digits = newValue.text.filter(Char::isDigit).take(16)
+                    val formatted = digits.chunked(4).joinToString(" ")
+
+                    // place cursor at end safely
+                    cardNumber = newValue.copy(
+                        text = formatted,
+                        selection = TextRange(formatted.length)
+                    )
+
+                    if (digits.length == 16) {
+                        isCardNumberError = !isValidCardNumber(cardNumber.text)
+                    } else {
+                        // don't show error while typing
+                        isCardNumberError = false
                     }
                 },
-                modifier = Modifier.shadow(6.dp)
-            )
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    focusManager.clearFocus()
-                }
-        ) {
-            Column(
+                label = { Text("Card number", color = Color.Black) },
+                placeholder = { Text(text = "1234 5678 9012 3456", color = middleGray) },
                 modifier = Modifier
-                    .padding(padding)
-                    .padding(16.dp)
                     .fillMaxWidth()
+                    .onFocusChanged { focusState ->
+                        if (!focusState.isFocused && hasFocusOnCard) {
+                            // Validation happens ONLY after user had focus before
+                            isCardNumberError = !isValidCardNumber(cardNumber.text)
+                        }
+                        hasFocusOnCard = focusState.isFocused
+                    },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                isError = isCardNumberError,
+                trailingIcon = {
+                    if (hasFocusOnCard && cardNumber.text.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                cardNumber = TextFieldValue("")
+                                isCardNumberError = false
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Clear,
+                                contentDescription = "Clear"
+                            )
+                        }
+                    }
+                }
+            )
+            if (isCardNumberError) {
+                Text(
+                    "Invalid card number",
+                    color = lightRed,
+                    fontSize = 12.sp
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // MM/YY + CVV Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
-                Text(
-                    text = "Card Detail",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = 25.sp, color = Color.Black
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                var showTrailingIcon by remember { mutableStateOf(false) }
-
-                // Card Number Input
-
                 OutlinedTextField(
-                    value = cardNumber,
-                    onValueChange = { newValue ->
+                    value = expiry,
+                    onValueChange = { input ->
+                        val digits = input.text.filter(Char::isDigit).take(4)
+                        val formatted = digits.chunked(2).joinToString("/")
 
-                        val digits = newValue.text.filter(Char::isDigit).take(16)
-                        val formatted = digits.chunked(4).joinToString(" ")
-
-                        // place cursor at end safely
-                        cardNumber = newValue.copy(
+                        expiry = input.copy(
                             text = formatted,
                             selection = TextRange(formatted.length)
                         )
 
-                        if (digits.length == 16) {
-                            isCardNumberError = !isValidCardNumber(cardNumber.text)
+                        if (digits.length == 4) {
+                            isExpiryError = !isValidExpiry(expiry.text)
                         } else {
                             // don't show error while typing
-                            isCardNumberError = false
+                            isExpiryError = false
                         }
                     },
-                    label = { Text("Card number", color = Color.Black) },
-                    placeholder = { Text(text = "1234 5678 9012 3456", color = middleGray) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { focusState ->
-                            if (!focusState.isFocused && hasFocusOnCard) {
-                                // Validation happens ONLY after user had focus before
-                                isCardNumberError = !isValidCardNumber(cardNumber.text)
-                            }
-                            hasFocusOnCard = focusState.isFocused
-                        },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    isError = isCardNumberError,
-                    trailingIcon = {
-                        if (hasFocusOnCard && cardNumber.text.isNotEmpty()) {
-                            IconButton(
-                                onClick = {
-                                    cardNumber = TextFieldValue("")
-                                    isCardNumberError = false
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Clear,
-                                    contentDescription = "Clear"
-                                )
-                            }
+                    label = { Text("Expiry Date", color = Color.Black) },
+                    placeholder = { Text(text = "MM/YY", color = middleGray) },
+                    modifier = Modifier.weight(1f).onFocusChanged { focusState ->
+                        if (!focusState.isFocused && hasFocusOnExpiry) {
+                            // Validation happens ONLY after user had focus before
+                            isExpiryError = !isValidExpiry(expiry.text)
                         }
-                    }
-                )
-                if (isCardNumberError) {
-                    Text(
-                        "Invalid card number",
-                        color = lightRed,
-                        fontSize = 12.sp
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // MM/YY + CVV Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-
-                    OutlinedTextField(
-                        value = expiry,
-                        onValueChange = { input ->
-                            val digits = input.text.filter(Char::isDigit).take(4)
-                            val formatted = digits.chunked(2).joinToString("/")
-
-                            expiry = input.copy(
-                                text = formatted,
-                                selection = TextRange(formatted.length)
-                            )
-
-                            if (digits.length == 4) {
-                                isExpiryError = !isValidExpiry(expiry.text)
-                            } else {
-                                // don't show error while typing
-                                isExpiryError = false
-                            }
-                        },
-                        label = { Text("Expiry Date", color = Color.Black) },
-                        placeholder = { Text(text = "MM/YY", color = middleGray) },
-                        modifier = Modifier.weight(1f).onFocusChanged { focusState ->
-                            if (!focusState.isFocused && hasFocusOnExpiry) {
-                                // Validation happens ONLY after user had focus before
-                                isExpiryError = !isValidExpiry(expiry.text)
-                            }
-                            hasFocusOnExpiry = focusState.isFocused
-                        },
-                        keyboardOptions = KeyboardOptions.Default.copy(
-                            keyboardType = KeyboardType.Number
-                        ),
-                        singleLine = true,
-                        isError = isExpiryError,
-                        supportingText = {
-                            if (isExpiryError) {
-                                Text(
-                                    "Invalid or expired date",
-                                    color = lightRed,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        },
-                        trailingIcon = {
-                            if (hasFocusOnExpiry && expiry.text.isNotEmpty()) {
-                                IconButton(
-                                    onClick = {
-                                        expiry = TextFieldValue("")
-                                        isExpiryError = false
-                                    }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Clear,
-                                        contentDescription = "Clear"
-                                    )
-                                }
-                            }
-                        }
-                    )
-
-                    OutlinedTextField(
-                        value = cvv,
-                        onValueChange = { newInput ->
-
-                            val digits = newInput.text.filter(Char::isDigit).take(3)
-
-                            // place cursor at end safely
-                            cvv = newInput.copy(
-                                text = digits,
-                                selection = TextRange(digits.length)
-                            )
-
-                            if (digits.length == 3) {
-                                isCVVError = !isValidCVV(cvv.text)
-                            } else {
-                                // don't show error while typing
-                                isCVVError = false
-                            }
-                        },
-                        label = { Text("CVV", color = Color.Black) },
-                        placeholder = { Text(text = "123", color = middleGray) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .onFocusChanged { focusState ->
-                            if (!focusState.isFocused && hasFocusOnCVV) {
-                                // Validation happens ONLY after user had focus before
-                                isCVVError = !isValidCVV(cvv.text)
-                            }
-                            hasFocusOnCVV = focusState.isFocused
-                        },
-                        keyboardOptions = KeyboardOptions.Default.copy(
-                            keyboardType = KeyboardType.Number
-                        ),
-                        singleLine = true,
-                        isError = isCVVError,
-                        supportingText = {
-                            if (isCVVError) {
-                                Text(
-                                    "Invalid CVV format",
-                                    color = lightRed,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        },
-                        trailingIcon = {
-                            if (hasFocusOnCVV && cvv.text.isNotEmpty()) {
-                                IconButton(
-                                    onClick = {
-                                        cvv = TextFieldValue("")
-                                        isCVVError = false
-                                    }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Clear,
-                                        contentDescription = "Clear"
-                                    )
-                                }
-                            }
-                        }
-                    )
-
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Card Holder Name
-                OutlinedTextField(
-                    value = cardHolder,
-                    onValueChange = { cardHolder = it },
-                    label = { Text("Card holder name", color = Color.Black) },
-                    modifier = Modifier.fillMaxWidth().onFocusChanged{ focusState ->
-                        if (focusState.isFocused) {
-                            hasTouchedHolder = true
-                        }
-                        hasFocusOnHolder = focusState.isFocused
+                        hasFocusOnExpiry = focusState.isFocused
                     },
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Number
+                    ),
                     singleLine = true,
+                    isError = isExpiryError,
+                    supportingText = {
+                        if (isExpiryError) {
+                            Text(
+                                "Invalid or expired date",
+                                color = lightRed,
+                                fontSize = 12.sp
+                            )
+                        }
+                    },
                     trailingIcon = {
-                        if (cardHolder.isNotEmpty() && hasFocusOnHolder) {
+                        if (hasFocusOnExpiry && expiry.text.isNotEmpty()) {
                             IconButton(
                                 onClick = {
-                                    cardHolder = ""
+                                    expiry = TextFieldValue("")
+                                    isExpiryError = false
                                 }) {
                                 Icon(
                                     imageVector = Icons.Filled.Clear,
@@ -332,42 +230,108 @@ fun PayByCard(
                                 )
                             }
                         }
+                    }
+                )
+
+                OutlinedTextField(
+                    value = cvv,
+                    onValueChange = { newInput ->
+
+                        val digits = newInput.text.filter(Char::isDigit).take(3)
+
+                        // place cursor at end safely
+                        cvv = newInput.copy(
+                            text = digits,
+                            selection = TextRange(digits.length)
+                        )
+
+                        if (digits.length == 3) {
+                            isCVVError = !isValidCVV(cvv.text)
+                        } else {
+                            // don't show error while typing
+                            isCVVError = false
+                        }
                     },
+                    label = { Text("CVV", color = Color.Black) },
+                    placeholder = { Text(text = "123", color = middleGray) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { focusState ->
+                        if (!focusState.isFocused && hasFocusOnCVV) {
+                            // Validation happens ONLY after user had focus before
+                            isCVVError = !isValidCVV(cvv.text)
+                        }
+                        hasFocusOnCVV = focusState.isFocused
+                    },
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Number
+                    ),
+                    singleLine = true,
+                    isError = isCVVError,
                     supportingText = {
-                        if (cardHolder.isEmpty() && hasTouchedHolder) {
+                        if (isCVVError) {
                             Text(
-                                "Cannot be empty",
+                                "Invalid CVV format",
                                 color = lightRed,
                                 fontSize = 12.sp
                             )
                         }
+                    },
+                    trailingIcon = {
+                        if (hasFocusOnCVV && cvv.text.isNotEmpty()) {
+                            IconButton(
+                                onClick = {
+                                    cvv = TextFieldValue("")
+                                    isCVVError = false
+                                }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Clear,
+                                    contentDescription = "Clear"
+                                )
+                            }
+                        }
                     }
                 )
 
-                Spacer(Modifier.height(24.dp))
-
-                // Done Button
-                Button(
-                    shape = RoundedCornerShape(8.dp),
-                    onClick = {
-                        val card = CardDetail(
-                            maskedCard = cardNumber.text.substring(15),
-                            expiry = expiry.text,
-                            CVV = cvv.text
-                        )
-                        viewModel.saveCard(card)   // <-- SAVE TO VIEWMODEL
-
-                        onBack()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    elevation = ButtonDefaults.buttonElevation(8.dp),
-                    enabled = isValid
-                ) {
-                    Text("Done", color = Color.Black)
-                }
             }
+
+            Spacer(Modifier.height(4.dp))
+
+            // Card Holder Name
+            OutlinedTextField(
+                value = cardHolder,
+                onValueChange = { cardHolder = it },
+                label = { Text("Card holder name", color = Color.Black) },
+                modifier = Modifier.fillMaxWidth().onFocusChanged{ focusState ->
+                    if (focusState.isFocused) {
+                        hasTouchedHolder = true
+                    }
+                    hasFocusOnHolder = focusState.isFocused
+                },
+                singleLine = true,
+                trailingIcon = {
+                    if (cardHolder.isNotEmpty() && hasFocusOnHolder) {
+                        IconButton(
+                            onClick = {
+                                cardHolder = ""
+                            }) {
+                            Icon(
+                                imageVector = Icons.Filled.Clear,
+                                contentDescription = "Clear"
+                            )
+                        }
+                    }
+                },
+                supportingText = {
+                    if (cardHolder.isEmpty() && hasTouchedHolder) {
+                        Text(
+                            "Cannot be empty",
+                            color = lightRed,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            )
         }
     }
 }
@@ -407,6 +371,6 @@ fun isValidExpiry(expiry: String): Boolean {
 @Composable
 fun GreetingPreview() {
     CanteenTheme {
-        PayByCard(viewModel =  viewModel())
+        //PayByCard()
     }
 }

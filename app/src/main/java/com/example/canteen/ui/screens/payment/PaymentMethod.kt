@@ -61,25 +61,21 @@ import com.example.canteen.viewmodel.payment.PaymentMethodViewModel
 import kotlin.math.sin
 import androidx.compose.ui.graphics.Color
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PaymentMethod(
-    cardDetailViewModel: CardDetailViewModel,
     paymentMethodViewModel: PaymentMethodViewModel = viewModel(),
     phoneNumber: String,
-    savedCard: String? = null,          // <-- ONLY ONE CARD
-    onCardSelected: () -> Unit = {},  // Navigate to Card Detail Page
-    onMethodSelected: (String?) -> Unit
+    onMethodSelected: (String?) -> Unit,
+    onCardValidityChange: (Boolean) -> Unit
 ) {
-    //val savedCard by cardDetailViewModel.savedCard.collectAsState()
-    //var selectedMethod by remember { mutableStateOf<String?>(null) }
-    //var phoneNumber by remember { mutableStateOf("") }
     val selectedMethod = paymentMethodViewModel.selectedMethod.value
 
-    Column(modifier = Modifier.padding(16.dp)) {
-
+    Column(modifier = Modifier.padding(8.dp)) {
         Text(
-            "Select Payment Method",
-            style = MaterialTheme.typography.titleMedium
+            text = "Select Payment Method",
+            style = MaterialTheme.typography.titleMedium,
+            fontSize = 25.sp, color = Color.Black
         )
 
         Spacer(Modifier.height(12.dp))
@@ -97,82 +93,8 @@ fun PaymentMethod(
             }
         )
 
-        AnimatedVisibility(visible = selectedMethod == "Card") {
-            Column(modifier = Modifier.padding(start = 12.dp, top = 10.dp)) {
 
-                // Show saved card if exists
-                if (savedCard != null) {
-
-                    Text("Saved Card", fontWeight = FontWeight.Bold, color = Color.Black)
-                    Spacer(Modifier.height(8.dp))
-
-                    // Example UI for saved card
-                    Card(
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = lightBlue
-                        )
-                    ) {
-                        Column(
-                            Modifier
-                                .padding(12.dp)
-                                .fillMaxWidth()
-                        ) {
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-
-                                // LEFT SECTION: Icon + Card Number
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.CheckBox,
-                                        contentDescription = null, tint = Color.Black
-                                    )
-
-                                    Spacer(Modifier.width(10.dp))
-
-                                    Text(
-                                        text = "Visa ending $savedCard",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.SemiBold, color = Color.Black
-                                    )
-                                }
-
-                                // RIGHT SECTION: Delete Button
-                                Button(
-                                    shape = RoundedCornerShape(8.dp),
-                                    onClick = {cardDetailViewModel.deleteCard()},
-                                    elevation = ButtonDefaults.buttonElevation(8.dp)
-                                ) {
-                                    Text("Delete", color = Color.Black)
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // No saved card → Allow user to add one
-                    Text("No saved card found.", color = Color.Black)
-                    Spacer(Modifier.height(12.dp))
-
-                    Button(
-                        onClick = {
-                            onCardSelected() }, // navigate
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = ButtonDefaults.buttonElevation(8.dp)
-                    ) {
-                        Text("Add New Card", color = Color.Black)
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
         // ------------------- E-WALLET -------------------
         PaymentOptionCard(
@@ -186,23 +108,26 @@ fun PaymentMethod(
                 onMethodSelected(newMethod)
             }
         )
+        AnimatedVisibility(visible = selectedMethod == "Card") {
+            PayByCard(
+                onValidityChange = onCardValidityChange
+            )
+        }
 
         // Expand section for E-Wallet
         AnimatedVisibility(visible = selectedMethod == "E-wallet") {
-            /*val isValid = remember(phoneNumber) { isValidPhoneNumber(phoneNumber) }
-            val showError = phoneNumber.isNotEmpty() && !isValid
-            var showTrailingIcon by remember { mutableStateOf(false) }
-
-            LaunchedEffect(phoneNumber) {
-                showTrailingIcon = phoneNumber.isNotEmpty()
-            }*/
-
             Column(modifier = Modifier.padding(top = 12.dp)) {
                 val formattedNumber = "${phoneNumber.substring(0, 3)}-${phoneNumber.substring(3, 6)} ${phoneNumber.substring(6)}"
 
-                Text("E-Wallet Phone Number", color = Color.Black)
+                Spacer(Modifier.height(20.dp))
 
-                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "  E-Wallet Phone Number",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 22.sp, color = Color.Black
+                )
+
+                Spacer(Modifier.height(12.dp))
 
                 Card(
                     shape = RoundedCornerShape(12.dp),
@@ -224,47 +149,10 @@ fun PaymentMethod(
                         }
                     }
                 }
-
-                /*OutlinedTextField(
-                    value = phoneNumber,
-                    onValueChange = { phoneNumber = it },
-                    placeholder = { Text("0123456789") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    isError = showError,
-                    singleLine = true,
-                    supportingText = {
-                        if (showError) {
-                            Text(
-                                text = "Invalid phone number format",
-                                color = lightRed,
-                                fontSize = 13.sp,
-                                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                            )
-                        }
-                    },
-                    trailingIcon = {
-                        if (showTrailingIcon) {
-                            IconButton(onClick = { phoneNumber = "" }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Clear,
-                                    contentDescription = "Clear"
-                                )
-                            }
-                        }
-                    }
-                )*/
+                Spacer(Modifier.height(8.dp))
             }
         }
     }
-}
-
-fun isValidPhoneNumber(number: String): Boolean {
-    val malaysiaRegex = Regex("^01[0-9]{8,9}$")
-
-    return malaysiaRegex.matches(number)
 }
 
 @Composable
