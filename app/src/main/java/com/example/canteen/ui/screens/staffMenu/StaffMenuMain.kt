@@ -38,7 +38,8 @@ val categories = listOf("All", "Chicken Rice", "Curry Mee", "Tomyam Maggi")
 // ===========================================================
 @Composable
 fun StaffDashboardScreen(
-    onNavigateToReports: () -> Unit = {}
+    onNavigateToReports: () -> Unit = {},
+    onNavigateToOrdersAnalytics: () -> Unit = {}
 ) {
     var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
@@ -92,7 +93,7 @@ fun StaffDashboardScreen(
                 icon = Icons.Default.ShoppingCart,
                 backgroundColor = Color(0xFF2196F3),
                 modifier = Modifier.weight(1f),
-                onClick = { /* TODO: Navigate to orders */ }
+                onClick = { onNavigateToOrdersAnalytics() }  // Changed from empty comment to actual navigation
             )
         }
 

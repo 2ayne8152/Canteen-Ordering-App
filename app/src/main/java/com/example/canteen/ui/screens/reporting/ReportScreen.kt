@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -28,6 +29,8 @@ import java.util.*
 import com.example.canteen.viewmodel.reporting.UiState
 import com.example.canteen.viewmodel.reporting.ReportViewModel
 import androidx.compose.ui.tooling.preview.Preview
+import kotlin.math.cos
+import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -254,8 +257,9 @@ fun ReportScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Trend Chart
+                        // Charts Section
                         if (state.data.trendData.isNotEmpty()) {
+                            // Chart 1: Revenue Trend
                             ChartCard(
                                 title = "Revenue Trend"
                             ) {
@@ -270,15 +274,34 @@ fun ReportScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Volume Chart
+                            // Chart 2: Payment Methods Breakdown
+                            if (state.data.paymentMethodData.isNotEmpty()) {
+                                ChartCard(
+                                    title = "Payment Methods"
+                                ) {
+                                    PaymentMethodChart(
+                                        data = state.data.paymentMethodData,
+                                        currencyFormatter = currencyFormatter,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(250.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            // Chart 3: Average Transaction Value
                             ChartCard(
-                                title = "Revenue Volume"
+                                title = "Average Transaction Value"
                             ) {
-                                AreaChart(
-                                    dataPoints = state.data.volumeData,
+                                BarChart(
+                                    dataPoints = state.data.averageTransactionData,
+                                    labels = state.data.trendLabels,
+                                    currencyFormatter = currencyFormatter,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(180.dp)
+                                        .height(200.dp)
                                 )
                             }
                         } else {
@@ -491,26 +514,103 @@ fun LineChart(
             style = Stroke(width = 3f)
         )
 
-        // Draw labels
+        // Draw labels (show every nth label to avoid crowding)
+        val labelStep = (labels.size / 6).coerceAtLeast(1)
         labels.forEachIndexed { index, label ->
-            val x = padding + (chartWidth * index / (labels.size - 1).coerceAtLeast(1))
-            drawContext.canvas.nativeCanvas.drawText(
-                label,
-                x,
-                height - padding / 4,
-                android.graphics.Paint().apply {
-                    color = android.graphics.Color.GRAY
-                    textSize = 28f
-                    textAlign = android.graphics.Paint.Align.CENTER
-                }
-            )
+            if (index % labelStep == 0 || index == labels.size - 1) {
+                val x = padding + (chartWidth * index / (labels.size - 1).coerceAtLeast(1))
+                drawContext.canvas.nativeCanvas.drawText(
+                    label,
+                    x,
+                    height - padding / 4,
+                    android.graphics.Paint().apply {
+                        color = android.graphics.Color.GRAY
+                        textSize = 24f
+                        textAlign = android.graphics.Paint.Align.CENTER
+                    }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun AreaChart(
+fun PaymentMethodChart(
+    data: Map<String, Double>,
+    currencyFormatter: NumberFormat,
+    modifier: Modifier = Modifier
+) {
+    val colors = listOf(
+        Color(0xFF6366F1), // Indigo
+        Color(0xFF10B981), // Green
+        Color(0xFFF59E0B), // Amber
+        Color(0xFFEF4444), // Red
+        Color(0xFF8B5CF6), // Purple
+        Color(0xFF06B6D4)  // Cyan
+    )
+
+    Canvas(modifier = modifier) {
+        if (data.isEmpty()) return@Canvas
+
+        val total = data.values.sum()
+        if (total == 0.0) return@Canvas
+
+        val centerX = size.width / 2
+        val centerY = size.height / 2
+        val radius = minOf(centerX, centerY) * 0.6f
+
+        var startAngle = -90f
+        data.entries.forEachIndexed { index, (method, amount) ->
+            val sweepAngle = ((amount / total) * 360).toFloat()
+            val color = colors[index % colors.size]
+
+            // Draw pie slice
+            drawArc(
+                color = color,
+                startAngle = startAngle,
+                sweepAngle = sweepAngle,
+                useCenter = true,
+                topLeft = Offset(centerX - radius, centerY - radius),
+                size = Size(radius * 2, radius * 2)
+            )
+
+            startAngle += sweepAngle
+        }
+
+        // Draw legend
+        var legendY = 20f
+        data.entries.forEachIndexed { index, (method, amount) ->
+            val color = colors[index % colors.size]
+            val percentage = (amount / total * 100).toInt()
+
+            // Draw color box
+            drawRect(
+                color = color,
+                topLeft = Offset(size.width - 180f, legendY),
+                size = Size(20f, 20f)
+            )
+
+            // Draw text
+            drawContext.canvas.nativeCanvas.drawText(
+                "$method ($percentage%)",
+                size.width - 150f,
+                legendY + 15f,
+                android.graphics.Paint().apply {
+                    this.color = android.graphics.Color.DKGRAY
+                    textSize = 32f
+                }
+            )
+
+            legendY += 35f
+        }
+    }
+}
+
+@Composable
+fun BarChart(
     dataPoints: List<Float>,
+    labels: List<String>,
+    currencyFormatter: NumberFormat,
     modifier: Modifier = Modifier
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -525,51 +625,39 @@ fun AreaChart(
         val chartHeight = height - padding * 2
 
         val maxValue = dataPoints.maxOrNull() ?: 1f
-        val minValue = 0f
-        val range = if (maxValue > 0) maxValue else 1f
+        val barWidth = chartWidth / dataPoints.size * 0.7f
+        val spacing = chartWidth / dataPoints.size * 0.3f
 
-        // Create area path
-        val path = Path()
+        // Draw bars
         dataPoints.forEachIndexed { index, value ->
-            val x = padding + (chartWidth * index / (dataPoints.size - 1).coerceAtLeast(1))
-            val y = padding + chartHeight - ((value - minValue) / range * chartHeight)
+            val barHeight = if (maxValue > 0) (value / maxValue) * chartHeight else 0f
+            val x = padding + (index * (barWidth + spacing))
+            val y = padding + chartHeight - barHeight
 
-            if (index == 0) {
-                path.moveTo(x, padding + chartHeight)
-                path.lineTo(x, y)
-            } else {
-                path.lineTo(x, y)
-            }
+            drawRect(
+                color = primaryColor,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barHeight)
+            )
         }
 
-        // Complete the area path
-        path.lineTo(width - padding, padding + chartHeight)
-        path.close()
-
-        // Draw filled area
-        drawPath(
-            path = path,
-            color = primaryColor.copy(alpha = 0.3f)
-        )
-
-        // Draw line on top
-        val linePath = Path()
-        dataPoints.forEachIndexed { index, value ->
-            val x = padding + (chartWidth * index / (dataPoints.size - 1).coerceAtLeast(1))
-            val y = padding + chartHeight - ((value - minValue) / range * chartHeight)
-
-            if (index == 0) {
-                linePath.moveTo(x, y)
-            } else {
-                linePath.lineTo(x, y)
+        // Draw labels (show every nth label)
+        val labelStep = (labels.size / 6).coerceAtLeast(1)
+        labels.forEachIndexed { index, label ->
+            if (index % labelStep == 0 || index == labels.size - 1) {
+                val x = padding + (index * (barWidth + spacing)) + barWidth / 2
+                drawContext.canvas.nativeCanvas.drawText(
+                    label,
+                    x,
+                    height - padding / 4,
+                    android.graphics.Paint().apply {
+                        color = android.graphics.Color.GRAY
+                        textSize = 24f
+                        textAlign = android.graphics.Paint.Align.CENTER
+                    }
+                )
             }
         }
-
-        drawPath(
-            path = linePath,
-            color = primaryColor,
-            style = Stroke(width = 3f)
-        )
     }
 }
 

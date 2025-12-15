@@ -1,9 +1,8 @@
 package com.example.canteen.viewmodel.reporting
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.canteen.data.Receipt
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +20,9 @@ data class RevenueReportData(
     val averageSubtitle: String,
     val trendData: List<Float>,
     val trendLabels: List<String>,
-    val volumeData: List<Float>
+    val paymentMethodData: Map<String, Double>,
+    val averageTransactionData: List<Float>,
+    val transactionCountData: List<Int>
 )
 
 sealed class UiState<out T> {
@@ -30,7 +31,6 @@ sealed class UiState<out T> {
     data class Error(val message: String) : UiState<Nothing>()
 }
 
-// Data class to hold receipt with timestamp
 data class ReceiptWithTimestamp(
     val receiptID: String,
     val paymentDate: Date,
@@ -50,11 +50,13 @@ class ReportViewModel(
             _reportData.value = UiState.Loading
 
             try {
-                // Fetch receipts from Firebase
                 val receipts = fetchReceiptsFromFirebase()
+                Log.d("ReportViewModel", "Fetched ${receipts.size} receipts")
+
                 val data = calculateRevenueData(receipts, period, selectedDate)
                 _reportData.value = UiState.Success(data)
             } catch (e: Exception) {
+                Log.e("ReportViewModel", "Error loading data", e)
                 _reportData.value = UiState.Error(e.message ?: "Failed to load revenue data")
             }
         }
@@ -62,83 +64,119 @@ class ReportViewModel(
 
     private suspend fun fetchReceiptsFromFirebase(): List<ReceiptWithTimestamp> {
         return try {
-            val snapshot = firestore.collection("Receipt")
+            val snapshot = firestore.collection("receipt")
                 .get()
                 .await()
 
+            Log.d("ReportViewModel", "Total documents in receipt collection: ${snapshot.documents.size}")
+
             snapshot.documents.mapNotNull { document ->
                 try {
-                    val timestamp = document.getTimestamp("Payment_Date")
-                    val payAmount = document.getDouble("Pay_Amount") ?: 0.0
+                    var date: Date? = null
 
-                    if (timestamp != null && payAmount > 0) {
-                        ReceiptWithTimestamp(
-                            receiptID = document.getString("ReceiptID") ?: document.id,
-                            paymentDate = timestamp.toDate(),
-                            payAmount = payAmount,
-                            paymentMethod = document.getString("Payment_Method") ?: ""
-                        )
+                    // First try to get as Long (milliseconds) - this is what your DB stores
+                    val millis = document.getLong("payment_Date")
+                        ?: document.getLong("Payment_Date")
+                        ?: document.getLong("paymentDate")
+
+                    if (millis != null) {
+                        date = Date(millis)
+                        Log.d("ReportViewModel", "Parsed date from millis: $millis -> ${date}")
                     } else {
+                        // Fallback: Try to get timestamp (Firestore Timestamp object)
+                        val timestamp = document.getTimestamp("payment_Date")
+                            ?: document.getTimestamp("Payment_Date")
+                            ?: document.getTimestamp("paymentDate")
+
+                        if (timestamp != null) {
+                            date = timestamp.toDate()
+                        }
+                    }
+
+                    val payAmount = document.getDouble("pay_Amount")
+                        ?: document.getDouble("Pay_Amount")
+                        ?: document.getDouble("payAmount")
+                        ?: 0.0
+
+                    if (date != null && payAmount > 0) {
+                        val receipt = ReceiptWithTimestamp(
+                            receiptID = document.getString("receiptId")
+                                ?: document.getString("ReceiptID")
+                                ?: document.getString("receiptID")
+                                ?: document.getString("orderId")
+                                ?: document.getString("OrderID")
+                                ?: document.id,
+                            paymentDate = date,
+                            payAmount = payAmount,
+                            paymentMethod = document.getString("payment_Method")
+                                ?: document.getString("Payment_Method")
+                                ?: document.getString("paymentMethod")
+                                ?: ""
+                        )
+
+                        Log.d("ReportViewModel", "Receipt: ${receipt.receiptID}, Amount: ${receipt.payAmount}, Date: ${receipt.paymentDate}")
+                        receipt
+                    } else {
+                        Log.w("ReportViewModel", "Skipped document ${document.id}: date=$date, amount=$payAmount")
                         null
                     }
                 } catch (e: Exception) {
-                    null // Skip invalid documents
+                    Log.e("ReportViewModel", "Error parsing document ${document.id}", e)
+                    null
                 }
             }
         } catch (e: Exception) {
+            Log.e("ReportViewModel", "Error fetching receipts", e)
             throw Exception("Failed to fetch receipts: ${e.message}")
         }
     }
 
-    private fun calculateRevenueData(receipts: List<ReceiptWithTimestamp>, period: String, selectedDate: Calendar): RevenueReportData {
-        // Filter receipts based on period and selected date
+    private fun calculateRevenueData(
+        receipts: List<ReceiptWithTimestamp>,
+        period: String,
+        selectedDate: Calendar
+    ): RevenueReportData {
+        Log.d("ReportViewModel", "Calculating for period: $period, date: ${selectedDate.time}")
+
         val filteredReceipts = receipts.filter { receipt ->
             isWithinPeriod(receipt.paymentDate, selectedDate.time, period)
         }
 
-        // Calculate total revenue
-        val totalRevenue = filteredReceipts.sumOf { it.payAmount }
+        Log.d("ReportViewModel", "Filtered receipts: ${filteredReceipts.size}")
 
-        // Calculate previous period revenue for comparison
+        val totalRevenue = filteredReceipts.sumOf { it.payAmount }
+        Log.d("ReportViewModel", "Total revenue: $totalRevenue")
+
         val previousPeriodReceipts = receipts.filter { receipt ->
             isWithinPreviousPeriod(receipt.paymentDate, selectedDate.time, period)
         }
         val previousRevenue = previousPeriodReceipts.sumOf { it.payAmount }
 
-        // Calculate percentage change
         val revenueChange = if (previousRevenue > 0) {
             ((totalRevenue - previousRevenue) / previousRevenue) * 100
         } else if (totalRevenue > 0) {
-            100.0 // If no previous revenue but current revenue exists, show 100% increase
+            100.0
         } else {
             0.0
         }
 
-        // Group data by time periods and calculate trend
-        val (trendData, trendLabels, volumeData) = calculateTrendData(
+        val (trendData, trendLabels, paymentMethodData, averageTransactionData, transactionCountData) = calculateTrendData(
             filteredReceipts,
-            period
+            period,
+            selectedDate
         )
 
-        // Calculate average
-        val divisor = when (period) {
-            "Daily" -> 7
-            "Weekly" -> 4
-            "Monthly" -> 12
-            "Yearly" -> 5
-            else -> 1
-        }
         val average = if (trendData.isNotEmpty()) {
             trendData.average()
         } else {
-            totalRevenue / divisor
+            0.0
         }
 
         val averageSubtitle = when (period) {
-            "Daily" -> "Per day"
-            "Weekly" -> "Per week"
-            "Monthly" -> "Per month"
-            "Yearly" -> "Per year"
+            "Daily" -> "Per hour"
+            "Weekly" -> "Per day"
+            "Monthly" -> "Per day"
+            "Yearly" -> "Per month"
             else -> "Per period"
         }
 
@@ -150,114 +188,166 @@ class ReportViewModel(
             averageSubtitle = averageSubtitle,
             trendData = trendData,
             trendLabels = trendLabels,
-            volumeData = volumeData
+            paymentMethodData = paymentMethodData,
+            averageTransactionData = averageTransactionData,
+            transactionCountData = transactionCountData
         )
     }
 
     private fun isWithinPeriod(date: Date, selectedDate: Date, period: String): Boolean {
-        val cal = Calendar.getInstance()
-        cal.time = selectedDate
+        val cal = Calendar.getInstance().apply { time = selectedDate }
+        val dateCal = Calendar.getInstance().apply { time = date }
 
-        when (period) {
+        val result = when (period) {
             "Daily" -> {
-                // Check if date is on the same day as selectedDate
-                val dateCal = Calendar.getInstance().apply { time = date }
-                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
+                cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
                         cal.get(Calendar.DAY_OF_YEAR) == dateCal.get(Calendar.DAY_OF_YEAR)
             }
             "Weekly" -> {
-                // Check if date is in the same week as selectedDate
                 cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
+                cal.set(Calendar.HOUR_OF_DAY, 0)
+                cal.set(Calendar.MINUTE, 0)
+                cal.set(Calendar.SECOND, 0)
                 val weekStart = cal.time
-                cal.add(Calendar.DAY_OF_YEAR, 6)
+
+                cal.add(Calendar.DAY_OF_YEAR, 7)
                 val weekEnd = cal.time
-                return (date.after(weekStart) || date == weekStart) &&
-                        (date.before(weekEnd) || date == weekEnd)
+
+                !date.before(weekStart) && date.before(weekEnd)
             }
             "Monthly" -> {
-                // Check if date is in the same month as selectedDate
-                val dateCal = Calendar.getInstance().apply { time = date }
-                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
+                cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
                         cal.get(Calendar.MONTH) == dateCal.get(Calendar.MONTH)
             }
             "Yearly" -> {
-                // Check if date is in the same year as selectedDate
-                val dateCal = Calendar.getInstance().apply { time = date }
-                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR)
+                cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR)
             }
+            else -> false
         }
 
-        return false
+        Log.d("ReportViewModel", "Date ${dateCal.time} within period? $result")
+        return result
     }
 
     private fun isWithinPreviousPeriod(date: Date, selectedDate: Date, period: String): Boolean {
-        val cal = Calendar.getInstance()
-        cal.time = selectedDate
+        val cal = Calendar.getInstance().apply { time = selectedDate }
 
         when (period) {
-            "Daily" -> {
-                cal.add(Calendar.DAY_OF_YEAR, -1)
-                val prevDay = cal.time
-                val dateCal = Calendar.getInstance().apply { time = date }
-                val prevCal = Calendar.getInstance().apply { time = prevDay }
-                return prevCal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
-                        prevCal.get(Calendar.DAY_OF_YEAR) == dateCal.get(Calendar.DAY_OF_YEAR)
-            }
-            "Weekly" -> {
-                cal.add(Calendar.WEEK_OF_YEAR, -1)
-                cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
-                val weekStart = cal.time
-                cal.add(Calendar.DAY_OF_YEAR, 6)
-                val weekEnd = cal.time
-                return (date.after(weekStart) || date == weekStart) &&
-                        (date.before(weekEnd) || date == weekEnd)
-            }
-            "Monthly" -> {
-                cal.add(Calendar.MONTH, -1)
-                val dateCal = Calendar.getInstance().apply { time = date }
-                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
-                        cal.get(Calendar.MONTH) == dateCal.get(Calendar.MONTH)
-            }
-            "Yearly" -> {
-                cal.add(Calendar.YEAR, -1)
-                val dateCal = Calendar.getInstance().apply { time = date }
-                return cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR)
-            }
+            "Daily" -> cal.add(Calendar.DAY_OF_YEAR, -1)
+            "Weekly" -> cal.add(Calendar.WEEK_OF_YEAR, -1)
+            "Monthly" -> cal.add(Calendar.MONTH, -1)
+            "Yearly" -> cal.add(Calendar.YEAR, -1)
         }
-        return false
+
+        return isWithinPeriod(date, cal.time, period)
     }
 
     private fun calculateTrendData(
         receipts: List<ReceiptWithTimestamp>,
-        period: String
-    ): Triple<List<Float>, List<String>, List<Float>> {
+        period: String,
+        selectedDate: Calendar
+    ): Tuple5<List<Float>, List<String>, Map<String, Double>, List<Float>, List<Int>> {
         if (receipts.isEmpty()) {
-            return Triple(emptyList(), emptyList(), emptyList())
+            return Tuple5(emptyList(), emptyList(), emptyMap(), emptyList(), emptyList())
         }
 
         val groupedData = mutableMapOf<String, Double>()
-        val labelFormat = when (period) {
-            "Daily" -> SimpleDateFormat("EEE", Locale.getDefault()) // Mon, Tue, etc.
-            "Weekly" -> SimpleDateFormat("'W'w", Locale.getDefault()) // W1, W2, etc.
-            "Monthly" -> SimpleDateFormat("MMM", Locale.getDefault()) // Jan, Feb, etc.
-            "Yearly" -> SimpleDateFormat("yyyy", Locale.getDefault()) // 2020, 2021, etc.
-            else -> SimpleDateFormat("MMM dd", Locale.getDefault())
-        }
+        val groupedVolume = mutableMapOf<String, Int>()
+        val sortOrder = mutableMapOf<String, Long>()
 
+        // Calculate payment method breakdown
+        val paymentMethodTotals = mutableMapOf<String, Double>()
         receipts.forEach { receipt ->
-            val label = labelFormat.format(receipt.paymentDate)
-            groupedData[label] = groupedData.getOrDefault(label, 0.0) + receipt.payAmount
+            val method = receipt.paymentMethod.ifEmpty { "Unknown" }
+            paymentMethodTotals[method] = paymentMethodTotals.getOrDefault(method, 0.0) + receipt.payAmount
         }
 
-        // Sort by date
-        val sortedEntries = groupedData.entries.sortedBy { entry ->
-            receipts.find { labelFormat.format(it.paymentDate) == entry.key }?.paymentDate?.time ?: 0L
+        when (period) {
+            "Daily" -> {
+                for (i in 0..23) {
+                    val label = String.format("%02d:00", i)
+                    groupedData[label] = 0.0
+                    groupedVolume[label] = 0
+                    sortOrder[label] = i.toLong()
+                }
+
+                receipts.forEach { receipt ->
+                    val cal = Calendar.getInstance().apply { time = receipt.paymentDate }
+                    val hour = cal.get(Calendar.HOUR_OF_DAY)
+                    val label = String.format("%02d:00", hour)
+                    groupedData[label] = groupedData.getOrDefault(label, 0.0) + receipt.payAmount
+                    groupedVolume[label] = groupedVolume.getOrDefault(label, 0) + 1
+                }
+            }
+            "Weekly" -> {
+                val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+                daysOfWeek.forEachIndexed { index, day ->
+                    groupedData[day] = 0.0
+                    groupedVolume[day] = 0
+                    sortOrder[day] = index.toLong()
+                }
+
+                receipts.forEach { receipt ->
+                    val cal = Calendar.getInstance().apply { time = receipt.paymentDate }
+                    val dayIndex = cal.get(Calendar.DAY_OF_WEEK) - 1
+                    val label = daysOfWeek[dayIndex]
+                    groupedData[label] = groupedData.getOrDefault(label, 0.0) + receipt.payAmount
+                    groupedVolume[label] = groupedVolume.getOrDefault(label, 0) + 1
+                }
+            }
+            "Monthly" -> {
+                val cal = Calendar.getInstance().apply { time = selectedDate.time }
+                val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+                for (day in 1..daysInMonth) {
+                    val label = day.toString()
+                    groupedData[label] = 0.0
+                    groupedVolume[label] = 0
+                    sortOrder[label] = day.toLong()
+                }
+
+                receipts.forEach { receipt ->
+                    val receiptCal = Calendar.getInstance().apply { time = receipt.paymentDate }
+                    val day = receiptCal.get(Calendar.DAY_OF_MONTH)
+                    val label = day.toString()
+                    groupedData[label] = groupedData.getOrDefault(label, 0.0) + receipt.payAmount
+                    groupedVolume[label] = groupedVolume.getOrDefault(label, 0) + 1
+                }
+            }
+            "Yearly" -> {
+                val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+                months.forEachIndexed { index, month ->
+                    groupedData[month] = 0.0
+                    groupedVolume[month] = 0
+                    sortOrder[month] = index.toLong()
+                }
+
+                receipts.forEach { receipt ->
+                    val cal = Calendar.getInstance().apply { time = receipt.paymentDate }
+                    val monthIndex = cal.get(Calendar.MONTH)
+                    val label = months[monthIndex]
+                    groupedData[label] = groupedData.getOrDefault(label, 0.0) + receipt.payAmount
+                    groupedVolume[label] = groupedVolume.getOrDefault(label, 0) + 1
+                }
+            }
         }
 
+        val sortedEntries = groupedData.entries.sortedBy { sortOrder[it.key] ?: 0L }
         val trendData = sortedEntries.map { it.value.toFloat() }
         val labels = sortedEntries.map { it.key }
-        val volumeData = trendData.toList()
 
-        return Triple(trendData, labels, volumeData)
+        // Calculate average transaction value per time period
+        val averageTransactionData = sortedEntries.map { entry ->
+            val volume = groupedVolume[entry.key] ?: 0
+            if (volume > 0) (entry.value / volume).toFloat() else 0f
+        }
+
+        val transactionCountData = sortedEntries.map { groupedVolume[it.key] ?: 0 }
+
+        return Tuple5(trendData, labels, paymentMethodTotals, averageTransactionData, transactionCountData)
     }
 }
+
+// Helper class for returning 5 values
+data class Tuple5<A, B, C, D, E>(val first: A, val second: B, val third: C, val fourth: D, val fifth: E)
