@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,11 +26,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.canteen.data.MenuItem
 import com.example.canteen.data.menuItems
 import com.example.canteen.viewmodel.staffMenu.CategoryData
-import com.example.menumanagement.categories
 import com.example.canteen.viewmodel.staffMenu.Category
 import com.example.canteen.viewmodel.staffMenu.CategoryData.category
 
@@ -48,7 +52,7 @@ data class MenuItemEditable(
 // Main Menu List Page
 // -------------------------------
 @Composable
-fun MenuListPage() {
+fun MenuListPage(navController: NavController) {
     val beautifulFont = FontFamily.Serif
 
     // Wrap menuItems in a mutable state list to allow editing
@@ -71,7 +75,22 @@ fun MenuListPage() {
     ) {
         // Title
         item {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color(0xFF0D47A1)
+                    )
+                }
                 Text(
                     text = "Menu List",
                     fontSize = 28.sp,
@@ -304,5 +323,6 @@ fun SimpleDropdown(
 @Composable
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 fun MenuListPagePreview() {
-    MenuListPage()
+    val navController = rememberNavController()
+    MenuListPage(navController)
 }

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,22 +20,29 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.canteen.data.MenuItem
 import com.example.canteen.viewmodel.staffMenu.CategoryData
 
 @Composable
-fun MenuItemForm() {
+fun MenuItemForm(navController: NavController) {
 
     val categoryOptions = CategoryData.category.map { it.name }
 
+    // -------------------- States --------------------
+    var menuId by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var itemName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+
     var unitPrice by remember { mutableStateOf("") }
-    var availability by remember { mutableStateOf("Available") }
+    var quantity by remember { mutableStateOf("") }
+
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
-    val availabilityOptions = listOf("Available", "Unavailable")
+    var validationMessage by remember { mutableStateOf("") }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -46,7 +55,31 @@ fun MenuItemForm() {
             .verticalScroll(rememberScrollState())
     ) {
 
-        // CATEGORY DROPDOWN
+        // -------------------- BACK BUTTON --------------------
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // -------------------- MENU ID INPUT --------------------
+        TextField(
+            value = menuId,
+            onValueChange = { menuId = it },
+            label = { Text("Menu ID") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // -------------------- CATEGORY DROPDOWN --------------------
         Text("Category", fontSize = 16.sp)
         DropdownMenuWrapper(
             options = categoryOptions,
@@ -55,9 +88,9 @@ fun MenuItemForm() {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // ITEM NAME INPUT
+        // -------------------- ITEM NAME INPUT --------------------
         TextField(
             value = itemName,
             onValueChange = { itemName = it },
@@ -66,9 +99,9 @@ fun MenuItemForm() {
             shape = RoundedCornerShape(12.dp)
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // DESCRIPTION
+        // -------------------- DESCRIPTION INPUT --------------------
         TextField(
             value = description,
             onValueChange = { description = it },
@@ -80,32 +113,41 @@ fun MenuItemForm() {
             shape = RoundedCornerShape(12.dp)
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // PRICE + AVAILABILITY
+        // -------------------- PRICE + QUANTITY --------------------
         Row(modifier = Modifier.fillMaxWidth()) {
 
             TextField(
                 value = unitPrice,
-                onValueChange = { unitPrice = it },
+                onValueChange = { input ->
+                    if (input.isEmpty() || input.matches(Regex("^[0-9]*\\.?[0-9]*$"))) {
+                        unitPrice = input
+                    }
+                },
                 label = { Text("Unit Price") },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(Modifier.width(8.dp))
 
-            DropdownMenuWrapper(
-                options = availabilityOptions,
-                selectedOption = availability,
-                onOptionSelected = { availability = it },
-                modifier = Modifier.weight(1f)
+            TextField(
+                value = quantity,
+                onValueChange = { input ->
+                    if (input.isEmpty() || input.matches(Regex("^[0-9]+$"))) {
+                        quantity = input
+                    }
+                },
+                label = { Text("Quantity") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(Modifier.height(20.dp))
 
-        // IMAGE PICKER
+        // -------------------- IMAGE PICKER --------------------
         Button(
             onClick = { imagePickerLauncher.launch("image/*") },
             modifier = Modifier.align(Alignment.Start),
@@ -114,12 +156,10 @@ fun MenuItemForm() {
             Text("Upload Image")
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // =====================
-        // PREVIEW SECTION
-        // =====================
-        Text("Preview", fontSize = 18.sp, modifier = Modifier.padding(bottom = 8.dp))
+        // -------------------- PREVIEW --------------------
+        Text("Preview", fontSize = 18.sp)
 
         Card(
             modifier = Modifier
@@ -129,9 +169,9 @@ fun MenuItemForm() {
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
+
             Column(modifier = Modifier.padding(12.dp)) {
 
-                // IMAGE
                 Box(
                     modifier = Modifier
                         .height(150.dp)
@@ -151,25 +191,76 @@ fun MenuItemForm() {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // TEXT PREVIEW
-                PreviewTextRow(label = "Category", value = selectedCategory)
-                PreviewTextRow(label = "Name", value = itemName.ifEmpty { "Item Name" })
-                PreviewTextRow(label = "Description", value = description.ifEmpty { "Description" })
-                PreviewTextRow(label = "Price", value = "RM ${unitPrice.ifEmpty { "0.00" }}")
-                PreviewTextRow(label = "Status", value = availability)
+                PreviewTextRow("Menu ID", menuId.ifEmpty { "ID" })
+                PreviewTextRow("Category", selectedCategory)
+                PreviewTextRow("Name", itemName.ifEmpty { "Item Name" })
+                PreviewTextRow("Description", description.ifEmpty { "Description" })
+                PreviewTextRow("Price", "RM ${unitPrice.ifEmpty { "0.00" }}")
+                PreviewTextRow("Remaining Quantity", quantity.ifEmpty { "0" })
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // =====================
-        // SUBMIT BUTTON
-        // =====================
+        // -------------------- VALIDATION MESSAGE --------------------
+        if (validationMessage.isNotEmpty()) {
+            Text(
+                text = validationMessage,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+        }
+
+        // -------------------- SUBMIT BUTTON --------------------
         Button(
             onClick = {
-                // TODO: Add database save logic here
+
+                // -------- VALIDATION --------
+                val priceDouble = unitPrice.toDoubleOrNull()
+                val quantityInt = quantity.toIntOrNull()
+
+                when {
+                    menuId.isBlank() || itemName.isBlank() || description.isBlank() -> {
+                        validationMessage = "All text fields must be filled."
+                        return@Button
+                    }
+
+                    priceDouble == null -> {
+                        validationMessage = "Unit Price must be a valid number."
+                        return@Button
+                    }
+
+                    quantityInt == null -> {
+                        validationMessage = "Quantity must be an integer."
+                        return@Button
+                    }
+
+                    imageUri == null -> {
+                        validationMessage = "Please upload an image."
+                        return@Button
+                    }
+                }
+
+                // ----- CLEAR VALIDATION MESSAGE -----
+                validationMessage = ""
+
+                // ----- CREATE DATA CLASS OBJECT -----
+                val newMenuItem = MenuItem(
+                    menuId = menuId,
+                    categoryId = selectedCategory,
+                    imageRes = 0,  // or use default drawable if you want
+                    itemName = 0,  // if using string resource, else adjust type
+                    itemDesc = 0,  // if using string resource, else adjust type
+                    itemPrice = priceDouble,
+                    remainQuantity = quantityInt
+                )
+
+                // TODO: Save newMenuItem to database
+                println("New MenuItem created: $newMenuItem")
+
             },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1)),
             modifier = Modifier
@@ -179,12 +270,10 @@ fun MenuItemForm() {
         ) {
             Text("Submit", color = Color.White, fontSize = 16.sp)
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
-@Composable
+        @Composable
 fun PreviewTextRow(label: String, value: String) {
     Row(modifier = Modifier.padding(vertical = 2.dp)) {
         Text("$label: ", fontSize = 14.sp, color = Color.DarkGray)
@@ -201,15 +290,12 @@ fun DropdownMenuWrapper(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Box(modifier = modifier) {
-
+    Box(modifier) {
         OutlinedButton(
             onClick = { expanded = true },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(selectedOption)
-        }
+        ) { Text(selectedOption) }
 
         DropdownMenu(
             expanded = expanded,
@@ -231,5 +317,6 @@ fun DropdownMenuWrapper(
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun MenuItemFormPreview() {
-    MenuItemForm()
+    val navController = rememberNavController()
+    MenuItemForm(navController)
 }

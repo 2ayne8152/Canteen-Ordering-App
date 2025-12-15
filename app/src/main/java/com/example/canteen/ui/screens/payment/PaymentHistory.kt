@@ -1,16 +1,19 @@
 package com.example.canteen.ui.screens.payment
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -18,63 +21,65 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.example.canteen.data.PaymentRecord
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.canteen.ui.theme.CanteenTheme
-import com.example.canteen.ui.theme.gray
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.ui.theme.lightViolet
-import com.example.canteen.ui.theme.middleGray
-import com.example.canteen.ui.theme.veryLightBlue
-import com.example.canteen.ui.theme.veryLightViolet
+import com.example.canteen.data.Receipt
+import com.example.canteen.data.RefundRequest
+import com.example.canteen.viewmodel.payment.ReceiptViewModel
+import com.example.menumanagement.BottomNavigationBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentHistory(
-    onBack: () -> Unit = {}
+    navController: NavController,
+    receiptViewModel: ReceiptViewModel
 ) {
+    val allReceipt by receiptViewModel.receiptList.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
-    // Sample data
-    val payments = listOf(
-        PaymentRecord("R0001", "14:00\n12/6/2025", 15.00, "Credit Card", "-"),
-        PaymentRecord("R0002", "13:15\n12/6/2025", 10.20, "TNG", "Pending")
-    )
+    // Store which item is expanded
+    val expandedMap = remember { mutableStateMapOf<String, Boolean>() }
 
-    val filtered = payments.filter { it.id.contains(searchQuery, ignoreCase = true) }
+    val filteredList = allReceipt.filter { pair ->
+        val receipt = pair.first
+        receipt.receiptId.contains(searchQuery.trim(), ignoreCase = true)
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Payment History") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
+                modifier = Modifier.shadow(6.dp)
             )
-        }
+        },
+        bottomBar = { BottomNavigationBar(navController) }
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .padding(8.dp)
         ) {
-
+            Spacer(Modifier.height(6.dp))
             // -----------------------------------------------------
             // Search Bar
             // -----------------------------------------------------
@@ -82,47 +87,31 @@ fun PaymentHistory(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null)
+                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.Black)
                 },
-                placeholder = { Text("Search by Receipt ID") },
+                placeholder = { Text("Search by Receipt ID", color = Color.Black) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(lightViolet, shape = RoundedCornerShape(16))
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
 
-            // -----------------------------------------------------
-            // Table Container
-            // -----------------------------------------------------
-            Box(
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(lightBlue, RoundedCornerShape(12.dp))
+                    .fillMaxSize().padding(start = 12.dp, top = 2.dp, end = 12.dp)
             ) {
+                items(filteredList) { receipt ->
 
-                Column(modifier = Modifier.padding(4.dp)) {
+                    val expanded = expandedMap[receipt.first.receiptId] ?: false
 
-                    // ---------------- HEADER ROW ----------------
-                    Card(colors = CardDefaults.cardColors(
-                        containerColor = veryLightBlue)) {
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            TableHeader("ReceiptID", 0.18f)
-                            TableHeader(" Date", 0.22f)
-                            TableHeader("Amount", 0.18f)
-                            TableHeader("Method", 0.22f)
-                            TableHeader("Refund", 0.20f)
+                    PaymentHistoryCard(
+                        data = receipt,
+                        expanded = expanded,
+                        onClick = {
+                            expandedMap[receipt.first.receiptId] = !expanded
                         }
-                    }
-                    Divider(color = middleGray)
-
-                    Spacer(Modifier.height(8.dp))
-
-                    // ---------------- PAYMENT ROWS ----------------
-                    filtered.forEach {
-                        PaymentRow(record = it)
-                        Divider(color = gray.copy(alpha = 0.4f))
-                    }
+                    )
                 }
             }
         }
@@ -130,27 +119,57 @@ fun PaymentHistory(
 }
 
 @Composable
-fun RowScope.TableHeader(title: String, weight: Float) {
-    Text(
-        text = title,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier
-            .weight(weight)
-            .padding(4.dp) // optional
-    )
-}
+fun PaymentHistoryCard(
+    data: Pair<Receipt, RefundRequest?>,
+    expanded: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = lightBlue,
+        shadowElevation = 6.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clickable { onClick() }
+    ) {
+        val formatted = formatTime(data.first.payment_Date)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Receipt ID : ${data.first.receiptId.take(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text("${formatted}", color = Color.Black)
+            }
 
+            Spacer(Modifier.height(4.dp))
 
-@Composable
-fun PaymentRow(record: PaymentRecord) {
-    Row(modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 4.dp)) {
-        Text(record.id, modifier = Modifier.weight(0.18f))
-        Text(record.date, modifier = Modifier.weight(0.22f))
-        Text(String.format("%.2f", record.amount), modifier = Modifier.weight(0.18f))
-        Text(record.method, modifier = Modifier.weight(0.22f))
-        Text(record.refundStatus, modifier = Modifier.weight(0.20f))
+            Text("Order ID :  ${data.first.orderId}", color = Color.Black)
+            Text("Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}", color = Color.Black)
+            Text("Refund : ${data.second?.status ?: "None"}", color = Color.Black)
+            if (!expanded) {
+                Text(
+                    text = "Tap to view more",
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
+
+            // ▼▼▼ ONLY SHOW WHEN EXPANDED ▼▼▼
+            AnimatedVisibility(visible = expanded) {
+
+                Column {
+                    Spacer(Modifier.height(8.dp))
+                    Divider()
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Text("Payment Method : ${data.first.payment_Method}", color = Color.Black)
+                }
+            }
+        }
     }
 }
 
@@ -158,6 +177,6 @@ fun PaymentRow(record: PaymentRecord) {
 @Composable
 fun PaymentHistoryPreview() {
     CanteenTheme {
-        PaymentHistory()
+        //PaymentHistory(viewModel ())
     }
 }

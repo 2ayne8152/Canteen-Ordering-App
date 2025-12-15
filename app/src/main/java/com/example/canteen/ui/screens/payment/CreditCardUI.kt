@@ -29,7 +29,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,7 +40,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.substring
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,8 +47,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.middleGray
 import com.example.canteen.ui.theme.lightRed
-import com.example.canteen.viewmodel.payment.CardDetail
+import com.example.canteen.data.CardDetail
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
+import androidx.compose.ui.graphics.Color
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,7 +113,7 @@ fun PayByCard(
                 Text(
                     text = "Card Detail",
                     style = MaterialTheme.typography.titleMedium,
-                    fontSize = 25.sp
+                    fontSize = 25.sp, color = Color.Black
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -143,7 +142,7 @@ fun PayByCard(
                             isCardNumberError = false
                         }
                     },
-                    label = { Text("Card number") },
+                    label = { Text("Card number", color = Color.Black) },
                     placeholder = { Text(text = "1234 5678 9012 3456", color = middleGray) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -206,7 +205,7 @@ fun PayByCard(
                                 isExpiryError = false
                             }
                         },
-                        label = { Text("Expiry Date") },
+                        label = { Text("Expiry Date", color = Color.Black) },
                         placeholder = { Text(text = "MM/YY", color = middleGray) },
                         modifier = Modifier.weight(1f).onFocusChanged { focusState ->
                             if (!focusState.isFocused && hasFocusOnExpiry) {
@@ -264,7 +263,7 @@ fun PayByCard(
                                 isCVVError = false
                             }
                         },
-                        label = { Text("CVV") },
+                        label = { Text("CVV", color = Color.Black) },
                         placeholder = { Text(text = "123", color = middleGray) },
                         modifier = Modifier
                             .weight(1f)
@@ -313,7 +312,7 @@ fun PayByCard(
                 OutlinedTextField(
                     value = cardHolder,
                     onValueChange = { cardHolder = it },
-                    label = { Text("Card holder name") },
+                    label = { Text("Card holder name", color = Color.Black) },
                     modifier = Modifier.fillMaxWidth().onFocusChanged{ focusState ->
                         if (focusState.isFocused) {
                             hasTouchedHolder = true
@@ -366,7 +365,7 @@ fun PayByCard(
                     elevation = ButtonDefaults.buttonElevation(8.dp),
                     enabled = isValid
                 ) {
-                    Text("Done")
+                    Text("Done", color = Color.Black)
                 }
             }
         }
