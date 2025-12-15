@@ -35,18 +35,8 @@ fun CartScreen(
     val totalItems = cart.value.sumOf { it.quantity }
     val totalPrice = cart.value.sumOf { it.totalPrice }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Your Cart") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(painter = painterResource(id = R.drawable.baseline_arrow_back_ios_24), contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    Scaffold()
+    { padding ->
         Column(modifier = Modifier
             .padding(padding)
             .fillMaxSize()
