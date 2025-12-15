@@ -25,7 +25,7 @@ import com.example.canteen.ui.screens.payment.PaymentMethod
 import com.example.canteen.ui.screens.payment.RefundDetailPage
 import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
 import com.example.canteen.ui.screens.staffMenu.MenuItemForm
-import com.example.canteen.ui.screens.staffMenu.MenuListPage
+import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
@@ -142,7 +142,7 @@ fun CanteenScreen(
         }
 
         composable (CanteenScreen.MenuListPage.name){
-            MenuListPage(navController)
+            StaffMenuListPage(navController)
         }
 
         composable (CanteenScreen.RefundManagementScreenWrapper.name){

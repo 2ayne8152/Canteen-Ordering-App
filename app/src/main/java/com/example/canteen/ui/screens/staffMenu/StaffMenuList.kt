@@ -6,10 +6,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,88 +28,65 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.canteen.viewmodel.login.FirestoreMenuItem
 import com.example.canteen.viewmodel.login.MenuViewModel
 
-data class EditableMenuItem(
-    val id: String,
-    var name: String,
-    var description: String,
-    var categoryId: String,
-    var price: String,
-    var remainQuantity: String,
-    var imageUrl: String
-)
-
 @Composable
-fun MenuListPage(navController: NavController, viewModel: MenuViewModel = viewModel()) {
+fun StaffMenuListPage(
+    navController: NavController,
+    viewModel: MenuViewModel = viewModel()
+) {
     val menuItems by viewModel.menuItems.collectAsState()
 
-    val editableItems = remember(menuItems) {
-        menuItems.map {
-            EditableMenuItem(
-                id = it.id,
-                name = it.name,
-                description = it.description,
-                categoryId = it.categoryId,
-                price = it.price.toString(),
-                remainQuantity = it.remainQuantity.toString(),
-                imageUrl = it.imageUrl
-            )
-        }.toMutableStateList()
-    }
-
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Title
         item {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color(0xFF0D47A1))
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color(0xFF0D47A1)
+                    )
                 }
-                Text("Menu List", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D47A1))
+                Text(
+                    text = "Menu List",
+                    fontSize = 28.sp,
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0D47A1)
+                )
             }
         }
 
-        items(editableItems) { item ->
-            MenuItemCard(item = item) { editedItem, newImageUri ->
-                val index = editableItems.indexOf(item)
-                if (index != -1) editableItems[index] = editedItem
-
-                val updatedItem = FirestoreMenuItem(
-                    id = editedItem.id,
-                    name = editedItem.name,
-                    description = editedItem.description,
-                    price = editedItem.price.toDoubleOrNull() ?: 0.0,
-                    categoryId = editedItem.categoryId,
-                    remainQuantity = editedItem.remainQuantity.toIntOrNull() ?: 0,
-                    imageUrl = editedItem.imageUrl
-                )
-
-                viewModel.updateMenuItem(updatedItem) { success, error ->
-                    if (success) println("Updated successfully")
-                    else println("Error: $error")
-                }
-            }
+        // Menu Items
+        items(menuItems) { item ->
+            StaffMenuItemCard(item = item, viewModel = viewModel)
         }
     }
 }
 
 @Composable
-fun MenuItemCard(item: EditableMenuItem, onEdit: (EditableMenuItem, Uri?) -> Unit) {
-    var showDialog by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf(item.name) }
-    var description by remember { mutableStateOf(item.description) }
-    var category by remember { mutableStateOf(item.categoryId) }
-    var price by remember { mutableStateOf(item.price) }
-    var remainQty by remember { mutableStateOf(item.remainQuantity) }
-    var imageUrl by remember { mutableStateOf(item.imageUrl) }
-    var newImageUri by remember { mutableStateOf<Uri?>(null) }
+fun StaffMenuItemCard(
+    item: FirestoreMenuItem,
+    viewModel: MenuViewModel
+) {
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editedName by remember { mutableStateOf(item.name) }
+    var editedDescription by remember { mutableStateOf(item.description) }
+    var editedCategory by remember { mutableStateOf(item.categoryId) }
+    var editedPrice by remember { mutableStateOf(item.price.toString()) }
+    var editedQuantity by remember { mutableStateOf(item.remainQuantity.toString()) }
+    var editedImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            newImageUri = it
-            imageUrl = it.toString() // local preview
-        }
-    }
+    val imageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? -> editedImageUri = uri }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -118,86 +96,131 @@ fun MenuItemCard(item: EditableMenuItem, onEdit: (EditableMenuItem, Uri?) -> Uni
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Box(
-                modifier = Modifier.height(150.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.LightGray),
+                modifier = Modifier
+                    .height(150.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.LightGray),
                 contentAlignment = Alignment.Center
             ) {
+                val imageUrl = editedImageUri?.toString() ?: item.imageUrl
                 Image(
                     painter = rememberAsyncImagePainter(imageUrl),
-                    contentDescription = name,
+                    contentDescription = editedName,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
             }
 
             Spacer(Modifier.height(12.dp))
-            Text(name, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text(description, fontSize = 14.sp, color = Color.DarkGray)
-            Text("RM $price", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text("Quantity: $remainQty", fontSize = 14.sp, color = Color.Gray)
+            Text(editedName, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(editedDescription, fontSize = 14.sp, color = Color.DarkGray)
+            Text("RM $editedPrice", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text("Quantity: $editedQuantity", fontSize = 14.sp, color = Color.Gray)
 
             Spacer(Modifier.height(8.dp))
+
             Button(
-                onClick = { showDialog = true },
+                onClick = { showEditDialog = true },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1)),
                 shape = RoundedCornerShape(10.dp)
-            ) { Text("Edit", color = Color.White) }
+            ) {
+                Text("Edit", color = Color.White)
+            }
         }
     }
 
-    if (showDialog) {
-        val categories = listOf("Chicken Rice", "Curry Mee", "Tomyam Maggi")
-
+    if (showEditDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { showEditDialog = false },
             title = { Text("Edit Menu Item") },
             text = {
                 Column {
-                    Button(onClick = { imageLauncher.launch("image/*") }) { Text("Change Image") }
+                    Box(
+                        modifier = Modifier
+                            .height(150.dp)
+                            .fillMaxWidth()
+                            .background(Color.LightGray, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val imageUrl = editedImageUri?.toString() ?: item.imageUrl
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUrl),
+                            contentDescription = editedName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
                     Spacer(Modifier.height(8.dp))
-                    Text("Name"); OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth())
+
+                    Button(
+                        onClick = { imageLauncher.launch("image/*") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1))
+                    ) {
+                        Text("Change Image", color = Color.White)
+                    }
+
                     Spacer(Modifier.height(8.dp))
-                    Text("Description"); OutlinedTextField(value = description, onValueChange = { description = it }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        value = editedName,
+                        onValueChange = { editedName = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(Modifier.height(8.dp))
-                    Text("Category"); SimpleDropdown(categories, category) { category = it }
+                    OutlinedTextField(
+                        value = editedDescription,
+                        onValueChange = { editedDescription = it },
+                        label = { Text("Description") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(Modifier.height(8.dp))
-                    Text("Price"); OutlinedTextField(value = price, onValueChange = { price = it }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        value = editedCategory,
+                        onValueChange = { editedCategory = it },
+                        label = { Text("Category") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(Modifier.height(8.dp))
-                    Text("Quantity"); OutlinedTextField(value = remainQty, onValueChange = { remainQty = it }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        value = editedPrice,
+                        onValueChange = { editedPrice = it },
+                        label = { Text("Price") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = editedQuantity,
+                        onValueChange = { editedQuantity = it },
+                        label = { Text("Quantity") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             },
             confirmButton = {
                 Button(onClick = {
-                    onEdit(item.copy(
-                        name = name,
-                        description = description,
-                        categoryId = category,
-                        price = price,
-                        remainQuantity = remainQty,
-                        imageUrl = imageUrl
-                    ), newImageUri)
-                    showDialog = false
+                    val updatedItem = item.copy(
+                        name = editedName,
+                        description = editedDescription,
+                        categoryId = editedCategory,
+                        price = editedPrice.toDoubleOrNull() ?: 0.0,
+                        remainQuantity = editedQuantity.toIntOrNull() ?: 0,
+                        imageUrl = editedImageUri?.toString() ?: item.imageUrl
+                    )
+                    viewModel.updateMenuItem(updatedItem) { success, error ->
+                        if (!success) {
+                            println("Error updating: $error")
+                        }
+                    }
+                    showEditDialog = false
                 }) { Text("Save") }
             },
             dismissButton = {
-                Button(onClick = { showDialog = false }) { Text("Cancel") }
+                Button(onClick = { showEditDialog = false }) { Text("Cancel") }
             }
         )
-    }
-}
-
-@Composable
-fun SimpleDropdown(options: List<String>, selected: String, onSelect: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) { Text(selected) }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { option ->
-                DropdownMenuItem(text = { Text(option) }, onClick = {
-                    onSelect(option)
-                    expanded = false
-                })
-            }
-        }
     }
 }

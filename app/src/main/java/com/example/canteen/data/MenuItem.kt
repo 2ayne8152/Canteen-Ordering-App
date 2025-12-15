@@ -1,8 +1,6 @@
 package com.example.canteen.data
 
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
-import com.example.canteen.R
+
 
 
 data class MenuItem(

@@ -1,6 +1,11 @@
 package com.example.canteen.ui.screens.staffMenu
 
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.os.Build
 import android.net.Uri
+import android.provider.MediaStore
+import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -16,28 +21,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.rememberAsyncImagePainter
 import com.example.canteen.viewmodel.staffMenu.CategoryData
 import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.storage.ktx.storage
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.io.ByteArrayOutputStream
 import java.util.UUID
-
 
 @Composable
 fun MenuItemForm(navController: NavController) {
-
     val categoryOptions = CategoryData.category.map { it.name }
 
-    // -------------------- States --------------------
     var menuId by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var itemName by remember { mutableStateOf("") }
@@ -53,6 +56,7 @@ fun MenuItemForm(navController: NavController) {
     ) { uri -> imageUri = uri }
 
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -61,7 +65,7 @@ fun MenuItemForm(navController: NavController) {
             .verticalScroll(rememberScrollState())
     ) {
 
-        // -------------------- BACK BUTTON --------------------
+        // Back button
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
@@ -74,7 +78,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(8.dp))
 
-        // -------------------- MENU ID --------------------
+        // Menu ID
         TextField(
             value = menuId,
             onValueChange = { menuId = it },
@@ -85,7 +89,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- CATEGORY DROPDOWN --------------------
+        // Category dropdown
         Text("Category", fontSize = 16.sp)
         DropdownMenuWrapper(
             options = categoryOptions,
@@ -96,7 +100,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- ITEM NAME --------------------
+        // Item name
         TextField(
             value = itemName,
             onValueChange = { itemName = it },
@@ -107,7 +111,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- DESCRIPTION --------------------
+        // Description
         TextField(
             value = description,
             onValueChange = { description = it },
@@ -121,7 +125,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- PRICE + QUANTITY --------------------
+        // Price and Quantity
         Row(modifier = Modifier.fillMaxWidth()) {
             TextField(
                 value = unitPrice,
@@ -152,7 +156,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(20.dp))
 
-        // -------------------- IMAGE PICKER --------------------
+        // Image picker
         Button(
             onClick = { imagePickerLauncher.launch("image/*") },
             modifier = Modifier.align(Alignment.Start),
@@ -163,7 +167,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- PREVIEW --------------------
+        // Preview
         Text("Preview", fontSize = 18.sp)
 
         Card(
@@ -183,8 +187,14 @@ fun MenuItemForm(navController: NavController) {
                     contentAlignment = Alignment.Center
                 ) {
                     if (imageUri != null) {
+                        val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                            MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri)
+                        } else {
+                            val source = ImageDecoder.createSource(context.contentResolver, imageUri!!)
+                            ImageDecoder.decodeBitmap(source)
+                        }
                         Image(
-                            painter = rememberAsyncImagePainter(imageUri),
+                            bitmap = bitmap.asImageBitmap(),
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -207,7 +217,6 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(16.dp))
 
-        // -------------------- VALIDATION MESSAGE --------------------
         if (validationMessage.isNotEmpty()) {
             Text(
                 text = validationMessage,
@@ -217,7 +226,7 @@ fun MenuItemForm(navController: NavController) {
             )
         }
 
-        // -------------------- SUBMIT BUTTON --------------------
+        // Submit button
         Button(
             onClick = {
                 coroutineScope.launch {
@@ -229,17 +238,14 @@ fun MenuItemForm(navController: NavController) {
                             validationMessage = "All text fields must be filled."
                             return@launch
                         }
-
                         priceDouble == null -> {
                             validationMessage = "Unit Price must be a valid number."
                             return@launch
                         }
-
                         quantityInt == null -> {
                             validationMessage = "Quantity must be an integer."
                             return@launch
                         }
-
                         imageUri == null -> {
                             validationMessage = "Please upload an image."
                             return@launch
@@ -250,14 +256,19 @@ fun MenuItemForm(navController: NavController) {
                     isLoading = true
 
                     try {
-                        // Upload image to Firebase Storage
-                        val storageRef = Firebase.storage.reference
-                        val fileName = "menu_images/${UUID.randomUUID()}"
-                        val imageRef = storageRef.child(fileName)
-                        imageRef.putFile(imageUri!!).await()
-                        val imageUrl = imageRef.downloadUrl.await().toString()
+                        // Convert imageUri to Base64
+                        val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                            MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri)
+                        } else {
+                            val source = ImageDecoder.createSource(context.contentResolver, imageUri!!)
+                            ImageDecoder.decodeBitmap(source)
+                        }
 
-                        // Save menu item to Firestore
+                        val outputStream = ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                        val byteArray = outputStream.toByteArray()
+                        val imageBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
+
                         val newMenuItem = mapOf(
                             "id" to menuId,
                             "name" to itemName,
@@ -265,16 +276,15 @@ fun MenuItemForm(navController: NavController) {
                             "price" to priceDouble,
                             "remainQuantity" to quantityInt,
                             "categoryId" to selectedCategory,
-                            "imageUrl" to imageUrl
+                            "imageUrl" to imageBase64 // keep field name same as your data class
                         )
 
-                        Firebase.firestore.collection("menu_items")
+                        Firebase.firestore.collection("MenuItems") // correct collection name
                             .document(menuId)
                             .set(newMenuItem)
                             .await()
 
                         validationMessage = "Menu item added successfully!"
-                        // Optionally, clear form fields here
                         menuId = ""
                         itemName = ""
                         description = ""
