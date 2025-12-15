@@ -25,6 +25,7 @@ import coil.compose.AsyncImage
 import com.example.canteen.R
 import com.example.canteen.data.MenuItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserMenu(
     menuItems: List<MenuItem>,
@@ -37,24 +38,24 @@ fun UserMenu(
 ) {
     var selectedItem by remember { mutableStateOf<MenuItem?>(null) }
     var isSheetOpen by remember { mutableStateOf(false) }
-
-    // 🔍 Search state
     var searchQuery by remember { mutableStateOf("") }
 
-    // 🔍 Filtered menu items
+    // Tab state
+    val categories = listOf("Food", "Beverages", "Dessert")
+    var selectedTab by remember { mutableStateOf(0) }
+
+    // Filtered menu items by search and category
     val filteredMenuItems = menuItems.filter {
-        it.name.contains(searchQuery, ignoreCase = true)
+        it.name.contains(searchQuery, ignoreCase = true) &&
+                it.categoryId.equals(categories[selectedTab].lowercase(), ignoreCase = true)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 120.dp, start = 16.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            // 🔍 SEARCH BAR
             item {
                 OutlinedTextField(
                     value = searchQuery,
@@ -63,17 +64,27 @@ fun UserMenu(
                         .fillMaxWidth()
                         .padding(top = 16.dp),
                     placeholder = { Text("Search food...") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
-                    },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
                 )
             }
 
             item {
+                TabRow(selectedTabIndex = selectedTab) {
+                    categories.forEachIndexed { index, category ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(category) }
+                        )
+                    }
+                }
+            }
+
+            item {
                 Text(
-                    text = "Main Menu",
+                    text = "${categories[selectedTab]} Menu",
                     style = MaterialTheme.typography.titleLarge,
                     fontSize = 30.sp,
                     modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
@@ -98,7 +109,6 @@ fun UserMenu(
             }
         }
 
-        // Floating checkout bar
         if (totalItemsInCart > 0) {
             FloatingCheckoutBar(
                 numOfItems = totalItemsInCart,
@@ -110,7 +120,6 @@ fun UserMenu(
             )
         }
 
-        // Bottom sheet
         if (isSheetOpen && selectedItem != null) {
             MenuItemCustomization(
                 item = selectedItem!!,
