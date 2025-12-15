@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
 
                     UserHomeScreen(
                         menuItems = sampleMenu,
-                        onItemClick = { /* optional item tapped */ }
+                        onItemClick = {}
                     )
                 }
             }
