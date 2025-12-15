@@ -1,67 +1,38 @@
 package com.example.canteen.ui.screens.usermenu
 
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.canteen.R
-import com.example.canteen.data.MenuItem
-import com.example.canteen.data.menuItems
-import com.example.canteen.ui.theme.CanteenTheme
+import coil.compose.rememberAsyncImagePainter
+import com.example.canteen.viewmodel.login.FirestoreMenuItem
 
 @Composable
 fun UserMenu(
-    menuItems: List<MenuItem>,
+    menuItems: List<FirestoreMenuItem>,
     numOfItem: Int,
     totalPrice: Double,
-    onItemClick: (MenuItem) -> Unit,
+    onItemClick: (FirestoreMenuItem) -> Unit,
     onDetailClick: () -> Unit
 ) {
-    // Track the selected item for customization
-    var selectedItem by remember { mutableStateOf<MenuItem?>(null) }
+    var selectedItem by remember { mutableStateOf<FirestoreMenuItem?>(null) }
     var quantity by remember { mutableStateOf(1) }
 
-    Scaffold(
-        topBar = {},
-    ) { padding ->
-
+    Scaffold(topBar = {}) { padding ->
         Box(
             modifier = Modifier
                 .padding(padding)
@@ -72,14 +43,12 @@ fun UserMenu(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(bottom = 110.dp)
             ) {
-
                 item {
                     Text(
                         text = "Main Menu",
-                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
                         fontSize = 30.sp,
                         modifier = Modifier.padding(top = 16.dp)
                     )
@@ -87,14 +56,11 @@ fun UserMenu(
 
                 items(menuItems) { item ->
                     MenuItemCard(
-                        imageRes = item.imageRes,
-                        itemName = item.itemName,
-                        itemDesc = item.itemDesc,
-                        itemPrice = item.itemPrice,
+                        item = item,
                         modifier = Modifier.fillMaxWidth(),
                         onItemClick = {
-                            selectedItem = item   // <-- open customization
-                            quantity = 1          // reset
+                            selectedItem = item
+                            quantity = 1
                             onItemClick(item)
                         }
                     )
@@ -112,7 +78,7 @@ fun UserMenu(
                 )
             }
 
-            // Show customization overlay when an item is selected
+            // Customization overlay
             selectedItem?.let { sel ->
                 Box(
                     modifier = Modifier
@@ -121,20 +87,16 @@ fun UserMenu(
                     contentAlignment = Alignment.Center
                 ) {
                     MenuItemCustomization(
-                        // convert @StringRes -> String for display
-                        itemName = stringResource(sel.itemName),
-                        itemImage = sel.imageRes,
+                        itemName = sel.name,
+                        itemImageUrl = sel.imageUrl,
                         quantity = quantity,
                         onIncrease = { quantity++ },
                         onDecrease = { if (quantity > 1) quantity-- },
                         onAddToCart = {
-                            // TODO: Add to cart logic (use sel & quantity)
-                            selectedItem = null // close popup
-                        },
-                        onCancel = {
+                            // TODO: Add to cart logic
                             selectedItem = null
                         },
-                        modifier = Modifier
+                        onCancel = { selectedItem = null }
                     )
                 }
             }
@@ -144,64 +106,121 @@ fun UserMenu(
 
 @Composable
 fun MenuItemCard(
-    @DrawableRes imageRes: Int,
-    @StringRes itemName: Int,
-    @StringRes itemDesc: Int,
-    itemPrice: Double,
+    item: FirestoreMenuItem,
     modifier: Modifier = Modifier,
     onItemClick: () -> Unit
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline,
-                shape = RoundedCornerShape(12.dp)
-            )
+            .border(1.dp, Color.Gray, RoundedCornerShape(12.dp))
             .clickable { onItemClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.Top
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // IMAGE (64dp)
             Image(
-                painter = painterResource(imageRes),
-                contentDescription = null,
-                modifier = Modifier.size(64.dp)
+                painter = rememberAsyncImagePainter(item.imageUrl),
+                contentDescription = item.name,
+                modifier = Modifier.size(64.dp),
+                contentScale = ContentScale.Crop
             )
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // COLUMN made same width as image (64dp)
             Column(
-                modifier = Modifier.height(64.dp),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Top
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = stringResource(itemName),
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Text(
-                    text = stringResource(itemDesc),
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text(item.name, fontSize = 18.sp)
+                Text(item.description, fontSize = 14.sp, color = Color.Gray)
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-
             Text(
-                text = String.format("RM %.2f", itemPrice),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.align(Alignment.Bottom)
+                text = String.format("RM %.2f", item.price),
+                fontSize = 16.sp
             )
+        }
+    }
+}
+
+@Composable
+fun MenuItemCustomization(
+    itemName: String,
+    itemImageUrl: String,
+    quantity: Int,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    onAddToCart: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(itemName, fontSize = 20.sp)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clickable { onCancel() }
+                        .border(1.dp, Color.Gray, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("✕")
+                }
+            }
+
+            Image(
+                painter = rememberAsyncImagePainter(itemImageUrl),
+                contentDescription = itemName,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable { onDecrease() }
+                        .border(1.dp, Color.Gray, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Text("–") }
+
+                Spacer(modifier = Modifier.width(32.dp))
+                Text(quantity.toString(), fontSize = 20.sp)
+                Spacer(modifier = Modifier.width(32.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable { onIncrease() }
+                        .border(1.dp, Color.Gray, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Text("+") }
+            }
+
+            Button(
+                onClick = onAddToCart,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Add to Cart") }
         }
     }
 }
@@ -217,205 +236,18 @@ fun ViewDetailButton(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onDetailClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = "$numOfItem items ordered",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = "Tap to view details",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
+                Text("$numOfItem items ordered")
+                Text(String.format("Total: RM %.2f", totalPrice), color = Color.Gray)
             }
-
-            Text(
-                text = String.format("RM %.2f", totalPrice),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            Text(String.format("RM %.2f", totalPrice))
         }
-    }
-}
-
-@Composable
-fun MenuItemCustomization(
-    itemName: String,
-    itemImage: Int,
-    quantity: Int,
-    onIncrease: () -> Unit,
-    onDecrease: () -> Unit,
-    onAddToCart: () -> Unit,
-    onCancel: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-    ) {
-
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-
-            // Top Row: Title + Cancel Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Customize Order",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                // Cancel Button (X)
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clickable { onCancel() }
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "✕",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-            }
-
-            // Item Image
-            Image(
-                painter = painterResource(id = itemImage),
-                contentDescription = itemName,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            // Item Name
-            Text(
-                text = itemName,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            // Quantity Label
-            Text(
-                text = "Select Quantity",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            // Quantity Selector
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-
-                // Minus Button
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clickable { onDecrease() }
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "–",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(32.dp))
-
-                Text(
-                    text = quantity.toString(),
-                    style = MaterialTheme.typography.headlineMedium
-                )
-
-                Spacer(modifier = Modifier.width(32.dp))
-
-                // Plus Button
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clickable { onIncrease() }
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "+",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
-            }
-
-            // Add to Cart Button
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .clickable { onAddToCart() },
-                shape = RoundedCornerShape(30.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Add to Cart",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun UserMenuPreview(){
-    CanteenTheme {
-
     }
 }

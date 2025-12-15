@@ -1,6 +1,11 @@
 package com.example.canteen.ui.screens.staffMenu
 
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.os.Build
 import android.net.Uri
+import android.provider.MediaStore
+import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -16,37 +21,42 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.rememberAsyncImagePainter
-import com.example.canteen.data.MenuItem
 import com.example.canteen.viewmodel.staffMenu.CategoryData
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.io.ByteArrayOutputStream
+import java.util.UUID
 
 @Composable
 fun MenuItemForm(navController: NavController) {
-
     val categoryOptions = CategoryData.category.map { it.name }
 
-    // -------------------- States --------------------
     var menuId by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var itemName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-
     var unitPrice by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
-
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-
     var validationMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri -> imageUri = uri }
+
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -55,7 +65,7 @@ fun MenuItemForm(navController: NavController) {
             .verticalScroll(rememberScrollState())
     ) {
 
-        // -------------------- BACK BUTTON --------------------
+        // Back button
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
@@ -68,7 +78,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(8.dp))
 
-        // -------------------- MENU ID INPUT --------------------
+        // Menu ID
         TextField(
             value = menuId,
             onValueChange = { menuId = it },
@@ -79,7 +89,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- CATEGORY DROPDOWN --------------------
+        // Category dropdown
         Text("Category", fontSize = 16.sp)
         DropdownMenuWrapper(
             options = categoryOptions,
@@ -90,7 +100,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- ITEM NAME INPUT --------------------
+        // Item name
         TextField(
             value = itemName,
             onValueChange = { itemName = it },
@@ -101,7 +111,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- DESCRIPTION INPUT --------------------
+        // Description
         TextField(
             value = description,
             onValueChange = { description = it },
@@ -115,9 +125,8 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- PRICE + QUANTITY --------------------
+        // Price and Quantity
         Row(modifier = Modifier.fillMaxWidth()) {
-
             TextField(
                 value = unitPrice,
                 onValueChange = { input ->
@@ -147,7 +156,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(20.dp))
 
-        // -------------------- IMAGE PICKER --------------------
+        // Image picker
         Button(
             onClick = { imagePickerLauncher.launch("image/*") },
             modifier = Modifier.align(Alignment.Start),
@@ -158,7 +167,7 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // -------------------- PREVIEW --------------------
+        // Preview
         Text("Preview", fontSize = 18.sp)
 
         Card(
@@ -169,9 +178,7 @@ fun MenuItemForm(navController: NavController) {
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-
             Column(modifier = Modifier.padding(12.dp)) {
-
                 Box(
                     modifier = Modifier
                         .height(150.dp)
@@ -180,8 +187,14 @@ fun MenuItemForm(navController: NavController) {
                     contentAlignment = Alignment.Center
                 ) {
                     if (imageUri != null) {
+                        val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                            MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri)
+                        } else {
+                            val source = ImageDecoder.createSource(context.contentResolver, imageUri!!)
+                            ImageDecoder.decodeBitmap(source)
+                        }
                         Image(
-                            painter = rememberAsyncImagePainter(imageUri),
+                            bitmap = bitmap.asImageBitmap(),
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -204,7 +217,6 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(16.dp))
 
-        // -------------------- VALIDATION MESSAGE --------------------
         if (validationMessage.isNotEmpty()) {
             Text(
                 text = validationMessage,
@@ -214,53 +226,78 @@ fun MenuItemForm(navController: NavController) {
             )
         }
 
-        // -------------------- SUBMIT BUTTON --------------------
+        // Submit button
         Button(
             onClick = {
+                coroutineScope.launch {
+                    val priceDouble = unitPrice.toDoubleOrNull()
+                    val quantityInt = quantity.toIntOrNull()
 
-                // -------- VALIDATION --------
-                val priceDouble = unitPrice.toDoubleOrNull()
-                val quantityInt = quantity.toIntOrNull()
-
-                when {
-                    menuId.isBlank() || itemName.isBlank() || description.isBlank() -> {
-                        validationMessage = "All text fields must be filled."
-                        return@Button
+                    when {
+                        menuId.isBlank() || itemName.isBlank() || description.isBlank() -> {
+                            validationMessage = "All text fields must be filled."
+                            return@launch
+                        }
+                        priceDouble == null -> {
+                            validationMessage = "Unit Price must be a valid number."
+                            return@launch
+                        }
+                        quantityInt == null -> {
+                            validationMessage = "Quantity must be an integer."
+                            return@launch
+                        }
+                        imageUri == null -> {
+                            validationMessage = "Please upload an image."
+                            return@launch
+                        }
                     }
 
-                    priceDouble == null -> {
-                        validationMessage = "Unit Price must be a valid number."
-                        return@Button
-                    }
+                    validationMessage = ""
+                    isLoading = true
 
-                    quantityInt == null -> {
-                        validationMessage = "Quantity must be an integer."
-                        return@Button
-                    }
+                    try {
+                        // Convert imageUri to Base64
+                        val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                            MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri)
+                        } else {
+                            val source = ImageDecoder.createSource(context.contentResolver, imageUri!!)
+                            ImageDecoder.decodeBitmap(source)
+                        }
 
-                    imageUri == null -> {
-                        validationMessage = "Please upload an image."
-                        return@Button
+                        val outputStream = ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                        val byteArray = outputStream.toByteArray()
+                        val imageBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
+
+                        val newMenuItem = mapOf(
+                            "id" to menuId,
+                            "name" to itemName,
+                            "description" to description,
+                            "price" to priceDouble,
+                            "remainQuantity" to quantityInt,
+                            "categoryId" to selectedCategory,
+                            "imageUrl" to imageBase64 // keep field name same as your data class
+                        )
+
+                        Firebase.firestore.collection("MenuItems") // correct collection name
+                            .document(menuId)
+                            .set(newMenuItem)
+                            .await()
+
+                        validationMessage = "Menu item added successfully!"
+                        menuId = ""
+                        itemName = ""
+                        description = ""
+                        unitPrice = ""
+                        quantity = ""
+                        imageUri = null
+
+                    } catch (e: Exception) {
+                        validationMessage = "Error: ${e.message}"
+                    } finally {
+                        isLoading = false
                     }
                 }
-
-                // ----- CLEAR VALIDATION MESSAGE -----
-                validationMessage = ""
-
-                // ----- CREATE DATA CLASS OBJECT -----
-                val newMenuItem = MenuItem(
-                    menuId = menuId,
-                    categoryId = selectedCategory,
-                    imageRes = 0,  // or use default drawable if you want
-                    itemName = 0,  // if using string resource, else adjust type
-                    itemDesc = 0,  // if using string resource, else adjust type
-                    itemPrice = priceDouble,
-                    remainQuantity = quantityInt
-                )
-
-                // TODO: Save newMenuItem to database
-                println("New MenuItem created: $newMenuItem")
-
             },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1)),
             modifier = Modifier
@@ -268,12 +305,20 @@ fun MenuItemForm(navController: NavController) {
                 .height(50.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Submit", color = Color.White, fontSize = 16.sp)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Submit", color = Color.White, fontSize = 16.sp)
+            }
         }
     }
 }
 
-        @Composable
+@Composable
 fun PreviewTextRow(label: String, value: String) {
     Row(modifier = Modifier.padding(vertical = 2.dp)) {
         Text("$label: ", fontSize = 14.sp, color = Color.DarkGray)
