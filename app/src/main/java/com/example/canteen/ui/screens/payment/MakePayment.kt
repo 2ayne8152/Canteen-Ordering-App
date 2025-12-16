@@ -47,6 +47,8 @@ import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -93,6 +95,13 @@ fun MakePayment(
                 .padding(bottom = 130.dp)
         )
 
+        val orderId = remember {
+            Firebase.firestore
+            .collection("receipt")
+            .document()
+            .id
+        }
+
         PaymentBottomBar(
             modifier = Modifier.align(Alignment.BottomCenter),
             itemCount = cart.value.sumOf { it.quantity },
@@ -103,8 +112,10 @@ fun MakePayment(
                 else -> false
             },
             onSubmit = {
+
+
                 receiptViewModel.createReceipt(
-                    "O0013",
+                    orderId = orderId,
                     selectedMethod!!,
                     cart.value.sumOf { it.totalPrice }
                 )
