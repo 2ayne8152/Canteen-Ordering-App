@@ -99,7 +99,7 @@ fun PayByCard(
                 .padding(8.dp)
                 .fillMaxWidth()
         ) {
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(18.dp))
 
             Text(
                 text = "Card Detail",
@@ -107,7 +107,7 @@ fun PayByCard(
                 fontSize = 25.sp, color = Color.Black
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
 
             // Card Number Input
 
@@ -168,7 +168,7 @@ fun PayByCard(
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
 
             // MM/YY + CVV Row
             Row(
