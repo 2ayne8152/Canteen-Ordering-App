@@ -78,7 +78,7 @@ fun StaffDashboardScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Menu Items ", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
             Spacer(Modifier.height(16.dp))
 
