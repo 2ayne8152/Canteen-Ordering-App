@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+// ---------------- DATA ----------------
+
 data class FirestoreMenuItem(
     val id: String = "",
     val name: String = "",
@@ -18,29 +20,32 @@ data class FirestoreMenuItem(
     val price: Double = 0.0,
     val categoryId: String = "",
     val remainQuantity: Int = 0,
-    val imageUrl: String = "" // Base64 string
+    val imageUrl: String = ""
 )
 
 data class Category(
-    val CategoryID: String = "",
-    val Name: String = "",
-    val Description: String = ""
+    val categoryId: String = "",
+    val name: String = "",
+    val description: String = ""
 )
+
+// ---------------- VIEWMODEL ----------------
 
 class MenuViewModel : ViewModel() {
 
     private val db = Firebase.firestore
 
-    // ---------------- MENU ----------------
+    // Menu
     private val _menuItems = MutableStateFlow<List<FirestoreMenuItem>>(emptyList())
     val menuItems = _menuItems.asStateFlow()
 
-    // ---------------- CATEGORIES ----------------
+    // Categories
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories = _categories.asStateFlow()
 
-    // ---------------- CART ----------------
-    private val _cart = MutableStateFlow<Map<FirestoreMenuItem, Int>>(emptyMap())
+    // Cart (key = menuItemId)
+    private val _cart =
+        MutableStateFlow<Map<String, Pair<FirestoreMenuItem, Int>>>(emptyMap())
     val cart = _cart.asStateFlow()
 
     private val _numOfItem = MutableStateFlow(0)
@@ -54,15 +59,17 @@ class MenuViewModel : ViewModel() {
         fetchMenuItems()
     }
 
+    // ---------------- FETCH ----------------
+
     private fun fetchCategories() {
         viewModelScope.launch {
             try {
                 val snapshot = db.collection("Category").get().await()
                 _categories.value = snapshot.documents.mapNotNull { doc ->
-                    doc.toObject(Category::class.java)?.copy(CategoryID = doc.id)
+                    doc.toObject(Category::class.java)?.copy(categoryId = doc.id)
                 }
             } catch (e: Exception) {
-                Log.e("MenuViewModel", "Fetch categories error", e)
+                Log.e("MenuViewModel", "Fetch categories failed", e)
             }
         }
     }
@@ -75,12 +82,13 @@ class MenuViewModel : ViewModel() {
                     doc.toObject(FirestoreMenuItem::class.java)?.copy(id = doc.id)
                 }
             } catch (e: Exception) {
-                Log.e("MenuViewModel", "Fetch menu items error", e)
+                Log.e("MenuViewModel", "Fetch menu items failed", e)
             }
         }
     }
 
-    // Create menu item + optionally category
+    // ---------------- CREATE / UPDATE ----------------
+
     fun createMenuItem(
         menuItem: FirestoreMenuItem,
         categoryName: String,
@@ -88,35 +96,29 @@ class MenuViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             try {
-                var categoryId = menuItem.categoryId
-
-                // Check if category exists
                 val categorySnapshot = db.collection("Category")
-                    .whereEqualTo("Name", categoryName)
+                    .whereEqualTo("name", categoryName)
                     .get()
                     .await()
 
-                categoryId = if (categorySnapshot.documents.isEmpty()) {
-                    // Category does not exist, create it
-                    val newCategoryRef = db.collection("Category").document()
-                    val newCategory = hashMapOf(
-                        "CategoryID" to newCategoryRef.id,
-                        "Name" to categoryName,
-                        "Description" to ""
-                    )
-                    newCategoryRef.set(newCategory).await()
-                    newCategoryRef.id
+                val categoryId = if (categorySnapshot.isEmpty) {
+                    val ref = db.collection("Category").document()
+                    ref.set(
+                        Category(
+                            categoryId = ref.id,
+                            name = categoryName,
+                            description = ""
+                        )
+                    ).await()
+                    ref.id
                 } else {
-                    categorySnapshot.documents[0].getString("CategoryID") ?: ""
+                    categorySnapshot.documents[0].id
                 }
 
-                // Create MenuItem with categoryId
                 val menuRef = db.collection("MenuItems").document()
-                val newMenuItem = menuItem.copy(categoryId = categoryId)
-                menuRef.set(newMenuItem).await()
+                menuRef.set(menuItem.copy(categoryId = categoryId)).await()
 
                 fetchMenuItems()
-                fetchCategories()
                 onComplete(true, null)
             } catch (e: Exception) {
                 onComplete(false, e.message)
@@ -129,17 +131,13 @@ class MenuViewModel : ViewModel() {
         onComplete: (Boolean, String?) -> Unit
     ) {
         if (item.id.isBlank()) {
-            onComplete(false, "Document ID empty")
+            onComplete(false, "Menu item id is empty")
             return
         }
 
         viewModelScope.launch {
             try {
-                db.collection("MenuItems")
-                    .document(item.id)
-                    .set(item)
-                    .await()
-
+                db.collection("MenuItems").document(item.id).set(item).await()
                 fetchMenuItems()
                 onComplete(true, null)
             } catch (e: Exception) {
@@ -149,10 +147,12 @@ class MenuViewModel : ViewModel() {
     }
 
     // ---------------- CART ----------------
+
     fun addToCart(item: FirestoreMenuItem) {
         _cart.update {
             val map = it.toMutableMap()
-            map[item] = (map[item] ?: 0) + 1
+            val current = map[item.id]
+            map[item.id] = Pair(item, (current?.second ?: 0) + 1)
             map
         }
         updateCartTotals()
@@ -161,15 +161,21 @@ class MenuViewModel : ViewModel() {
     fun removeFromCart(item: FirestoreMenuItem) {
         _cart.update {
             val map = it.toMutableMap()
-            val qty = map[item] ?: 0
-            if (qty > 1) map[item] = qty - 1 else map.remove(item)
+            val current = map[item.id]
+            if (current != null) {
+                if (current.second > 1)
+                    map[item.id] = Pair(item, current.second - 1)
+                else
+                    map.remove(item.id)
+            }
             map
         }
         updateCartTotals()
     }
 
     private fun updateCartTotals() {
-        _numOfItem.value = _cart.value.values.sum()
-        _totalPrice.value = _cart.value.entries.sumOf { it.key.price * it.value }
+        _numOfItem.value = _cart.value.values.sumOf { it.second }
+        _totalPrice.value =
+            _cart.value.values.sumOf { it.first.price * it.second }
     }
 }
