@@ -57,6 +57,9 @@ fun CanteenScreen(
     LaunchedEffect(authState) {
         if (authState is AuthState.LoggedOut) {
             receiptViewModel.stopListening()
+            navController.navigate("login") {
+                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+            }
         }
     }
 
@@ -72,8 +75,8 @@ fun CanteenScreen(
         composable("login") {
             LoginScreen(
                 onStaffLoginClick = { navController.navigate("staff_login") },
-                onLoginSuccess = { role ->
-                    when (role) {
+                onLoginSuccess = { userRole ->
+                    when (userRole) {
                         "user" -> navController.navigate(CanteenScreen.UserHomeScreen.name) {
                             popUpTo("login") { inclusive = true }
                         }
@@ -91,8 +94,8 @@ fun CanteenScreen(
         composable("staff_login") {
             StaffLoginScreen(
                 onUserLoginClick = { navController.navigate("login") },
-                onLoginSuccess = { role ->
-                    when (role) {
+                onLoginSuccess = { userRole ->
+                    when (userRole) {
                         "staff" -> navController.navigate(CanteenScreen.StaffDashboard.name) {
                             popUpTo("staff_login") { inclusive = true }
                         }
@@ -119,8 +122,12 @@ fun CanteenScreen(
             UserHomeScreen(
                 menuItems = menuItems,
                 onItemClick = {},
-                receiptViewModel = receiptViewModel,
-                userViewModel = userViewModel
+                receiptViewModel = receiptViewModel,  
+                userViewModel = userViewModel,
+                onSignOut = {
+                    authViewModel.signOut()
+
+                }
             )
         }
 
