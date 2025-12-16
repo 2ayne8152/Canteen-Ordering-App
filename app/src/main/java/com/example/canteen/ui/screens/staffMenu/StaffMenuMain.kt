@@ -1,7 +1,5 @@
 package com.example.menumanagement
 
-
-import android.R.attr.onClick
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.Image
@@ -28,25 +26,21 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.canteen.viewmodel.login.Category
 import com.example.canteen.viewmodel.login.FirestoreMenuItem
 import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.ui.screens.CanteenScreen
-import com.example.canteen.viewmodel.staffMenu.CategoryData   // ✅ ADDED
+import kotlinx.coroutines.launch
 
 @Composable
-fun StaffDashboardScreen(
-    navController: NavController,
-    onClick: () -> Unit,
-    viewModel: MenuViewModel = viewModel()
-) {
+fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel = viewModel()) {
 
-    // 🔹 EXISTING STATE (UNCHANGED)
     var search by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("All") }   // ✅ ADDED
+    var selectedCategory by remember { mutableStateOf("All") }
 
     val menuItems by viewModel.menuItems.collectAsState()
+    val categories by viewModel.categories.collectAsState()
 
-    // 🔹 ONLY FILTER LOGIC ADDED
     val filteredMenuItems = menuItems.filter { item ->
         (selectedCategory == "All" || item.categoryId == selectedCategory) &&
                 item.name.contains(search.trim(), ignoreCase = true)
@@ -55,7 +49,6 @@ fun StaffDashboardScreen(
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -63,7 +56,7 @@ fun StaffDashboardScreen(
                 .padding(16.dp)
         ) {
 
-            // 🔹 HEADER (UNCHANGED)
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -73,16 +66,16 @@ fun StaffDashboardScreen(
                     Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
                 }
-                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue, modifier = Modifier.clickable(onClick = {onClick()}))
+                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue)
             }
 
             Spacer(Modifier.height(20.dp))
 
-            Text("Menu Items ", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
             Spacer(Modifier.height(16.dp))
 
-            // 🔹 BUTTONS (UNCHANGED)
+            // Add & Edit buttons row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -104,13 +97,18 @@ fun StaffDashboardScreen(
                         .clickable { navController.navigate(CanteenScreen.MenuListPage.name) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit Menu", tint = Color.White)
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Menu",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // 🔹 SEARCH BAR (UNCHANGED)
+            // Search field
             OutlinedTextField(
                 value = search,
                 onValueChange = { search = it },
@@ -122,29 +120,24 @@ fun StaffDashboardScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ✅ CATEGORY CHIPS (ONLY ADDITION)
+            // Category Chips
             Row(
                 modifier = Modifier
                     .horizontalScroll(rememberScrollState())
                     .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CategoryChip(
-                    text = "All",
-                    selected = selectedCategory == "All",
-                    onClick = { selectedCategory = "All" }
-                )
-
-                CategoryData.category.forEach { category ->
+                val allCategories = listOf(Category("", "All", "")) + categories
+                allCategories.forEach { category ->
                     CategoryChip(
-                        text = category.name,
-                        selected = selectedCategory == category.name,
-                        onClick = { selectedCategory = category.name }
+                        text = category.Name,
+                        selected = selectedCategory == category.CategoryID || (category.Name == "All" && selectedCategory == "All"),
+                        onClick = { selectedCategory = category.CategoryID.ifBlank { "All" } }
                     )
                 }
             }
 
-            // 🔹 MENU LIST (UNCHANGED)
+            // Scrollable list of menu items
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
@@ -152,28 +145,15 @@ fun StaffDashboardScreen(
                     .padding(bottom = paddingValues.calculateBottomPadding())
             ) {
                 items(filteredMenuItems) { item ->
-                    MenuItemCard(
-                        item = item,
-                        onEditClick = {
-                            navController.navigate(
-                                "${CanteenScreen.StaffMenuDetailPage.name}/${item.id}"
-                            )
-                        }
-                    )
+                    MenuItemCard(item)
                 }
-
             }
         }
     }
 }
 
-
 @Composable
-fun CategoryChip(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
+fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -181,24 +161,15 @@ fun CategoryChip(
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        Text(
-            text,
-            color = if (selected) Color.White else Color.Black,
-            fontSize = 13.sp
-        )
+        Text(text, color = if (selected) Color.White else Color.Black, fontSize = 13.sp)
     }
 }
 
-
 @Composable
-fun MenuItemCard(
-    item: FirestoreMenuItem,
-    onEditClick: () -> Unit = {}
-) {
+fun MenuItemCard(item: FirestoreMenuItem, onEditClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onEditClick() }
             .background(Color.White, RoundedCornerShape(12.dp))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically

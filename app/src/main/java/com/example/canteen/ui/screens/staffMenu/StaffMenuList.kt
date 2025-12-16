@@ -141,11 +141,7 @@ fun StaffMenuItemCard(
             Spacer(Modifier.height(12.dp))
             Text(editedName, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text(editedDescription, fontSize = 14.sp, color = Color.DarkGray)
-            Text(
-                "RM ${String.format("%.2f", editedPrice.toDoubleOrNull() ?: 0.0)}",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            Text("RM $editedPrice", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text("Quantity: $editedQuantity", fontSize = 14.sp, color = Color.Gray)
 
             Spacer(Modifier.height(8.dp))
@@ -239,9 +235,9 @@ fun StaffMenuItemCard(
                         name = editedName,
                         description = editedDescription,
                         categoryId = editedCategory,
-                        price = String.format("%.2f", editedPrice.toDoubleOrNull() ?: 0.0).toDouble(),
+                        price = editedPrice.toDoubleOrNull() ?: 0.0,
                         remainQuantity = editedQuantity.toIntOrNull() ?: 0,
-                        imageUrl = editedImageUri?.let { null } ?: item.imageUrl // Handle image upload separately
+                        imageUrl = editedImageUri?.let { null } ?: item.imageUrl // Handle your upload logic separately
                     )
                     viewModel.updateMenuItem(updatedItem) { success, error ->
                         if (!success) println("Error updating: $error")

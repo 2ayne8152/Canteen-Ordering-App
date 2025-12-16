@@ -1,4 +1,4 @@
-/*package com.example.canteen.viewmodel.staffMenu
+package com.example.canteen.viewmodel.staffMenu
 
 
 import androidx.lifecycle.ViewModel
@@ -26,4 +26,3 @@ class MenuViewModel : ViewModel() {
         }
     }
 }
-*/
