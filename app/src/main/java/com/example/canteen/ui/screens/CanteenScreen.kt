@@ -180,7 +180,7 @@ fun CanteenScreen(
 
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
-            StaffDashboardScreen(navController)
+            StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
         }
 
         composable(CanteenScreen.MenuItemForm.name){
