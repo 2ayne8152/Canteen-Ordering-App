@@ -17,6 +17,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.canteen.ui.screens.loginscreens.ForgotPasswordScreen
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
+import com.example.canteen.ui.screens.payment.PaymentHistory
+import com.example.canteen.ui.screens.payment.RefundDetailPage
+import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
@@ -176,6 +179,30 @@ fun CanteenScreen(
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
             StaffDashboardScreen(navController)
+        }
+
+        composable (CanteenScreen.RefundManagementScreenWrapper.name){
+            RefundManagementScreenWrapper (
+                receiptViewModel = receiptViewModel,
+                navController = navController,
+                onClick = {navController.navigate(CanteenScreen.RefundDetailPage.name)}
+            )
+        }
+
+        composable(CanteenScreen.RefundDetailPage.name){
+            RefundDetailPage(
+                receiptViewModel = receiptViewModel,
+                refundViewModel = refundViewModel,
+                onBack = {navController.popBackStack()},
+                userViewModel = userViewModel
+            )
+        }
+
+        composable(CanteenScreen.PaymentHistory.name){
+            PaymentHistory(
+                navController = navController,
+                receiptViewModel = receiptViewModel
+            )
         }
     }
 }

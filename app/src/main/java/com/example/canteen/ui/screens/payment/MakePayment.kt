@@ -90,7 +90,7 @@ fun MakePayment(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 130.dp) // 👈 ABOVE bottom bar
+                .padding(bottom = 130.dp)
         )
 
         PaymentBottomBar(
