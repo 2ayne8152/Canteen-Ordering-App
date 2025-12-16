@@ -10,18 +10,27 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.canteen.ui.screens.loginscreens.ForgotPasswordScreen
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.ui.screens.payment.PaymentHistory
 import com.example.canteen.ui.screens.payment.RefundDetailPage
 import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
+import com.example.canteen.ui.screens.staffMenu.MenuItemForm
+import com.example.canteen.ui.screens.staffMenu.StaffMenuDetailPage
+import com.example.canteen.ui.screens.staffMenu.StaffMenuItemEditPage
+import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
+import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
@@ -35,6 +44,8 @@ enum class CanteenScreen(val title: String) {
     StaffDashboard(title = "StaffDashboard"),
     MenuItemForm(title = "MenuItemForm"),
     MenuListPage(title = "MenuListPage"),
+    StaffMenuDetailPage(title = "StaffMenuDetailPage"),
+    StaffMenuEditPage(title = "StaffMenuEditPage"),
     PaymentHistory(title = "PaymentHistory"),
     RefundManagementScreenWrapper(title = "RefundManagement"),
     RefundDetailPage(title = "RefundDetail"),
@@ -52,15 +63,12 @@ fun CanteenScreen(
     refundViewModel: RefundViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel(),
     userViewModel: UserViewModel = viewModel(),
-    userMenuViewModel: UserMenuViewModel = viewModel()
+    userMenuViewModel: UserMenuViewModel = viewModel(),
 ) {
     val navController = rememberNavController()
     val authState by authViewModel.authState.collectAsState()
     val userId = (authState as? AuthState.LoggedIn)?.userId
     val role = (authState as? AuthState.LoggedIn)?.role
-
-
-    // Firestore menu items
     val menuItems by userMenuViewModel.menuItems.collectAsState()
 
     // Auto-navigate based on auth state
@@ -103,27 +111,13 @@ fun CanteenScreen(
     LaunchedEffect(role) {
         if (role == "staff") {
             receiptViewModel.startListeningOnce()
-        }
-    }
 
-    LaunchedEffect(authState) {
-        if (authState is AuthState.LoggedOut) {
-            receiptViewModel.stopListening()
-            navController.navigate("login") {
-                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-            }
-        }
-    }
-
-    LaunchedEffect(userId) {
-        if (userId != null) {
-            userViewModel.loadUserById(userId)
         }
     }
 
     NavHost(navController, startDestination = "login") {
 
-        // -------------------- LOGIN --------------------
+        // -------------------- Login Screens --------------------
         composable("login") {
             LoginScreen(
                 onStaffLoginClick = { navController.navigate("staff_login") },
@@ -142,7 +136,6 @@ fun CanteenScreen(
             )
         }
 
-        // -------------------- STAFF LOGIN --------------------
         composable("staff_login") {
             StaffLoginScreen(
                 onUserLoginClick = { navController.navigate("login") },
@@ -169,7 +162,8 @@ fun CanteenScreen(
             )
         }
 
-        // -------------------- USER HOME --------------------
+    
+        // -------------------- User Screen --------------------
         composable(CanteenScreen.UserHomeScreen.name) {
             UserHomeScreen(
                 menuItems = menuItems,
@@ -184,27 +178,62 @@ fun CanteenScreen(
 
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
-            StaffDashboardScreen(navController)
+            StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
         }
 
-        composable (CanteenScreen.RefundManagementScreenWrapper.name){
-            RefundManagementScreenWrapper (
+        // -------------------- Staff Menu --------------------
+        composable(CanteenScreen.MenuItemForm.name) {
+            MenuItemForm(navController)
+        }
+
+        // Staff Menu List
+        composable(CanteenScreen.MenuListPage.name) {
+            StaffMenuListPage(navController = navController)
+        }
+
+        // Staff Menu Detail Page (with itemId)
+        composable(
+            route = "${CanteenScreen.StaffMenuDetailPage.name}/{itemId}",
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            StaffMenuDetailPage(navController = navController, itemId = itemId)
+        }
+
+        // Staff Menu Edit Page (with itemId)
+        composable(
+            route = "${CanteenScreen.StaffMenuEditPage.name}/{itemId}",
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId")
+            if (itemId != null) {
+                StaffMenuItemEditPage(itemId = itemId, navController = navController)
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Invalid item", color = Color.Gray)
+                }
+            }
+        }
+
+        // -------------------- Refund & Payment --------------------
+        composable(CanteenScreen.RefundManagementScreenWrapper.name) {
+            RefundManagementScreenWrapper(
                 receiptViewModel = receiptViewModel,
                 navController = navController,
-                onClick = {navController.navigate(CanteenScreen.RefundDetailPage.name)}
+                onClick = { navController.navigate(CanteenScreen.RefundDetailPage.name) }
             )
         }
 
-        composable(CanteenScreen.RefundDetailPage.name){
+        composable(CanteenScreen.RefundDetailPage.name) {
             RefundDetailPage(
                 receiptViewModel = receiptViewModel,
                 refundViewModel = refundViewModel,
-                onBack = {navController.popBackStack()},
+                onBack = { navController.popBackStack() },
                 userViewModel = userViewModel
             )
         }
 
-        composable(CanteenScreen.PaymentHistory.name){
+        composable(CanteenScreen.PaymentHistory.name) {
             PaymentHistory(
                 navController = navController,
                 receiptViewModel = receiptViewModel
@@ -212,4 +241,3 @@ fun CanteenScreen(
         }
     }
 }
-
