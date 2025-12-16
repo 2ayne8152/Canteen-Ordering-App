@@ -36,6 +36,7 @@ import com.example.canteen.viewmodel.staffMenu.CategoryData   // ✅ ADDED
 @Composable
 fun StaffDashboardScreen(
     navController: NavController,
+    onClick: () -> Unit,
     viewModel: MenuViewModel = viewModel()
 ) {
 

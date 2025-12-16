@@ -11,9 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -21,7 +18,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.canteen.data.sampleMenuItems
 import com.example.canteen.ui.screens.loginscreens.ForgotPasswordScreen
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
@@ -64,12 +60,12 @@ fun CanteenScreen(
     authViewModel: AuthViewModel = viewModel(),
     userViewModel: UserViewModel = viewModel(),
     userMenuViewModel: UserMenuViewModel = viewModel(),
-    menuViewModel: MenuViewModel = viewModel()
 ) {
     val navController = rememberNavController()
     val authState by authViewModel.authState.collectAsState()
     val userId = (authState as? AuthState.LoggedIn)?.userId
     val role = (authState as? AuthState.LoggedIn)?.role
+    val menuItems by userMenuViewModel.menuItems.collectAsState()
 
     // Auto-navigate based on auth state
     LaunchedEffect(authState) {
@@ -111,26 +107,7 @@ fun CanteenScreen(
     LaunchedEffect(role) {
         if (role == "staff") {
             receiptViewModel.startListeningOnce()
-        Log.w("Log", "role")
-        if (role == "staff") {
-            receiptViewModel.startListeningOnce()
-            Log.w("Log", "role = staff")
-            Log.w("Log", "$userId")
-        }
-    }
 
-    LaunchedEffect(authState) {
-        if (authState is AuthState.LoggedOut) {
-            receiptViewModel.stopListening()
-            navController.navigate("login") {
-                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-            }
-        }
-    }
-
-    LaunchedEffect(userId) {
-        if (userId != null) {
-            userViewModel.loadUserById(userId)
         }
     }
 
