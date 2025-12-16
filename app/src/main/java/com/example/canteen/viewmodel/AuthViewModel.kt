@@ -154,6 +154,12 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
+
+    fun signOut() {
+        auth.signOut()
+        _authState.value = AuthState.LoggedOut
+    }
+
     fun sendPasswordResetEmail(email: String) {
         if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             _passwordResetStatus.value = "Please enter a valid email address to reset password."
