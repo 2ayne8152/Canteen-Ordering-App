@@ -26,7 +26,9 @@ import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
+import com.example.canteen.viewmodel.usermenu.CartViewModel
 import com.example.canteen.viewmodel.usermenu.UserMenuViewModel
+import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
 import com.example.menumanagement.StaffDashboardScreen
 
 enum class CanteenScreen(val title: String) {
@@ -45,6 +47,8 @@ enum class CanteenScreen(val title: String) {
 fun CanteenScreen(
     cardDetailViewModel: CardDetailViewModel = viewModel(),
     receiptViewModel: ReceiptViewModel = viewModel(),
+    cartViewModel: CartViewModel = viewModel(),
+    orderViewModel: OrderViewModel = viewModel(),
     refundViewModel: RefundViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel(),
     userViewModel: UserViewModel = viewModel(),
@@ -170,7 +174,9 @@ fun CanteenScreen(
             UserHomeScreen(
                 menuItems = menuItems,
                 onItemClick = {},
-                receiptViewModel = receiptViewModel,  
+                receiptViewModel = receiptViewModel,
+                cartViewModel = cartViewModel,
+                orderViewModel = orderViewModel,
                 userViewModel = userViewModel,
                 onSignOut = { authViewModel.signOut() }
             )

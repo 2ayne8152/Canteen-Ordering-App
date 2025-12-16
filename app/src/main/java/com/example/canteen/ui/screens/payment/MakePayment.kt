@@ -47,6 +47,7 @@ import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
+import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.delay
@@ -61,7 +62,8 @@ fun MakePayment(
     userViewModel: UserViewModel,
     onBack: () -> Unit = {},
     onClick: () -> Unit,
-    cartViewModel: CartViewModel
+    cartViewModel: CartViewModel,
+    orderViewModel: OrderViewModel
 ) {
     var selectedMethod by remember { mutableStateOf<String?>("Card") }
     var isCardValid by remember { mutableStateOf(false) }
@@ -112,21 +114,29 @@ fun MakePayment(
                 else -> false
             },
             onSubmit = {
+                val userId = user?.UserID ?: return@PaymentBottomBar
+                val items = cart.value
+                val total = cart.value.sumOf { it.totalPrice }
 
+                // CREATE ORDER
+                orderViewModel.createOrder(userId, items, total)
 
+                // CREATE RECEIPT
                 receiptViewModel.createReceipt(
-                    orderId = orderId,
+                    orderId = orderViewModel.latestOrder.value?.orderId ?: "",
                     selectedMethod!!,
-                    cart.value.sumOf { it.totalPrice }
+                    total
                 )
+
                 scope.launch {
                     snackbarHostState.showSnackbar("Payment successful 🎉")
-                    delay(100)
                     onClick()
                 }
+
                 cartViewModel.clearCart()
             }
         )
+
     }
 }
 
