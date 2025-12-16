@@ -71,7 +71,7 @@ fun PaymentMethod(
 ) {
     val selectedMethod = paymentMethodViewModel.selectedMethod.value
 
-    Column(modifier = Modifier.padding(8.dp)) {
+    Column {
         Text(
             text = "Select Payment Method",
             style = MaterialTheme.typography.titleMedium,

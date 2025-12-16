@@ -63,6 +63,7 @@ fun UserHomeScreen(
     }
 
     val isCartScreen = currentRoute == "cart"
+    val isMakePaymentScreen = currentRoute == "makePayment"
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -84,7 +85,7 @@ fun UserHomeScreen(
                 TopAppBar(
                     title = { Text(topBarTitle) },
                     navigationIcon = {
-                        if (isCartScreen) {
+                        if (isCartScreen || isMakePaymentScreen) {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     Icons.Default.ArrowBack,

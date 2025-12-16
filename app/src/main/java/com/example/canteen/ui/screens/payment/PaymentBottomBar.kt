@@ -21,16 +21,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
 
 @Composable
 fun PaymentBottomBar(
+    modifier: Modifier = Modifier,
     itemCount: Int,
     totalAmount: Double,
     enabled: Boolean,
     onSubmit: () -> Unit
 ) {
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .shadow(
                 elevation = 20.dp,

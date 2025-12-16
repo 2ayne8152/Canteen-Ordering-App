@@ -5,6 +5,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,59 +60,23 @@ fun MakePayment(
     onBack: () -> Unit = {},
     onClick: () -> Unit,
     cartViewModel: CartViewModel
-){
-    //val savedCard by cardDetailViewModel.savedCard.collectAsState()
+) {
     var selectedMethod by remember { mutableStateOf<String?>("Card") }
     var isCardValid by remember { mutableStateOf(false) }
 
     val user by userViewModel.selectedUser.collectAsState()
-    val isSubmitEnabled = when (selectedMethod) {
-        "Card" -> isCardValid
-        "E-wallet" -> true
-        else -> false
-    }
-
     val cart = cartViewModel.cart.collectAsState()
-    val totalItems = cart.value.sumOf { it.quantity }
-    val totalPrice = cart.value.sumOf { it.totalPrice }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(snackbarHostState)
-        },
-        bottomBar = {
-            PaymentBottomBar(
-                itemCount = totalItems,
-                totalAmount = totalPrice,
-                enabled = isSubmitEnabled,
-                onSubmit = {
-                    receiptViewModel.createReceipt(
-                        "O0011",
-                        selectedMethod!!,
-                        totalPrice
-                    )
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Payment successful 🎉",
-                            duration = SnackbarDuration.Short
-                        )
-                        delay(100)
-                        onClick() // navigate AFTER snackbar
-                    }
-                    cartViewModel.clearCart()
-                }
-            )
-        }
-    ) { padding ->
-
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
         Column(
             modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             PaymentMethod(
@@ -119,8 +85,40 @@ fun MakePayment(
                 onCardValidityChange = { isCardValid = it }
             )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 130.dp) // 👈 ABOVE bottom bar
+        )
+
+        PaymentBottomBar(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            itemCount = cart.value.sumOf { it.quantity },
+            totalAmount = cart.value.sumOf { it.totalPrice },
+            enabled = when (selectedMethod) {
+                "Card" -> isCardValid
+                "E-wallet" -> true
+                else -> false
+            },
+            onSubmit = {
+                receiptViewModel.createReceipt(
+                    "O0013",
+                    selectedMethod!!,
+                    cart.value.sumOf { it.totalPrice }
+                )
+                scope.launch {
+                    snackbarHostState.showSnackbar("Payment successful 🎉")
+                    delay(100)
+                    onClick()
+                }
+                cartViewModel.clearCart()
+            }
+        )
     }
 }
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
