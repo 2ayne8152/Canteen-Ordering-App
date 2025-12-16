@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.canteen.R
 import com.example.canteen.data.MenuItem
+import com.example.canteen.viewmodel.staffMenu.Base64Utils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,11 +42,9 @@ fun UserMenu(
     var isSheetOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    // Tab state
     val categories = listOf("Food", "Beverages", "Dessert")
     var selectedTab by remember { mutableStateOf(0) }
 
-    // Filtered menu items by search and category
     val filteredMenuItems = menuItems.filter {
         it.name.contains(searchQuery, ignoreCase = true) &&
                 it.categoryId.equals(categories[selectedTab].lowercase(), ignoreCase = true)
@@ -144,6 +144,16 @@ fun MenuItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val bitmap = remember(menuItem.imageUrl) {
+        try {
+            if (menuItem.imageUrl.isNotBlank()) {
+                Base64Utils.base64ToBitmap(menuItem.imageUrl)
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     Card(
         modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(12.dp)
@@ -152,9 +162,9 @@ fun MenuItemCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (menuItem.imageUrl.isNotBlank()) {
-                AsyncImage(
-                    model = menuItem.imageUrl,
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
                     contentDescription = menuItem.name,
                     modifier = Modifier
                         .size(70.dp)

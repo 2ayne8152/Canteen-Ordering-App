@@ -16,10 +16,6 @@ class UserMenuViewModel : ViewModel() {
     val menuItems = _menuItems.asStateFlow()
 
     init {
-        loadMenu()
-    }
-
-    private fun loadMenu() {
         viewModelScope.launch {
             _menuItems.value = repo.getMenuItems()
         }

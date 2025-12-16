@@ -16,7 +16,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.canteen.data.MenuItem
-import com.example.canteen.data.sampleMenuItems
 import com.example.canteen.ui.screens.CanteenScreen
 import com.example.canteen.ui.screens.UserHomeScreen
 import com.example.canteen.viewmodel.usermenu.CartViewModel
