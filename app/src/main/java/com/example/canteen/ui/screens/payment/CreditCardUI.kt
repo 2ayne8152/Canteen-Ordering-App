@@ -196,7 +196,7 @@ fun PayByCard(
                     },
                     label = { Text("Expiry Date", color = Color.Black) },
                     placeholder = { Text(text = "MM/YY", color = middleGray) },
-                    modifier = Modifier.weight(1f).onFocusChanged { focusState ->
+                    modifier = Modifier.weight(1.5f).onFocusChanged { focusState ->
                         if (!focusState.isFocused && hasFocusOnExpiry) {
                             // Validation happens ONLY after user had focus before
                             isExpiryError = !isValidExpiry(expiry.text)

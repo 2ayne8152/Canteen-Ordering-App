@@ -129,7 +129,9 @@ fun CanteenScreen(
         composable(CanteenScreen.UserHomeScreen.name) {
             UserHomeScreen(
                 menuItems = sampleMenuItems,
-                onItemClick = {}
+                onItemClick = {},
+                receiptViewModel = receiptViewModel,
+                userViewModel = userViewModel
             )
         }
 

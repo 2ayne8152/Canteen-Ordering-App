@@ -30,6 +30,7 @@ import com.example.canteen.viewmodel.login.Category
 import com.example.canteen.viewmodel.login.FirestoreMenuItem
 import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.ui.screens.CanteenScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel = viewModel()) {
@@ -45,75 +46,87 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                 item.name.contains(search.trim(), ignoreCase = true)
     }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0xFFF7F7F7))
-        .padding(16.dp)) {
-
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController) }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF7F7F7))
+                .padding(16.dp)
         ) {
-            Column {
-                Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
+
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
+                }
+                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue)
             }
-            Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue)
-        }
 
-        Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp))
 
-        Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
-        Spacer(Modifier.height(16.dp))
+            Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
+            Spacer(Modifier.height(16.dp))
 
-        Button(
-            onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A3D91)),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("+ Add New Item", color = Color.White)
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = search,
-            onValueChange = { search = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search menu items...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Blue) },
-            shape = RoundedCornerShape(14.dp)
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Category Chips
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            val allCategories = listOf(Category("", "All", "")) + categories
-            allCategories.forEach { category ->
-                CategoryChip(
-                    text = category.Name,
-                    selected = selectedCategory == category.CategoryID || (category.Name == "All" && selectedCategory == "All"),
-                    onClick = { selectedCategory = category.CategoryID.ifBlank { "All" } }
-                )
+            Button(
+                onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A3D91)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("+ Add New Item", color = Color.White)
             }
-        }
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(filteredMenuItems) { item ->
-                MenuItemCard(item)
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search menu items...") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = Color.Blue
+                    )
+                },
+                shape = RoundedCornerShape(14.dp)
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Category Chips
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                val allCategories = listOf(Category("", "All", "")) + categories
+                allCategories.forEach { category ->
+                    CategoryChip(
+                        text = category.Name,
+                        selected = selectedCategory == category.CategoryID || (category.Name == "All" && selectedCategory == "All"),
+                        onClick = { selectedCategory = category.CategoryID.ifBlank { "All" } }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(filteredMenuItems) { item ->
+                    MenuItemCard(item)
+                }
             }
         }
     }

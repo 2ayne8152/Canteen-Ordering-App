@@ -1,5 +1,7 @@
 package com.example.canteen.ui.screens
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,14 +26,20 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.canteen.data.MenuItem
+import com.example.canteen.ui.screens.payment.MakePayment
+import com.example.canteen.viewmodel.login.UserViewModel
+import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserHomeScreen(
     menuItems: List<MenuItem>,
     onItemClick: (MenuItem) -> Unit = {},
+    receiptViewModel: ReceiptViewModel,
+    userViewModel: UserViewModel
 ) {
     val cartViewModel: CartViewModel = viewModel()
     val navController = rememberNavController()
@@ -50,6 +58,7 @@ fun UserHomeScreen(
         "order" -> "Order"
         "cart" -> "Your Cart"
         "history" -> "Order History"
+        "makePayment" -> "Complete your Payment"
         else -> "Canteen"
     }
 
@@ -113,9 +122,25 @@ fun UserHomeScreen(
                         cartViewModel = cartViewModel,
                         onBack = { navController.popBackStack() },
                         onCheckout = {
-                            cartViewModel.clearCart()
-                            navController.popBackStack()
+                            navController.navigate("makePayment")
                         }
+                    )
+                }
+
+                composable("makePayment") {
+                    MakePayment(
+                        receiptViewModel = receiptViewModel,
+                        userViewModel = userViewModel,
+                        onBack = {navController.popBackStack()},
+                        onClick = {
+                            navController.navigate("order") {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        },
+                        cartViewModel = cartViewModel
                     )
                 }
 

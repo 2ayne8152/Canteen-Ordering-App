@@ -19,6 +19,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -28,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,59 +44,64 @@ import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
+import com.example.canteen.viewmodel.usermenu.CartViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MakePayment(
-    receiptViewModel: ReceiptViewModel = viewModel(),
-    userViewModel: UserViewModel = viewModel(),
-    onBack: () -> Unit = {}
+    receiptViewModel: ReceiptViewModel,
+    userViewModel: UserViewModel,
+    onBack: () -> Unit = {},
+    onClick: () -> Unit,
+    cartViewModel: CartViewModel
 ){
     //val savedCard by cardDetailViewModel.savedCard.collectAsState()
     var selectedMethod by remember { mutableStateOf<String?>("Card") }
     var isCardValid by remember { mutableStateOf(false) }
 
     val user by userViewModel.selectedUser.collectAsState()
-    // need to get the userId from the canteenScreen NavHost
-    val userId = "AMyzJmi2PrhlSz9jVNx7UJTlCeh2"
     val isSubmitEnabled = when (selectedMethod) {
         "Card" -> isCardValid
         "E-wallet" -> true
         else -> false
     }
 
-    LaunchedEffect(userId) {
-        userId.let {
-            userViewModel.loadUserById(it)
-        }
-    }
+    val cart = cartViewModel.cart.collectAsState()
+    val totalItems = cart.value.sumOf { it.quantity }
+    val totalPrice = cart.value.sumOf { it.totalPrice }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
 
     Scaffold(
-        topBar = {
-            Surface(shadowElevation = 6.dp) {
-                TopAppBar(
-                    title = { Text("Complete your payment") },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    }
-                )
-            }
+        snackbarHost = {
+            SnackbarHost(snackbarHostState)
         },
         bottomBar = {
             PaymentBottomBar(
-                itemCount = 3,
-                totalAmount = 10.00,
+                itemCount = totalItems,
+                totalAmount = totalPrice,
                 enabled = isSubmitEnabled,
                 onSubmit = {
                     receiptViewModel.createReceipt(
-                        "O0006",
+                        "O0011",
                         selectedMethod!!,
-                        10.00
+                        totalPrice
                     )
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Payment successful 🎉",
+                            duration = SnackbarDuration.Short
+                        )
+                        delay(100)
+                        onClick() // navigate AFTER snackbar
+                    }
+                    cartViewModel.clearCart()
                 }
             )
         }
@@ -118,6 +127,6 @@ fun MakePayment(
 @Composable
 fun MakePaymentPreview() {
     CanteenTheme {
-        MakePayment()
+        //MakePayment()
     }
 }
