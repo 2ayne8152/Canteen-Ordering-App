@@ -1,14 +1,15 @@
 package com.example.canteen.ui.screens
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.canteen.ui.screens.loginscreens.ForgotPasswordScreen
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
+import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
@@ -44,7 +45,7 @@ fun CanteenScreen(
     val userId = (authState as? AuthState.LoggedIn)?.userId
     val role = (authState as? AuthState.LoggedIn)?.role
 
-    // 🔥 FIRESTORE MENU ITEMS
+    // Firestore menu items
     val menuItems by userMenuViewModel.menuItems.collectAsState()
 
     LaunchedEffect(role) {
@@ -67,6 +68,7 @@ fun CanteenScreen(
 
     NavHost(navController, startDestination = "login") {
 
+        // -------------------- LOGIN --------------------
         composable("login") {
             LoginScreen(
                 onStaffLoginClick = { navController.navigate("staff_login") },
@@ -85,15 +87,44 @@ fun CanteenScreen(
             )
         }
 
+        // -------------------- STAFF LOGIN --------------------
+        composable("staff_login") {
+            StaffLoginScreen(
+                onUserLoginClick = { navController.navigate("login") },
+                onLoginSuccess = { role ->
+                    when (role) {
+                        "staff" -> navController.navigate(CanteenScreen.StaffDashboard.name) {
+                            popUpTo("staff_login") { inclusive = true }
+                        }
+                        "user" -> navController.navigate(CanteenScreen.UserHomeScreen.name) {
+                            popUpTo("staff_login") { inclusive = true }
+                        }
+                    }
+                },
+                authViewModel = authViewModel,
+                onForgotPasswordClick = { navController.navigate("forgot_password") }
+            )
+        }
+
+        // -------------------- FORGOT PASSWORD --------------------
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                authViewModel = authViewModel,
+                onBackToLoginClick = { navController.popBackStack() }
+            )
+        }
+
+        // -------------------- USER HOME --------------------
         composable(CanteenScreen.UserHomeScreen.name) {
             UserHomeScreen(
-                menuItems = menuItems,   // ✅ FIRESTORE DATA
+                menuItems = menuItems,
                 onItemClick = {},
                 receiptViewModel = receiptViewModel,
                 userViewModel = userViewModel
             )
         }
 
+        // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
             StaffDashboardScreen(navController)
         }
