@@ -20,7 +20,7 @@ class AuthViewModel : ViewModel() {
     private val auth: FirebaseAuth = Firebase.auth
     private val db = Firebase.firestore
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.LoggedOut)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Initial)
     val authState = _authState.asStateFlow()
 
     // --- State for Password Reset ---
@@ -31,6 +31,42 @@ class AuthViewModel : ViewModel() {
     val isLoadingPasswordReset: StateFlow<Boolean> = _isLoadingPasswordReset.asStateFlow()
     // ---
 
+    init {
+        // Check for existing user session when ViewModel is created
+        checkCurrentUser()
+    }
+
+    private fun checkCurrentUser() {
+        viewModelScope.launch {
+            val currentUser = auth.currentUser
+            if (currentUser != null) {
+                // User is already logged in, fetch their role from Firestore
+                try {
+                    Log.d("AuthViewModel", "Found existing user: ${currentUser.uid}")
+
+                    val userDoc = db.collection("users").document(currentUser.uid).get().await()
+                    val userRole = userDoc.getString("Role") ?: "user"
+
+                    Log.d("AuthViewModel", "User role from Firestore: $userRole")
+                    _authState.value = AuthState.LoggedIn(
+                        userId = currentUser.uid,
+                        role = userRole
+                    )
+                    Log.d("AuthViewModel", "Auto-login successful with role: $userRole")
+
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Error fetching user data on auto-login: ${e.message}")
+                    // If we can't fetch user data, sign them out
+                    auth.signOut()
+                    _authState.value = AuthState.LoggedOut
+                }
+            } else {
+                // No user is logged in
+                _authState.value = AuthState.LoggedOut
+                Log.d("AuthViewModel", "No existing user session found")
+            }
+        }
+    }
     fun register(email: String, password: String, username: String, role: String, phoneNumber: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -206,6 +242,7 @@ class AuthViewModel : ViewModel() {
 sealed class AuthState {
     data class LoggedIn(val userId: String, val role: String) : AuthState()
     data class RegistrationSuccess(val message: String = "Registration successful!") : AuthState()
+    object Initial : AuthState() // Added Initial state
     object LoggedOut : AuthState()
     object Loading : AuthState()
     data class Error(val message: String) : AuthState()

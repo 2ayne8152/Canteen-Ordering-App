@@ -7,8 +7,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
@@ -31,6 +33,7 @@ import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import kotlinx.coroutines.launch
+import com.example.canteen.viewmodel.AuthViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,7 +42,8 @@ fun UserHomeScreen(
     menuItems: List<MenuItem>,
     onItemClick: (MenuItem) -> Unit = {},
     receiptViewModel: ReceiptViewModel,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    onSignOut: () -> Unit  // Add this parameter
 ) {
     val cartViewModel: CartViewModel = viewModel()
     val navController = rememberNavController()
@@ -76,6 +80,12 @@ fun UserHomeScreen(
                 onOrderHistoryClick = {
                     navController.navigate("history") { launchSingleTop = true }
                     scope.launch { drawerState.close() }
+                },
+                onSignOut = {
+                    scope.launch { drawerState.close() }
+                    // Clear cart and sign out
+                    cartViewModel.clearCart()
+                    onSignOut()
                 }
             )
         }
@@ -132,7 +142,7 @@ fun UserHomeScreen(
                     MakePayment(
                         receiptViewModel = receiptViewModel,
                         userViewModel = userViewModel,
-                        onBack = {navController.popBackStack()},
+                        onBack = { navController.popBackStack() },
                         onClick = {
                             navController.navigate("order") {
                                 popUpTo(navController.graph.startDestinationId) {
@@ -159,15 +169,33 @@ fun UserHomeScreen(
 }
 
 @Composable
-fun DrawerContent(onOrderClick: () -> Unit, onOrderHistoryClick: () -> Unit) {
+fun DrawerContent(
+    onOrderClick: () -> Unit,
+    onOrderHistoryClick: () -> Unit,
+    onSignOut: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(top = 48.dp)
+            .padding(top = 48.dp),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        DrawerItem(Icons.Default.ShoppingCart, "Order", onOrderClick)
-        DrawerItem(Icons.Default.History, "Order History", onOrderHistoryClick)
+        // Top section - Menu items
+        Column {
+            DrawerItem(Icons.Default.ShoppingCart, "Order", onOrderClick)
+            DrawerItem(Icons.Default.History, "Order History", onOrderHistoryClick)
+        }
+
+        // Bottom section - Logout
+        Column {
+            Divider(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
+            DrawerItem(Icons.AutoMirrored.Filled.Logout, "Logout", onSignOut)
+        }
     }
 }
 
@@ -180,8 +208,18 @@ fun DrawerItem(icon: ImageVector, text: String, onClick: () -> Unit) {
             .padding(vertical = 12.dp, horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = text, tint = MaterialTheme.colorScheme.primary)
+        Icon(
+            icon,
+            contentDescription = text,
+            tint = if (text == "Logout") MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.primary
+        )
         Spacer(modifier = Modifier.width(16.dp))
-        Text(text = text, fontSize = 18.sp)
+        Text(
+            text = text,
+            fontSize = 18.sp,
+            color = if (text == "Logout") MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.onSurface
+        )
     }
 }
