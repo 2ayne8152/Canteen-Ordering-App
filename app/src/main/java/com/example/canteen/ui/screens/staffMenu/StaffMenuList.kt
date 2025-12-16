@@ -1,6 +1,8 @@
 package com.example.canteen.ui.screens.staffMenu
 
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -9,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -24,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import coil.compose.rememberAsyncImagePainter
 import com.example.canteen.viewmodel.login.FirestoreMenuItem
 import com.example.canteen.viewmodel.login.MenuViewModel
 
@@ -86,7 +87,22 @@ fun StaffMenuItemCard(
 
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> editedImageUri = uri }
+    ) { uri: Uri? ->
+        editedImageUri = uri
+    }
+
+    // Decode Base64 if needed
+    val bitmap = remember(editedImageUri, item.imageUrl) {
+        editedImageUri?.let { null } // new image will be handled differently
+            ?: item.imageUrl?.let { base64 ->
+                try {
+                    val bytes = Base64.decode(base64, Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -103,13 +119,23 @@ fun StaffMenuItemCard(
                     .background(Color.LightGray),
                 contentAlignment = Alignment.Center
             ) {
-                val imageUrl = editedImageUri?.toString() ?: item.imageUrl
-                Image(
-                    painter = rememberAsyncImagePainter(imageUrl),
-                    contentDescription = editedName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                if (editedImageUri != null) {
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_gallery),
+                        contentDescription = editedName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    bitmap?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = editedName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -141,16 +167,19 @@ fun StaffMenuItemCard(
                         modifier = Modifier
                             .height(150.dp)
                             .fillMaxWidth()
-                            .background(Color.LightGray, RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.LightGray),
                         contentAlignment = Alignment.Center
                     ) {
-                        val imageUrl = editedImageUri?.toString() ?: item.imageUrl
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = editedName,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
+                        val editBitmap = editedImageUri?.let { null } ?: bitmap
+                        editBitmap?.let {
+                            Image(
+                                bitmap = it.asImageBitmap(),
+                                contentDescription = editedName,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(8.dp))
@@ -208,12 +237,10 @@ fun StaffMenuItemCard(
                         categoryId = editedCategory,
                         price = editedPrice.toDoubleOrNull() ?: 0.0,
                         remainQuantity = editedQuantity.toIntOrNull() ?: 0,
-                        imageUrl = editedImageUri?.toString() ?: item.imageUrl
+                        imageUrl = editedImageUri?.let { null } ?: item.imageUrl // Handle your upload logic separately
                     )
                     viewModel.updateMenuItem(updatedItem) { success, error ->
-                        if (!success) {
-                            println("Error updating: $error")
-                        }
+                        if (!success) println("Error updating: $error")
                     }
                     showEditDialog = false
                 }) { Text("Save") }

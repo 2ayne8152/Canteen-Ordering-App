@@ -48,7 +48,7 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
 
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) }
-    ) { padding ->
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -75,29 +75,46 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
             Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
             Spacer(Modifier.height(16.dp))
 
-            Button(
-                onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
+            // Add & Edit buttons row
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A3D91)),
-                shape = RoundedCornerShape(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("+ Add New Item", color = Color.White)
+                Button(
+                    onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A3D91)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("+ Add New Item", color = Color.White)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0D47A1))
+                        .clickable { navController.navigate(CanteenScreen.MenuListPage.name) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Menu",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))
 
+            // Search field
             OutlinedTextField(
                 value = search,
                 onValueChange = { search = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search menu items...") },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = Color.Blue
-                    )
-                },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Blue) },
                 shape = RoundedCornerShape(14.dp)
             )
 
@@ -105,7 +122,9 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
 
             // Category Chips
             Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 val allCategories = listOf(Category("", "All", "")) + categories
@@ -118,11 +137,12 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
+            // Scrollable list of menu items
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = paddingValues.calculateBottomPadding())
             ) {
                 items(filteredMenuItems) { item ->
                     MenuItemCard(item)
@@ -134,21 +154,24 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
 
 @Composable
 fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
-    Box(modifier = Modifier
-        .clip(RoundedCornerShape(20.dp))
-        .background(if (selected) Color(0xFF0A3D91) else Color(0xFFEFEFEF))
-        .clickable { onClick() }
-        .padding(horizontal = 14.dp, vertical = 8.dp)) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (selected) Color(0xFF0A3D91) else Color(0xFFEFEFEF))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
         Text(text, color = if (selected) Color.White else Color.Black, fontSize = 13.sp)
     }
 }
 
 @Composable
-fun MenuItemCard(item: FirestoreMenuItem) {
-    Row(modifier = Modifier
-        .fillMaxWidth()
-        .background(Color.White, RoundedCornerShape(12.dp))
-        .padding(12.dp),
+fun MenuItemCard(item: FirestoreMenuItem, onEditClick: () -> Unit = {}) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val bitmap = remember(item.imageUrl) {
@@ -161,9 +184,19 @@ fun MenuItemCard(item: FirestoreMenuItem) {
         }
 
         bitmap?.let {
-            Image(it.asImageBitmap(), contentDescription = item.name,
-                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(12.dp)))
-        } ?: Box(modifier = Modifier.size(60.dp).clip(RoundedCornerShape(12.dp)).background(Color.LightGray))
+            Image(
+                it.asImageBitmap(),
+                contentDescription = item.name,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(12.dp))
+            )
+        } ?: Box(
+            modifier = Modifier
+                .size(60.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.LightGray)
+        )
 
         Spacer(Modifier.width(12.dp))
 
@@ -172,14 +205,20 @@ fun MenuItemCard(item: FirestoreMenuItem) {
             Text(item.description, fontSize = 13.sp, color = Color.Gray, maxLines = 1)
         }
 
+        // Price tag
         Box(
-            modifier = Modifier.background(Color(0xFFFFE0C2), RoundedCornerShape(12.dp))
+            modifier = Modifier
+                .background(Color(0xFFFFE0C2), RoundedCornerShape(12.dp))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
             Text("RM %.2f".format(item.price), color = Color(0xFFFF6F3C), fontSize = 12.sp)
         }
+
+        Spacer(Modifier.width(8.dp))
+
     }
 }
+
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
@@ -196,8 +235,8 @@ fun BottomNavigationBar(navController: NavController) {
         NavigationBarItem(
             selected = currentRoute == CanteenScreen.MenuItemForm.name,
             onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) { launchSingleTop = true } },
-            icon = { Icon(Icons.Default.Add, contentDescription = "Add Item") },
-            label = { Text("Add Item") }
+            icon = { Icon(Icons.Default.Add, contentDescription = "AddItem") },
+            label = { Text("AddItem") }
         )
         NavigationBarItem(
             selected = currentRoute == CanteenScreen.RefundManagementScreenWrapper.name,
