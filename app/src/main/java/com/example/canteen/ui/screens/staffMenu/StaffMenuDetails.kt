@@ -55,7 +55,7 @@ fun StaffMenuDetailPage(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-       
+
         IconButton(onClick = { navController.popBackStack() }) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Back")
         }
