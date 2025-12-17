@@ -129,10 +129,13 @@ fun PaymentHistoryCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val order by orderViewModel.latestOrder.collectAsState()
+    val orders by orderViewModel.orders.collectAsState()
+    val order = orders[data.first.orderId]
 
-    LaunchedEffect(data.first.orderId) {
-        orderViewModel.getOrder(data.first.orderId)
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            orderViewModel.getOrderForHistory(data.first.orderId)
+        }
     }
 
     Surface(
