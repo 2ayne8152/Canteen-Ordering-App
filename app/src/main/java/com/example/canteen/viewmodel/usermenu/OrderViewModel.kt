@@ -54,11 +54,11 @@ class OrderViewModel(
 
     private val _orderHistory = MutableStateFlow<List<Order>>(emptyList())
     val orderHistory: StateFlow<List<Order>> = _orderHistory
-
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
-
     private var orderListener: ListenerRegistration? = null
+    private val _selectedOrder = MutableStateFlow<Order?>(null)
+    val selectedOrder: StateFlow<Order?> = _selectedOrder
 
     fun startListeningOrderHistory(userId: String) {
         stopListeningOrderHistory()
@@ -84,4 +84,7 @@ class OrderViewModel(
         super.onCleared()
     }
 
+    fun selectOrder(order: Order) {
+        _selectedOrder.value = order
+    }
 }

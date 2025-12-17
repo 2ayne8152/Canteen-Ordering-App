@@ -1,5 +1,6 @@
 package com.example.canteen.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,9 +22,12 @@ import com.example.canteen.data.CartItem
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.painterResource
 import com.example.canteen.R
+import com.example.canteen.viewmodel.staffMenu.Base64Utils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,20 +115,43 @@ fun CartListItem(
     onDecrease: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val bitmap = remember(cartItem.menuItem.imageUrl) {
+        try {
+            if (cartItem.menuItem.imageUrl.isNotBlank()) {
+                Base64Utils.base64ToBitmap(cartItem.menuItem.imageUrl)
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     Card(
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (cartItem.menuItem.imageUrl.isNotBlank()) {
-                AsyncImage(
-                    model = cartItem.menuItem.imageUrl,
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
                     contentDescription = cartItem.menuItem.name,
-                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(8.dp))
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
                 )
             } else {
-                // fallback placeholder from drawable
-                Icon(painter = painterResource(id = R.drawable.tomyammaggi), contentDescription = null, modifier = Modifier.size(80.dp))
+                Image(
+                    painter = painterResource(R.drawable.tomyammaggi),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -131,19 +159,21 @@ fun CartListItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(cartItem.menuItem.name, style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("RM ${"%.2f".format(cartItem.menuItem.price)}", style = MaterialTheme.typography.bodyMedium)
+                Text("RM ${"%.2f".format(cartItem.menuItem.price)}")
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Subtotal: RM ${"%.2f".format(cartItem.totalPrice)}", fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Subtotal: RM ${"%.2f".format(cartItem.totalPrice)}",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
-            // Quantity controls (compact)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(onClick = onIncrease) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
+                    Icon(Icons.Default.Add, contentDescription = "Increase")
                 }
                 Text("${cartItem.quantity}", fontWeight = FontWeight.Medium)
                 IconButton(onClick = onDecrease) {
-                    Icon(Icons.Default.Remove, contentDescription = "Remove")
+                    Icon(Icons.Default.Remove, contentDescription = "Decrease")
                 }
                 TextButton(onClick = onRemove) {
                     Text("Remove")
@@ -152,3 +182,4 @@ fun CartListItem(
         }
     }
 }
+

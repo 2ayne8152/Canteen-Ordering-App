@@ -1,14 +1,17 @@
 package com.example.canteen.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.canteen.data.Order
 import com.example.canteen.viewmodel.login.UserViewModel
@@ -20,16 +23,18 @@ import java.util.*
 @Composable
 fun OrderHistoryScreen(
     userViewModel: UserViewModel,
-    orderViewModel: OrderViewModel
+    orderViewModel: OrderViewModel,
+    onOrderClick: (Order) -> Unit
 ) {
     val user by userViewModel.selectedUser.collectAsState()
-
     val userId = user?.UserID?.trim()
 
     val orders by orderViewModel.orderHistory.collectAsState()
 
     LaunchedEffect(userId) {
-        orderViewModel.startListeningOrderHistory(userId!!)
+        userId?.let {
+            orderViewModel.startListeningOrderHistory(it)
+        }
     }
 
     DisposableEffect(Unit) {
@@ -38,8 +43,7 @@ fun OrderHistoryScreen(
         }
     }
 
-    Scaffold()
-    { padding ->
+    Scaffold { padding ->
         if (orders.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -54,10 +58,14 @@ fun OrderHistoryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(orders) { order ->
-                    OrderHistoryItem(order)
+                    OrderHistoryItem(
+                        order = order,
+                        onOrderClick = onOrderClick
+                    )
                 }
             }
         }
@@ -65,8 +73,10 @@ fun OrderHistoryScreen(
 }
 
 @Composable
-fun OrderHistoryItem(order: Order) {
-
+fun OrderHistoryItem(
+    order: Order,
+    onOrderClick: (Order) -> Unit
+) {
     val date = remember(order.createdAt) {
         SimpleDateFormat(
             "dd MMM yyyy, HH:mm",
@@ -75,19 +85,64 @@ fun OrderHistoryItem(order: Order) {
     }
 
     Card(
+        shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 12.dp),
+            .clickable { onOrderClick(order) },
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Order ID: ${order.orderId}", style = MaterialTheme.typography.bodySmall)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Total: RM ${order.totalAmount}", style = MaterialTheme.typography.bodyLarge)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Status: ${order.status}")
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Date: $date", style = MaterialTheme.typography.bodySmall)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            // ===== Left Icon (like image in cart) =====
+            Icon(
+                imageVector = Icons.Default.ReceiptLong,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // ===== Main Content =====
+            Column(modifier = Modifier.weight(1f)) {
+
+                Text(
+                    text = "Order #${order.orderId.takeLast(6)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Date: $date",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "Status: ${order.status}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // ===== Right Total (like subtotal) =====
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "Total",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = "RM ${"%.2f".format(order.totalAmount)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
