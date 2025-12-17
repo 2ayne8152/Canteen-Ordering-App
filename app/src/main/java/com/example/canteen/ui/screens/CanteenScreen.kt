@@ -59,7 +59,6 @@ enum class CanteenScreen(val title: String) {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CanteenScreen(
-    cardDetailViewModel: CardDetailViewModel = viewModel(),
     receiptViewModel: ReceiptViewModel = viewModel(),
     cartViewModel: CartViewModel = viewModel(),
     orderViewModel: OrderViewModel = viewModel(),
@@ -192,6 +191,7 @@ fun CanteenScreen(
                 cartViewModel = cartViewModel,
                 orderViewModel = orderViewModel,
                 userViewModel = userViewModel,
+                refundViewModel = refundViewModel,
                 onSignOut = { authViewModel.signOut() }
             )
         }

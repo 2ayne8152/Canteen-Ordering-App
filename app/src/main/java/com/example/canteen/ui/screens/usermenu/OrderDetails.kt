@@ -1,5 +1,6 @@
 package com.example.canteen.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,6 +10,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,16 +26,36 @@ import coil.compose.AsyncImage
 import com.example.canteen.R
 import com.example.canteen.data.CartItem
 import com.example.canteen.data.Order
+import com.example.canteen.ui.screens.payment.RefundDetailScreen
+import com.example.canteen.ui.theme.Green
+import com.example.canteen.ui.theme.darkGreen
+import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.staffMenu.Base64Utils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderDetailScreen(
     order: Order,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onClick: () -> Unit,
+    receiptViewModel: ReceiptViewModel
 ) {
     val totalItems = order.items.sumOf { it.quantity }
     val totalPrice = order.totalAmount
+    val status = order.status == "PENDING" || order.status == "PREPARING" || order.status == "Pending"
+    val receiptPair by receiptViewModel.receiptLoadByOrderId.collectAsState()
+
+    LaunchedEffect(order.orderId) {
+        Log.d("OrderListener", order.orderId)
+        receiptViewModel.loadReceiptByOrderId(order.orderId)
+    }
+
+    LaunchedEffect(receiptPair) {
+        receiptPair?.let {
+            Log.d("OrderListener", "Receipt loaded for orderId=${it.first.orderId}")
+        }
+    }
+
 
     Scaffold()
     { padding ->
@@ -60,6 +84,13 @@ fun OrderDetailScreen(
                         text = "Status: ${order.status}",
                         fontWeight = FontWeight.Medium
                     )
+
+                    if (receiptPair?.first?.refundId != null){
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Divider(modifier = Modifier.padding(bottom = 8.dp))
+                        RefundDetailScreen(orderId = order.orderId, receiptViewModel = receiptViewModel)
+                    }
                 }
             }
 
@@ -102,6 +133,19 @@ fun OrderDetailScreen(
                         "RM ${"%.2f".format(totalPrice)}",
                         fontWeight = FontWeight.Bold
                     )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                if (status){
+                    Button(
+                        onClick = onClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(darkGreen))
+                    {
+                        Text(text = "Refund Request")
+                    }
                 }
             }
         }

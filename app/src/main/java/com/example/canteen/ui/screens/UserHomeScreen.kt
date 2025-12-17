@@ -30,11 +30,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.canteen.data.MenuItem
 import com.example.canteen.ui.screens.payment.MakePayment
+import com.example.canteen.ui.screens.payment.Refund
 import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import kotlinx.coroutines.launch
 import com.example.canteen.viewmodel.AuthViewModel
+import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.OrderViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -47,6 +49,7 @@ fun UserHomeScreen(
     cartViewModel: CartViewModel,
     orderViewModel: OrderViewModel,
     userViewModel: UserViewModel,
+    refundViewModel: RefundViewModel,
     onSignOut: () -> Unit  // Add this parameter
 ) {
     val navController = rememberNavController()
@@ -67,12 +70,14 @@ fun UserHomeScreen(
         "history" -> "Order History"
         "makePayment" -> "Complete your Payment"
         "orderDetail" -> "Order Details"
+        "refund" -> "Request Refund"
         else -> "Canteen"
     }
 
     val isCartScreen = currentRoute == "cart"
     val isMakePaymentScreen = currentRoute == "makePayment"
     val isOrderDetailScreen = currentRoute == "orderDetail"
+    val isRequestRefund = currentRoute == "refund"
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -100,7 +105,7 @@ fun UserHomeScreen(
                 TopAppBar(
                     title = { Text(topBarTitle) },
                     navigationIcon = {
-                        if (isCartScreen || isMakePaymentScreen || isOrderDetailScreen) {
+                        if (isCartScreen || isMakePaymentScreen || isOrderDetailScreen || isRequestRefund) {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     Icons.Default.ArrowBack,
@@ -177,7 +182,9 @@ fun UserHomeScreen(
                     selectedOrder?.let { order ->
                         OrderDetailScreen(
                             order = order,
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack() },
+                            receiptViewModel = receiptViewModel,
+                            onClick = {navController.navigate("refund")}
                         )
                     } ?: Box(
                         modifier = Modifier.fillMaxSize(),
@@ -185,6 +192,19 @@ fun UserHomeScreen(
                     ) {
                         Text("Order not found")
                     }
+                }
+
+                composable("refund") {
+                    Refund(
+                        onBack = {
+                            navController.navigate("history") {
+                                launchSingleTop = true   // avoid duplicate history screens
+                            }
+                        },
+                        refundViewModel = refundViewModel,
+                        receiptViewModel = receiptViewModel,
+                        orderViewModel = orderViewModel
+                    )
                 }
             }
         }

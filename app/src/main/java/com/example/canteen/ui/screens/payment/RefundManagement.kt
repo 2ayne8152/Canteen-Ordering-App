@@ -66,13 +66,13 @@ fun RefundManagementScreenWrapper(
     onClick: () -> Unit = {},
     navController: NavController
 ) {
-    val pending by receiptViewModel.pendingReceipts.collectAsState()
+    val requested by receiptViewModel.requestedReceipts.collectAsState()
     val approved by receiptViewModel.approvedReceipts.collectAsState()
     val rejected by receiptViewModel.rejectedReceipts.collectAsState()
 
     RefundManagementScreen(
         receiptViewModel = receiptViewModel,
-        pendingList = pending,
+        pendingList = requested,
         approvedList = approved,
         rejectedList = rejected,
         onBack = onBack,
@@ -94,7 +94,7 @@ fun RefundManagementScreen(
     navController: NavController
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Pending", "Approved", "Rejected")
+    val tabs = listOf("Requested", "Approved", "Rejected")
     var expandedCardId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(

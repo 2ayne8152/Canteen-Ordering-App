@@ -69,7 +69,7 @@ fun RefundDetailPage(
     userViewModel: UserViewModel,
     onBack: () -> Unit = {}
 ) {
-    val order by orderViewModel.latestOrder.collectAsState()
+    val order by orderViewModel.refundOrder.collectAsState()
     val user by userViewModel.selectedUser.collectAsState()
     val selected by receiptViewModel.selectedRefund.collectAsState()
     var responseBy by remember { mutableStateOf("") }
@@ -290,6 +290,7 @@ fun RefundDetailPage(
                                         "status" to "Approved",
                                     )
                                 )
+                                orderViewModel.orderStatusUpdate(receipt.orderId,"APPROVED")
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightGreen
@@ -313,6 +314,7 @@ fun RefundDetailPage(
                                         "status" to "Rejected",
                                         )
                                 )
+                                orderViewModel.orderStatusUpdate(receipt.orderId,"REJECTED")
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = lightRed// red

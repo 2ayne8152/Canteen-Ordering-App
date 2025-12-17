@@ -54,9 +54,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
+@Composable
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
 fun MakePayment(
     receiptViewModel: ReceiptViewModel,
     userViewModel: UserViewModel,
@@ -74,9 +74,7 @@ fun MakePayment(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,49 +95,51 @@ fun MakePayment(
                 .padding(bottom = 130.dp)
         )
 
-        val orderId = remember {
-            Firebase.firestore
-            .collection("receipt")
-            .document()
-            .id
-        }
+        var isProcessing by remember { mutableStateOf(false) }
 
         PaymentBottomBar(
             modifier = Modifier.align(Alignment.BottomCenter),
             itemCount = cart.value.sumOf { it.quantity },
             totalAmount = cart.value.sumOf { it.totalPrice },
             enabled = when (selectedMethod) {
-                "Card" -> isCardValid
-                "E-wallet" -> true
+                "Card" -> isCardValid && !isProcessing
+                "E-wallet" -> !isProcessing
                 else -> false
             },
             onSubmit = {
+                if (isProcessing) return@PaymentBottomBar  // prevent double clicks
+                isProcessing = true
+
                 val userId = user?.UserID ?: return@PaymentBottomBar
                 val items = cart.value
                 val total = cart.value.sumOf { it.totalPrice }
 
-                // CREATE ORDER
-                orderViewModel.createOrder(userId, items, total)
-
-                // CREATE RECEIPT
-                receiptViewModel.createReceipt(
-                    orderId = orderViewModel.latestOrder.value?.orderId ?: "",
-                    selectedMethod!!,
-                    total
-                )
-
+                // CREATE ORDER & RECEIPT
                 scope.launch {
-                    snackbarHostState.showSnackbar("Payment successful 🎉")
-                    onClick()
-                }
+                    try {
+                        val order = orderViewModel.createOrder(userId, items, total)
+                        receiptViewModel.createReceipt(
+                            orderId = order.orderId,
+                            selectedMethod!!,
+                            total
+                        )
 
-                cartViewModel.clearCart()
+                        cartViewModel.clearCart()  // clear cart immediately
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar("Payment failed: ${e.message}")
+                        isProcessing = false
+                        return@launch
+                    }
+
+                    // show success snackbar without blocking button
+                    snackbarHostState.showSnackbar("Payment successful 🎉")
+                    isProcessing = false
+                    onClick()  // navigate back or update UI
+                }
             }
         )
-
     }
 }
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)

@@ -1,5 +1,6 @@
 package com.example.canteen.viewmodel.usermenu
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.canteen.data.CartItem
@@ -18,25 +19,32 @@ class OrderViewModel(
     private val _latestOrder = MutableStateFlow<Order?>(null)
     val latestOrder: StateFlow<Order?> = _latestOrder
 
+    private val _refundOrder = MutableStateFlow<Order?>(null)
+    val refundOrder: StateFlow<Order?> = _refundOrder
+
     private val _orders = MutableStateFlow<Map<String, Order>>(emptyMap())
     val orders: StateFlow<Map<String, Order>> = _orders
 
-    fun createOrder(userId: String, items: List<CartItem>, totalAmount: Double) {
-        viewModelScope.launch {
-            val order = repository.createOrder(userId, items, totalAmount)
-            _latestOrder.value = order
-        }
+    suspend fun createOrder(
+        userId: String,
+        items: List<CartItem>,
+        totalAmount: Double
+    ): Order {
+        val order = repository.createOrder(userId, items, totalAmount)
+        _latestOrder.value = order
+        return order
     }
 
-    fun markOrderPaid(orderId: String) {
+
+    fun orderStatusUpdate(orderId: String, status: String) {
         viewModelScope.launch {
-            repository.markOrderPaid(orderId)
+            repository.orderStatusUpdate(orderId, status)
         }
     }
 
     fun getOrder(orderId: String) {
         viewModelScope.launch {
-            _latestOrder.value = repository.getOrder(orderId)
+            _refundOrder.value = repository.getOrder(orderId)
         }
     }
 
@@ -62,10 +70,12 @@ class OrderViewModel(
 
     fun startListeningOrderHistory(userId: String) {
         stopListeningOrderHistory()
+        Log.d("OrderListener", "Listening orders for userId=$userId")
 
         orderListener = repository.listenOrdersByUserId(
             userId = userId,
             onUpdate = { orders ->
+                Log.d("OrderListener", "Orders updated: ${orders.map { it.status }}")
                 _orderHistory.value = orders
             },
             onError = { throwable ->

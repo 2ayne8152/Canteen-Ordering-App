@@ -58,7 +58,7 @@ class RefundViewModel(
                     reason = reason,
                     refundDetail = detail,
                     requestTime = System.currentTimeMillis(),
-                    status = "Pending"
+                    status = "Requested"
                 )
 
                 val newId = repository.createRefund(refund)

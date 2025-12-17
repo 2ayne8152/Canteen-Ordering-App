@@ -3,7 +3,7 @@ package com.example.canteen.viewmodel.payment
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.example.canteen.Repository.ReceiptRepository
+import com.example.canteen.repository.ReceiptRepository
 import com.example.canteen.data.Receipt
 import com.example.canteen.data.RefundRequest
 import androidx.compose.runtime.State
@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 class ReceiptViewModel(
     private val repository: ReceiptRepository = ReceiptRepository()
 ) : ViewModel() {
-
     private val _receipt = mutableStateOf<Receipt?>(null)
     val receipt: State<Receipt?> = _receipt
 
@@ -36,8 +35,8 @@ class ReceiptViewModel(
     private val _newReceiptId = MutableStateFlow<String?>(null)
     val newReceiptId: StateFlow<String?> = _newReceiptId
 
-    private val _pendingReceipts = MutableStateFlow<List<Pair<Receipt, RefundRequest?>>>(emptyList())
-    val pendingReceipts = _pendingReceipts.asStateFlow()
+    private val _requestedReceipts = MutableStateFlow<List<Pair<Receipt, RefundRequest?>>>(emptyList())
+    val requestedReceipts = _requestedReceipts.asStateFlow()
 
     private val _approvedReceipts = MutableStateFlow<List<Pair<Receipt, RefundRequest?>>>(emptyList())
     val approvedReceipts = _approvedReceipts.asStateFlow()
@@ -50,6 +49,9 @@ class ReceiptViewModel(
 
     private val _receiptLoadById = MutableStateFlow<Pair<Receipt, RefundRequest?>?>(null)
     val receiptLoadById = _receiptLoadById.asStateFlow()
+
+    private val _receiptLoadByOrderId = MutableStateFlow<Pair<Receipt, RefundRequest?>?>(null)
+    val receiptLoadByOrderId = _receiptLoadByOrderId.asStateFlow()
 
     fun selectRefundItem(item: Pair<Receipt, RefundRequest?>) {
         _selectedRefund.value = item
@@ -73,18 +75,23 @@ class ReceiptViewModel(
     }
 
     fun loadReceiptByOrderId(orderId: String) {
+        Log.d("ReceiptVM", "loadReceiptByOrderId CALLED with $orderId")
+
         viewModelScope.launch {
+            _receiptLoadByOrderId.value = null
             _loading.value = true
             try {
-                _receiptLoadById.value =
-                    repository.getReceiptWithRefundByOrderId(orderId)
+                val result = repository.getReceiptWithRefundByOrderId(orderId)
+                Log.d("ReceiptVM", "Repository result = $result")
+                _receiptLoadByOrderId.value = result
             } catch (e: Exception) {
-                _error.value = e.message
+                Log.e("ReceiptVM", "Error", e)
             } finally {
                 _loading.value = false
             }
         }
     }
+
 
 
     fun createReceipt(
@@ -135,7 +142,7 @@ class ReceiptViewModel(
                 val withRefund = all.filter{ it.first.refundId != null}
 
                 // Separate by refund status
-                _pendingReceipts.value = withRefund.filter { it.second?.status == "Pending" }
+                _requestedReceipts.value = withRefund.filter { it.second?.status == "Requested" }
                 _approvedReceipts.value = withRefund.filter { it.second?.status == "Approved" }
                 _rejectedReceipts.value = withRefund.filter { it.second?.status == "Rejected" }
 
@@ -187,8 +194,8 @@ class ReceiptViewModel(
 
                 val withRefund = sorted.filter { it.first.refundId != null }
 
-                _pendingReceipts.value =
-                    withRefund.filter { it.second?.status == "Pending" }
+                _requestedReceipts.value =
+                    withRefund.filter { it.second?.status == "Requested" }
 
                 _approvedReceipts.value =
                     withRefund.filter { it.second?.status == "Approved" }

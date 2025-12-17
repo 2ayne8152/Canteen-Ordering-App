@@ -54,18 +54,21 @@ import com.example.canteen.ui.theme.lightRed
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import androidx.compose.ui.graphics.Color
+import com.example.canteen.viewmodel.usermenu.OrderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Refund(
     onBack: () -> Unit = {},
-    refundViewModel: RefundViewModel = viewModel(),
-    receiptViewModel: ReceiptViewModel
+    refundViewModel: RefundViewModel,
+    receiptViewModel: ReceiptViewModel,
+    orderViewModel: OrderViewModel
 ) {
     val loading by refundViewModel.loading.collectAsState()
     val error by refundViewModel.error.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val newReceiptId by receiptViewModel.newReceiptId.collectAsState()
+    val receiptPair by receiptViewModel.receiptLoadByOrderId.collectAsState()
+    //val newReceiptId by receiptViewModel.newReceiptId.collectAsState()
     val newRefundId by refundViewModel.newRefundId.collectAsState()
 
     // UI States
@@ -87,21 +90,17 @@ fun Refund(
         }
     }
 
-    LaunchedEffect(Unit) {
-        refundViewModel.refundCreated.collect { refundId ->
+    LaunchedEffect(newRefundId,receiptPair) {
+        val receiptId = receiptPair?.first?.receiptId
+        val refundId = newRefundId
 
-            val receiptId = newReceiptId
-            if (receiptId != null) {
-                receiptViewModel.updateReceipt(
-                    id = receiptId,
-                    updates = mapOf("refundId" to newRefundId)
-                )
-            } else {
-                Log.e("Refund", "newReceiptId is NULL!")
-            }
+        if (!receiptId.isNullOrBlank() && !refundId.isNullOrBlank()) {
+            receiptViewModel.updateReceipt(
+                id = receiptId,
+                updates = mapOf("refundId" to refundId)
+            )
         }
     }
-
 
     // Success Snackbar
     LaunchedEffect(refundViewModel.refundCreated.collectAsState().value) {
@@ -117,133 +116,121 @@ fun Refund(
         }
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
-        topBar = {
-            TopAppBar(
-                title = { Text("Refund Request") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+
+        Column {
+
+            // --- HEADER ----
+            Text(
+                text = "Select Refund Reason",
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 25.sp, color = Color.Black
             )
-        }
-    ) { padding ->
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
+            Spacer(Modifier.height(8.dp))
 
-            Column {
-
-                // --- HEADER ----
-                Text(
-                    text = "Select Refund Reason",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = 25.sp, color = Color.Black
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                // --- DROPDOWN ----
-                Box {
-                    val density = LocalDensity.current
-                    OutlinedTextField(
-                        value = selectedReason,
-                        onValueChange = {},
-                        label = { Text("Refund Reason", color = Color.Black) },
-                        readOnly = true,
-                        trailingIcon = {
-                            Icon(
-                                if (expanded) Icons.Default.KeyboardArrowUp
-                                else Icons.Default.KeyboardArrowDown,
-                                contentDescription = null,
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onGloballyPositioned { coordinates ->
-                                textFieldWidth = with(density) { coordinates.size.width.toDp() }
-                            }
-                    )
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clickable { expanded = true }
-                    )
-
-                    DropdownMenu(
-                        modifier = Modifier.width(textFieldWidth),
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        refundReasons.forEach { reason ->
-                            DropdownMenuItem(
-                                text = { Text(reason, color = Color.Black) },
-                                onClick = {
-                                    selectedReason = reason
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // --- DETAILS FIELD ---
+            // --- DROPDOWN ----
+            Box {
+                val density = LocalDensity.current
                 OutlinedTextField(
-                    value = refundDetails,
-                    onValueChange = { refundDetails = it },
-                    label = { Text("Refund Details", color = Color.Black) },
+                    value = selectedReason,
+                    onValueChange = {},
+                    label = { Text("Refund Reason", color = Color.Black) },
+                    readOnly = true,
+                    trailingIcon = {
+                        Icon(
+                            if (expanded) Icons.Default.KeyboardArrowUp
+                            else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp)
-                        .onFocusChanged { focusState ->
-                            if (focusState.isFocused) hasTouchedHolder = true
-                        },
-                    maxLines = 5,
-                    supportingText = {
-                        if (refundDetails.isEmpty() && hasTouchedHolder) {
-                            Text("Cannot be empty", color = lightRed, fontSize = 12.sp)
+                        .onGloballyPositioned { coordinates ->
+                            textFieldWidth = with(density) { coordinates.size.width.toDp() }
                         }
-                    }
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { expanded = true }
                 )
 
-                Spacer(Modifier.height(24.dp))
-
-                // --- SUBMIT BUTTON ---
-                Button(
-                    onClick = {
-                        refundViewModel.createRefund(selectedReason, refundDetails)
-                    },
-                    enabled = isValid && !loading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    elevation = ButtonDefaults.buttonElevation(8.dp)
+                DropdownMenu(
+                    modifier = Modifier.width(textFieldWidth),
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
                 ) {
-                    Text("Submit", color = Color.Black)
+                    refundReasons.forEach { reason ->
+                        DropdownMenuItem(
+                            text = { Text(reason, color = Color.Black) },
+                            onClick = {
+                                selectedReason = reason
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        // --- LOADING DIALOG ---
-        if (loading) {
-            AlertDialog(
-                onDismissRequest = {},
-                confirmButton = {},
-                title = { Text("Submitting...", color = Color.Black) }
+            Spacer(Modifier.height(16.dp))
+
+            // --- DETAILS FIELD ---
+            OutlinedTextField(
+                value = refundDetails,
+                onValueChange = { refundDetails = it },
+                label = { Text("Refund Details", color = Color.Black) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) hasTouchedHolder = true
+                    },
+                maxLines = 5,
+                supportingText = {
+                    if (refundDetails.isEmpty() && hasTouchedHolder) {
+                        Text("Cannot be empty", color = lightRed, fontSize = 12.sp)
+                    }
+                }
             )
+
+            Spacer(Modifier.height(24.dp))
+
+            // --- SUBMIT BUTTON ---
+            Button(
+                onClick = {
+                    val orderId = receiptPair?.first?.orderId
+
+                    if (!orderId.isNullOrBlank()) {
+                        refundViewModel.createRefund(selectedReason, refundDetails)
+                        orderViewModel.orderStatusUpdate(orderId, "REQUESTED")
+                        onBack()
+                    }
+                },
+                enabled = isValid && !loading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(8.dp),
+                elevation = ButtonDefaults.buttonElevation(8.dp)
+            ) {
+                Text("Submit", color = Color.Black)
+            }
         }
+    }
+
+    // --- LOADING DIALOG ---
+    if (loading) {
+        AlertDialog(
+            onDismissRequest = {},
+            confirmButton = {},
+            title = { Text("Submitting...", color = Color.Black) }
+        )
     }
 }
 
