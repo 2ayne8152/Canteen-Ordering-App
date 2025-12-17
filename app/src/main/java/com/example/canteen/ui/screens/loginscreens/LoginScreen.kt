@@ -64,7 +64,7 @@ fun LoginScreen(
     if (authState is AuthState.RegistrationSuccess) {
         AlertDialog(
             onDismissRequest = {
-                authViewModel.resetAuthState()
+                authViewModel.clearError()  // <-- Use this
                 isCurrentlyRegistering.value = false
             },
             title = { Text("Registration Successful!") },
@@ -73,7 +73,9 @@ fun LoginScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    authViewModel.resetAuthState()
+                    // Sign out the newly registered user
+                    authViewModel.signOut()
+                    authViewModel.clearError()  // <-- Use this
                     isRegistering = false
                     isCurrentlyRegistering.value = false
                     email = ""
@@ -91,7 +93,8 @@ fun LoginScreen(
     if (authState is AuthState.Error) {
         AlertDialog(
             onDismissRequest = {
-                authViewModel.resetAuthState()
+                // Just clear the error, don't reset to LoggedOut
+                authViewModel.clearError()  // <-- Use this instead
                 isCurrentlyRegistering.value = false
             },
             title = { Text("Error") },
@@ -100,7 +103,7 @@ fun LoginScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    authViewModel.resetAuthState()
+                    authViewModel.clearError()  // <-- Use this instead
                     isCurrentlyRegistering.value = false
                 }) {
                     Text("OK")
@@ -249,7 +252,7 @@ fun LoginScreen(
                         if (authState !is AuthState.Loading) {
                             isRegistering = !isRegistering
                             isCurrentlyRegistering.value = false
-                            authViewModel.resetAuthState()
+                            authViewModel.clearError()  // <-- Use this instead of resetAuthState()
                             username = ""
                         }
                     }

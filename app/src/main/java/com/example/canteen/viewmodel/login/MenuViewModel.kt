@@ -11,6 +11,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+suspend fun generateNextMenuId(): String {
+    val snapshot = Firebase.firestore
+        .collection("MenuItems")
+        .get()
+        .await()
+
+    val existingIds = snapshot.documents.mapNotNull { doc ->
+        doc.getString("id")?.removePrefix("M")?.toIntOrNull()
+    }.sorted()
+
+    // Find the smallest missing number starting from 1
+    var nextNumber = 1
+    for (id in existingIds) {
+        if (id == nextNumber) nextNumber++ else break
+    }
+
+    return "M" + nextNumber.toString().padStart(4, '0')
+}
 data class FirestoreMenuItem(
     val id: String = "",
     val name: String = "",
