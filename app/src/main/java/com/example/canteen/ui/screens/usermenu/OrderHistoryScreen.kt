@@ -23,13 +23,18 @@ fun OrderHistoryScreen(
     orderViewModel: OrderViewModel
 ) {
     val user by userViewModel.selectedUser.collectAsState()
-    val orders by orderViewModel.orders.collectAsState()
 
     val userId = user?.UserID?.trim()
 
+    val orders by orderViewModel.orderHistory.collectAsState()
+
     LaunchedEffect(userId) {
-        userId?.let {
-            orderViewModel.loadOrdersByUser(it)
+        orderViewModel.startListeningOrderHistory(userId!!)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            orderViewModel.stopListeningOrderHistory()
         }
     }
 
