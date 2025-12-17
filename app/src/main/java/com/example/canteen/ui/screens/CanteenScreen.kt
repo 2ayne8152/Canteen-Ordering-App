@@ -7,13 +7,17 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.canteen.ui.screens.loginscreens.ForgotPasswordScreen
 import com.example.canteen.ui.screens.loginscreens.LoginScreen
 import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
@@ -23,6 +27,8 @@ import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
 import com.example.canteen.ui.screens.reporting.ReportScreen
 import com.example.canteen.ui.screens.reporting.OrdersAnalyticsScreen
 import com.example.canteen.ui.screens.staffMenu.MenuItemForm
+import com.example.canteen.ui.screens.staffMenu.StaffMenuDetailPage
+import com.example.canteen.ui.screens.staffMenu.StaffMenuItemEditPage
 import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
@@ -31,8 +37,8 @@ import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
-import com.example.canteen.viewmodel.usermenu.UserMenuViewModel
 import com.example.canteen.viewmodel.usermenu.OrderViewModel
+import com.example.canteen.viewmodel.usermenu.UserMenuViewModel
 import com.example.menumanagement.StaffDashboardScreen
 
 enum class CanteenScreen(val title: String) {
@@ -45,7 +51,9 @@ enum class CanteenScreen(val title: String) {
     MakePayment(title = "MakePayment"),
     UserHomeScreen(title = "UserHomeScreen"),
     ReportScreen(title = "ReportScreen"),
-    OrdersAnalyticsScreen(title = "OrdersAnalyticsScreen")
+    OrdersAnalyticsScreen(title = "OrdersAnalyticsScreen"),
+    StaffMenuDetailPage(title = "StaffMenuDetailPage"),
+    StaffMenuEditPage(title = "StaffMenuEditPage")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -188,17 +196,44 @@ fun CanteenScreen(
             )
         }
 
+
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
             StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
         }
 
-        composable(CanteenScreen.MenuItemForm.name){
+        // -------------------- Staff Menu --------------------
+        composable(CanteenScreen.MenuItemForm.name) {
             MenuItemForm(navController)
         }
 
-        composable (CanteenScreen.MenuListPage.name){
-            StaffMenuListPage(navController)
+        // Staff Menu List
+        composable(CanteenScreen.MenuListPage.name) {
+            StaffMenuListPage(navController = navController)
+        }
+
+        // Staff Menu Detail Page (with itemId)
+        composable(
+            route = "${CanteenScreen.StaffMenuDetailPage.name}/{itemId}",
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+            StaffMenuDetailPage(navController = navController, itemId = itemId)
+        }
+
+        // Staff Menu Edit Page (with itemId)
+        composable(
+            route = "${CanteenScreen.StaffMenuEditPage.name}/{itemId}",
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId")
+            if (itemId != null) {
+                StaffMenuItemEditPage(itemId = itemId, navController = navController)
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Invalid item", color = Color.Gray)
+                }
+            }
         }
 
         // -------------------- REFUND MANAGEMENT --------------------
@@ -212,20 +247,20 @@ fun CanteenScreen(
 
         composable(CanteenScreen.RefundDetailPage.name) {
             RefundDetailPage(
-                orderViewModel = orderViewModel,
                 receiptViewModel = receiptViewModel,
                 refundViewModel = refundViewModel,
                 onBack = { navController.popBackStack() },
-                userViewModel = userViewModel
+                userViewModel = userViewModel,
+                orderViewModel = orderViewModel  // Add this line
             )
         }
 
-        // -------------------- PAYMENT HISTORY --------------------
+// -------------------- PAYMENT HISTORY --------------------
         composable(CanteenScreen.PaymentHistory.name) {
             PaymentHistory(
                 navController = navController,
                 receiptViewModel = receiptViewModel,
-                orderViewModel = orderViewModel
+                orderViewModel = orderViewModel  // Add this line if needed
             )
         }
 

@@ -2,12 +2,12 @@ package com.example.canteen.repository
 
 import com.example.canteen.data.CartItem
 import com.example.canteen.data.Order
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.protobuf.LazyStringArrayList.emptyList
 import kotlinx.coroutines.tasks.await
-import kotlin.collections.emptyList
 
 class OrderRepository {
 
@@ -23,9 +23,23 @@ class OrderRepository {
             totalAmount = totalAmount,
             status = "Pending"
         )
-        ordersCollection.document(orderId).set(order)
+
+        val batch = db.batch()
+
+        val orderRef = ordersCollection.document(orderId)
+        batch.set(orderRef, order)
+
+        val menuCollection = db.collection("MenuItems")
+        items.forEach { item ->
+            val menuRef = menuCollection.document(item.menuItem.id)
+            batch.update(menuRef, "remainQuantity", FieldValue.increment(-item.quantity.toLong()))
+        }
+
+        batch.commit().await()
+
         return order
     }
+
 
     suspend fun markOrderPaid(orderId: String) {
         ordersCollection.document(orderId).update("status", "Paid")
