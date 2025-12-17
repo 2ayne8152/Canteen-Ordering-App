@@ -46,13 +46,15 @@ import com.example.canteen.ui.theme.lightViolet
 import com.example.canteen.data.Receipt
 import com.example.canteen.data.RefundRequest
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
+import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
 import com.example.menumanagement.BottomNavigationBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentHistory(
     navController: NavController,
-    receiptViewModel: ReceiptViewModel
+    receiptViewModel: ReceiptViewModel,
+    orderViewModel: OrderViewModel
 ) {
     val allReceipt by receiptViewModel.receiptList.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
@@ -106,6 +108,7 @@ fun PaymentHistory(
                     val expanded = expandedMap[receipt.first.receiptId] ?: false
 
                     PaymentHistoryCard(
+                        orderViewModel = orderViewModel,
                         data = receipt,
                         expanded = expanded,
                         onClick = {
@@ -120,11 +123,18 @@ fun PaymentHistory(
 
 @Composable
 fun PaymentHistoryCard(
+    orderViewModel: OrderViewModel,
     data: Pair<Receipt, RefundRequest?>,
     expanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val order by orderViewModel.latestOrder.collectAsState()
+
+    LaunchedEffect(data.first.orderId) {
+        orderViewModel.getOrder(data.first.orderId)
+    }
+
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = lightBlue,
@@ -140,13 +150,13 @@ fun PaymentHistoryCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Receipt ID : ${data.first.receiptId.take(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text("Receipt ID : ${data.first.receiptId.take(6)}", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                 Text("${formatted}", color = Color.Black)
             }
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Order ID :  ${data.first.orderId}", color = Color.Black)
+            Text("Order ID :  ${data.first.orderId.take(n=6)}", color = Color.Black)
             Text("Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}", color = Color.Black)
             Text("Refund : ${data.second?.status ?: "None"}", color = Color.Black)
             if (!expanded) {
@@ -163,6 +173,20 @@ fun PaymentHistoryCard(
                 Column {
                     Spacer(Modifier.height(8.dp))
                     Divider()
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text("Order Items :", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+
+                    order?.items?.forEach { item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("${item.menuItem.name} x${item.quantity}")
+                            Text("RM ${"%.2f".format(item.totalPrice)}")
+                        }
+                    }
 
                     Spacer(Modifier.height(8.dp))
 

@@ -39,6 +39,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
@@ -56,16 +57,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import com.example.canteen.viewmodel.login.UserViewModel
+import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RefundDetailPage(
+    orderViewModel: OrderViewModel,
     receiptViewModel: ReceiptViewModel,
     refundViewModel: RefundViewModel,
     userViewModel: UserViewModel,
     onBack: () -> Unit = {}
 ) {
+    val order by orderViewModel.latestOrder.collectAsState()
     val user by userViewModel.selectedUser.collectAsState()
     val selected by receiptViewModel.selectedRefund.collectAsState()
     var responseBy by remember { mutableStateOf("") }
@@ -81,6 +85,10 @@ fun RefundDetailPage(
 
     val receipt = selected!!.first
     val refund = selected!!.second
+
+    LaunchedEffect(receipt.orderId) {
+        orderViewModel.getOrder(receipt.orderId)
+    }
 
     Scaffold(
         topBar = {
@@ -123,7 +131,7 @@ fun RefundDetailPage(
                     }
 
                     Spacer(Modifier.height(4.dp))
-                    Text("Total : RM${receipt.pay_Amount}", fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text("Total : RM${"%.2f".format(receipt.pay_Amount)}", fontWeight = FontWeight.Bold, color = Color.Black)
                 }
             }
 
@@ -141,15 +149,22 @@ fun RefundDetailPage(
 
                     Text("Order Items :", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
 
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Set A x1", color = Color.Black)
-                        Text("RM 15.00", color = Color.Black)
+                    order?.items?.forEach { item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "${item.menuItem.name} x${item.quantity}",
+                                color = Color.Black
+                            )
+                            Text(
+                                text = "RM ${"%.2f".format(item.totalPrice)}",
+                                color = Color.Black
+                            )
+                        }
                     }
 
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Add On Rice x1", color = Color.Black)
-                        Text("RM 1.00", color = Color.Black)
-                    }
                 }
             }
 
@@ -322,6 +337,6 @@ fun RefundDetailPage(
 @Composable
 fun RefundDetailPreview() {
     CanteenTheme {
-        RefundDetailPage(viewModel(), viewModel (), viewModel())
+        //RefundDetailPage(viewModel(), viewModel (), viewModel())
     }
 }

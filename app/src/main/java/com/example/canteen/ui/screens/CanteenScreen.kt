@@ -20,6 +20,8 @@ import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.ui.screens.payment.PaymentHistory
 import com.example.canteen.ui.screens.payment.RefundDetailPage
 import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
+import com.example.canteen.ui.screens.staffMenu.MenuItemForm
+import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
@@ -184,7 +186,15 @@ fun CanteenScreen(
 
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
-            StaffDashboardScreen(navController)
+            StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
+        }
+
+        composable(CanteenScreen.MenuItemForm.name){
+            MenuItemForm(navController)
+        }
+
+        composable (CanteenScreen.MenuListPage.name){
+            StaffMenuListPage(navController)
         }
 
         composable (CanteenScreen.RefundManagementScreenWrapper.name){
@@ -197,6 +207,7 @@ fun CanteenScreen(
 
         composable(CanteenScreen.RefundDetailPage.name){
             RefundDetailPage(
+                orderViewModel = orderViewModel,
                 receiptViewModel = receiptViewModel,
                 refundViewModel = refundViewModel,
                 onBack = {navController.popBackStack()},
@@ -207,7 +218,8 @@ fun CanteenScreen(
         composable(CanteenScreen.PaymentHistory.name){
             PaymentHistory(
                 navController = navController,
-                receiptViewModel = receiptViewModel
+                receiptViewModel = receiptViewModel,
+                orderViewModel = orderViewModel
             )
         }
     }

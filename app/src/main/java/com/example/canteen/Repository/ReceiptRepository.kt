@@ -26,6 +26,16 @@ class ReceiptRepository(
         return Pair(receipt, refund)
     }
 
+    suspend fun getReceiptWithRefundByOrderId(orderId: String)
+            : Pair<Receipt, RefundRequest?>? {
+
+        val receiptData = receiptDao.getReceiptByOrderId(orderId) ?: return null
+        val receipt = Receipt.fromMap(receiptData)
+        val refund = receipt.refundId?.let { refundDao.getRefundById(it) }
+
+        return Pair(receipt, refund)
+    }
+
     suspend fun createReceipt(
         orderId: String,
         paymentMethod: String,

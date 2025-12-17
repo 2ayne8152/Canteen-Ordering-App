@@ -8,7 +8,6 @@ import com.example.canteen.data.Receipt
 import com.example.canteen.data.RefundRequest
 import androidx.compose.runtime.State
 import androidx.lifecycle.viewModelScope
-import com.example.canteen.Repository.RefundRepository
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -72,6 +71,21 @@ class ReceiptViewModel(
             }
         }
     }
+
+    fun loadReceiptByOrderId(orderId: String) {
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                _receiptLoadById.value =
+                    repository.getReceiptWithRefundByOrderId(orderId)
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
 
     fun createReceipt(
         orderId: String,
