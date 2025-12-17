@@ -3,11 +3,14 @@ package com.example.canteen.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -17,17 +20,61 @@ class AuthViewModel : ViewModel() {
     private val auth: FirebaseAuth = Firebase.auth
     private val db = Firebase.firestore
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.LoggedOut)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Initial)
     val authState = _authState.asStateFlow()
 
-    fun register(email: String, password: String, username: String, role: String) {
+    // --- State for Password Reset ---
+    private val _passwordResetStatus = MutableStateFlow<String?>(null)
+    val passwordResetStatus: StateFlow<String?> = _passwordResetStatus.asStateFlow()
+
+    private val _isLoadingPasswordReset = MutableStateFlow(false)
+    val isLoadingPasswordReset: StateFlow<Boolean> = _isLoadingPasswordReset.asStateFlow()
+    // ---
+
+    init {
+        // Check for existing user session when ViewModel is created
+        checkCurrentUser()
+    }
+
+    private fun checkCurrentUser() {
+        viewModelScope.launch {
+            val currentUser = auth.currentUser
+            if (currentUser != null) {
+                // User is already logged in, fetch their role from Firestore
+                try {
+                    Log.d("AuthViewModel", "Found existing user: ${currentUser.uid}")
+
+                    val userDoc = db.collection("users").document(currentUser.uid).get().await()
+                    val userRole = userDoc.getString("Role") ?: "user"
+
+                    Log.d("AuthViewModel", "User role from Firestore: $userRole")
+                    _authState.value = AuthState.LoggedIn(
+                        userId = currentUser.uid,
+                        role = userRole
+                    )
+                    Log.d("AuthViewModel", "Auto-login successful with role: $userRole")
+
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Error fetching user data on auto-login: ${e.message}")
+                    // If we can't fetch user data, sign them out
+                    auth.signOut()
+                    _authState.value = AuthState.LoggedOut
+                }
+            } else {
+                // No user is logged in
+                _authState.value = AuthState.LoggedOut
+                Log.d("AuthViewModel", "No existing user session found")
+            }
+        }
+    }
+    fun register(email: String, password: String, username: String, role: String, phoneNumber: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             Log.d("AuthViewModel", "Starting registration for email: $email")
 
             try {
                 // Validate inputs first
-                if (email.isEmpty() || password.isEmpty() || username.isEmpty()) {
+                if (email.isEmpty() || password.isEmpty() || username.isEmpty() || phoneNumber.isEmpty()) {
                     _authState.value = AuthState.Error("Please fill in all fields")
                     return@launch
                 }
@@ -45,10 +92,11 @@ class AuthViewModel : ViewModel() {
                     Log.d("AuthViewModel", "User created successfully, UID: ${firebaseUser.uid}")
 
                     val user = hashMapOf(
-                        "uid" to firebaseUser.uid,
-                        "email" to email,
-                        "username" to username,
-                        "role" to role
+                        "UserID" to firebaseUser.uid,
+                        "Email" to email,
+                        "Name" to username,
+                        "Role" to role,
+                        "PhoneNumber" to phoneNumber
                     )
 
                     Log.d("AuthViewModel", "Saving user data to Firestore...")
@@ -106,12 +154,15 @@ class AuthViewModel : ViewModel() {
                     Log.d("AuthViewModel", "User signed in successfully, UID: ${firebaseUser.uid}")
 
                     val userDoc = db.collection("users").document(firebaseUser.uid).get().await()
-                    val userRole = userDoc.getString("role")
+                    val userRole = userDoc.getString("Role")
 
                     Log.d("AuthViewModel", "User role from Firestore: $userRole, Expected role: $role")
 
                     if (userRole == role) {
-                        _authState.value = AuthState.LoggedIn(role)
+                        _authState.value = AuthState.LoggedIn(
+                            userId = firebaseUser.uid,
+                            role = role
+                        )
                         Log.d("AuthViewModel", "Login state set to LoggedIn with role: $role")
                     } else {
                         Log.e("AuthViewModel", "Role mismatch: $userRole != $role")
@@ -140,6 +191,47 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun signOut() {
+        auth.signOut()
+        _authState.value = AuthState.LoggedOut
+    }
+
+    fun sendPasswordResetEmail(email: String) {
+        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _passwordResetStatus.value = "Please enter a valid email address to reset password."
+            return
+        }
+
+        _isLoadingPasswordReset.value = true
+        _passwordResetStatus.value = null // Clear previous status
+
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                _isLoadingPasswordReset.value = false
+                if (task.isSuccessful) {
+                    _passwordResetStatus.value = "Password reset email sent to $email. Please check your inbox (and spam folder)."
+                } else {
+                    val exception = task.exception
+                    when (exception) {
+                        is FirebaseAuthInvalidUserException -> {
+                            _passwordResetStatus.value = "No account found with this email address."
+                        }
+                        is FirebaseNetworkException -> {
+                            _passwordResetStatus.value = "Network error. Please check your connection."
+                        }
+                        // Add more specific error handling if needed
+                        else -> {
+                            _passwordResetStatus.value = "Failed to send password reset email. Please try again. (${exception?.message ?: "Unknown error"})"
+                        }
+                    }
+                }
+            }
+    }
+
+    fun clearPasswordResetStatus() {
+        _passwordResetStatus.value = null
+    }
+
     fun resetAuthState() {
         Log.d("AuthViewModel", "Resetting auth state to LoggedOut")
         _authState.value = AuthState.LoggedOut
@@ -148,8 +240,9 @@ class AuthViewModel : ViewModel() {
 
 // Enhanced AuthState sealed class
 sealed class AuthState {
-    data class LoggedIn(val role: String) : AuthState()
+    data class LoggedIn(val userId: String, val role: String) : AuthState()
     data class RegistrationSuccess(val message: String = "Registration successful!") : AuthState()
+    object Initial : AuthState() // Added Initial state
     object LoggedOut : AuthState()
     object Loading : AuthState()
     data class Error(val message: String) : AuthState()

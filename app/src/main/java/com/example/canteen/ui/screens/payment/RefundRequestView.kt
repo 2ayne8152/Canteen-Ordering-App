@@ -1,0 +1,244 @@
+package com.example.canteen.ui.screens.payment
+
+import android.view.Surface
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.canteen.ui.theme.CanteenTheme
+import com.example.canteen.ui.theme.darkGray
+import com.example.canteen.ui.theme.isVeryLightBlue
+import com.example.canteen.ui.theme.middleGray
+import com.example.canteen.ui.theme.veryLightBlue
+import com.example.canteen.viewmodel.payment.ReceiptViewModel
+
+enum class RefundStatus {
+    APPROVED,
+    PENDING,
+    REJECTED;
+
+    companion object {
+        fun from(value: String?): RefundStatus {
+            return when (value?.lowercase()) {
+                "approved" -> APPROVED
+                "rejected" -> REJECTED
+                "pending" -> PENDING
+                else -> PENDING
+            }
+        }
+    }
+}
+
+
+@Composable
+fun RefundStatusChip(status: RefundStatus) {
+    val (bgColor, textColor, text) = when (status) {
+        RefundStatus.APPROVED -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32), "Approved")
+        RefundStatus.PENDING -> Triple(Color(0xFFFFF8E1), Color(0xFFF9A825), "Pending")
+        RefundStatus.REJECTED -> Triple(Color(0xFFFDECEA), Color(0xFFC62828), "Rejected")
+    }
+
+    Surface(
+        color = bgColor,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+fun RefundRequestCard(
+    reason: String,
+    requestTime: String,
+    status: RefundStatus,
+    remark: String? = null,
+    modifier: Modifier = Modifier
+) {
+    val canExpand =
+        (status == RefundStatus.APPROVED || status == RefundStatus.REJECTED)
+                && !remark.isNullOrBlank()
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .clickable(
+                enabled = canExpand,
+                indication = if (canExpand) LocalIndication.current else null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) {
+                expanded = !expanded
+            },
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = isVeryLightBlue, // Set the card's background color
+        )
+    ) {
+        Column(modifier = Modifier
+            .padding(16.dp)
+            .animateContentSize()) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Refund Request",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold, color = Color.Black
+                )
+
+                RefundStatusChip(status = status)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Reason: $reason",
+                fontSize = 14.sp,
+                color = darkGray
+            )
+
+            Text(
+                text = "Requested: $requestTime",
+                fontSize = 14.sp,
+                color = darkGray
+            )
+
+            if (canExpand && !expanded) {
+                Text(
+                    text = "Tap to view admin remark",
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
+
+            AnimatedVisibility(
+                visible = expanded && canExpand,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .fillMaxWidth()
+                ) {
+
+                    Divider(modifier = Modifier.padding(bottom = 8.dp))
+
+                    Text(
+                        text = "Admin Remark : ",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+
+                    Text(
+                        text = remark.orEmpty(),
+                        fontSize = 13.sp,
+                        color = darkGray
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RefundDetailScreen(
+    receiptId: String,
+    receiptViewModel: ReceiptViewModel,
+    onBack: () -> Unit
+) {
+    LaunchedEffect(receiptId) {
+        receiptViewModel.loadReceipt(receiptId)
+    }
+
+    val receiptPair by receiptViewModel.receiptLoadById.collectAsState()
+
+    when {
+        receiptPair == null -> {
+            CircularProgressIndicator()
+        }
+
+        else -> {
+            val (receipt, refund) = receiptPair!!
+
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(
+                    text = "Payment Method : ${if (receipt.payment_Method == "card") "Credit Card" else "E-Wallet"}",
+                    fontSize = 14.sp,
+                    color = darkGray
+                )
+
+                Divider(modifier = Modifier.padding(8.dp))
+
+                RefundRequestCard(
+                    reason = refund?.reason ?: "No reason provided",
+                    requestTime = refund?.requestTime?.let { formatTime(it) } ?: "-",
+                    status = RefundStatus.from(refund?.status),
+                    remark = refund?.remark
+                )
+            }
+        }
+    }
+}
+
+
+
+@Composable
+fun RefundCardPreview() {
+    RefundDetailScreen(
+        receiptId = "78885366-5bc4-479f-9721-0546c7f149ab", receiptViewModel = viewModel(), onBack = {})
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PaymentCardPreview() {
+    CanteenTheme {
+        RefundCardPreview()
+    }
+}
+

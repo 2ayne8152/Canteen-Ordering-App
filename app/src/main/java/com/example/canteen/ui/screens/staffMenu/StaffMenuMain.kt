@@ -1,14 +1,15 @@
 package com.example.menumanagement
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,282 +19,242 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.canteen.viewmodel.login.Category
+import com.example.canteen.viewmodel.login.FirestoreMenuItem
+import com.example.canteen.viewmodel.login.MenuViewModel
+import com.example.canteen.ui.screens.CanteenScreen
+import kotlinx.coroutines.launch
 
-// Import your actual menu data model
-import com.example.canteen.data.MenuItem
-import com.example.canteen.data.menuItems
-
-// Example category list (you can change it)
-val categories = listOf("All", "Chicken Rice", "Curry Mee", "Tomyam Maggi")
-
-// ===========================================================
-// FULL DASHBOARD UI
-// ===========================================================
 @Composable
-fun StaffDashboardScreen(
-    onNavigateToReports: () -> Unit = {},
-    onNavigateToOrdersAnalytics: () -> Unit = {}
-) {
+fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel = viewModel()) {
+
     var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF7F7F7))
-            .padding(16.dp)
-    ) {
+    val menuItems by viewModel.menuItems.collectAsState()
+    val categories by viewModel.categories.collectAsState()
 
-        // ---------- Top Header ----------
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
-            }
-            Icon(
-                Icons.Default.Logout,
-                contentDescription = "Logout",
-                tint = Color.Blue
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // ---------- Quick Actions Section ----------
-        Text("Quick Actions", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            QuickActionCard(
-                title = "Revenue Report",
-                subtitle = "View analytics",
-                icon = Icons.Default.TrendingUp,
-                backgroundColor = Color(0xFF4CAF50),
-                modifier = Modifier.weight(1f),
-                onClick = { onNavigateToReports() }
-            )
-
-            QuickActionCard(
-                title = "Orders",
-                subtitle = "Manage orders",
-                icon = Icons.Default.ShoppingCart,
-                backgroundColor = Color(0xFF2196F3),
-                modifier = Modifier.weight(1f),
-                onClick = { onNavigateToOrdersAnalytics() }  // Changed from empty comment to actual navigation
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // Section Title
-        Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
-        Spacer(Modifier.height(16.dp))
-
-        // Add New Item Button
-        Button(
-            onClick = {},
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF0A3D91)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("+ Add New Item", fontSize = 15.sp, color = Color.White)
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Search Bar
-        OutlinedTextField(
-            value = search,
-            onValueChange = { search = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search menu items...") },
-            leadingIcon = {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = Color.Blue
-                )
-            },
-            shape = RoundedCornerShape(14.dp)
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Category Chips
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            categories.forEach { category ->
-                CategoryChip(
-                    text = category,
-                    selected = category == selectedCategory,
-                    onClick = { selectedCategory = category }
-                )
-            }
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // ===========================================================
-        // MENU LIST (real data from your data class)
-        // ===========================================================
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(menuItems) { item ->
-                MenuItemCard(item)
-            }
-        }
+    val filteredMenuItems = menuItems.filter { item ->
+        (selectedCategory == "All" || item.categoryId == selectedCategory) &&
+                item.name.contains(search.trim(), ignoreCase = true)
     }
-}
 
-// ===========================================================
-// QUICK ACTION CARD
-// ===========================================================
-@Composable
-fun QuickActionCard(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    backgroundColor: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
-) {
-    Card(
-        modifier = modifier
-            .height(100.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
-    ) {
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController) }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .background(Color(0xFFF7F7F7))
+                .padding(16.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
+
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
+                }
+                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue)
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
+            Spacer(Modifier.height(16.dp))
+
+            // Add & Edit buttons row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A3D91)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("+ Add New Item", color = Color.White)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0D47A1))
+                        .clickable { navController.navigate(CanteenScreen.MenuListPage.name) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Menu",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Search field
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search menu items...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Blue) },
+                shape = RoundedCornerShape(14.dp)
             )
 
-            Column {
-                Text(
-                    text = title,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = subtitle,
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 12.sp
-                )
+            Spacer(Modifier.height(16.dp))
+
+            // Category Chips
+            Row(
+                modifier = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                val allCategories = listOf(Category("", "All", "")) + categories
+                allCategories.forEach { category ->
+                    CategoryChip(
+                        text = category.Name,
+                        selected = selectedCategory == category.CategoryID || (category.Name == "All" && selectedCategory == "All"),
+                        onClick = { selectedCategory = category.CategoryID.ifBlank { "All" } }
+                    )
+                }
+            }
+
+            // Scrollable list of menu items
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = paddingValues.calculateBottomPadding())
+            ) {
+                items(filteredMenuItems) { item ->
+                    MenuItemCard(item)
+                }
             }
         }
     }
 }
 
-// ===========================================================
-// CATEGORY CHIP
-// ===========================================================
 @Composable
-fun CategoryChip(text: String, selected: Boolean = false, onClick: () -> Unit) {
+fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(
-                if (selected) Color(0xFF0A3D91) else Color(0xFFEFEFEF)
-            )
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .background(if (selected) Color(0xFF0A3D91) else Color(0xFFEFEFEF))
             .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        Text(
-            text,
-            color = if (selected) Color.White else Color.Black,
-            fontSize = 13.sp
-        )
+        Text(text, color = if (selected) Color.White else Color.Black, fontSize = 13.sp)
     }
 }
 
-// ===========================================================
-// MENU ITEM CARD (uses your real MenuItem)
-// ===========================================================
 @Composable
-fun MenuItemCard(item: MenuItem) {
+fun MenuItemCard(item: FirestoreMenuItem, onEditClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val bitmap = remember(item.imageUrl) {
+            item.imageUrl?.let { base64 ->
+                try {
+                    val bytes = Base64.decode(base64, Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } catch (e: Exception) { null }
+            }
+        }
 
-        // Actual Image
-        Image(
-            painter = painterResource(id = item.imageRes),
-            contentDescription = null,
+        bitmap?.let {
+            Image(
+                it.asImageBitmap(),
+                contentDescription = item.name,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(12.dp))
+            )
+        } ?: Box(
             modifier = Modifier
                 .size(60.dp)
                 .clip(RoundedCornerShape(12.dp))
+                .background(Color.LightGray)
         )
 
         Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(id = item.itemName),
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-
-            Text(
-                text = stringResource(id = item.itemDesc),
-                fontSize = 13.sp,
-                color = Color.Gray,
-                maxLines = 1
-            )
+            Text(item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(item.description, fontSize = 13.sp, color = Color.Gray, maxLines = 1)
         }
 
-        // Price Tag
+        // Price tag
         Box(
             modifier = Modifier
                 .background(Color(0xFFFFE0C2), RoundedCornerShape(12.dp))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         ) {
-            Text(
-                text = "RM %.2f".format(item.itemPrice),
-                color = Color(0xFFFF6F3C),
-                fontSize = 12.sp
-            )
+            Text("RM %.2f".format(item.price), color = Color(0xFFFF6F3C), fontSize = 12.sp)
         }
+
+        Spacer(Modifier.width(8.dp))
+
     }
 }
 
-@Preview(showBackground = true)
+
 @Composable
-fun PreviewUI() {
-    StaffDashboardScreen()
+fun BottomNavigationBar(navController: NavController) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    NavigationBar {
+        NavigationBarItem(
+            selected = currentRoute == CanteenScreen.StaffDashboard.name,
+            onClick = { navController.navigate(CanteenScreen.StaffDashboard.name) { launchSingleTop = true } },
+            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+            label = { Text("Home") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == CanteenScreen.MenuItemForm.name,
+            onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) { launchSingleTop = true } },
+            icon = { Icon(Icons.Default.Add, contentDescription = "AddItem") },
+            label = { Text("AddItem") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == CanteenScreen.RefundManagementScreenWrapper.name,
+            onClick = { navController.navigate(CanteenScreen.RefundManagementScreenWrapper.name) { launchSingleTop = true } },
+            icon = { Icon(Icons.Default.MonetizationOn, contentDescription = "Refund") },
+            label = { Text("Refund") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == CanteenScreen.PaymentHistory.name,
+            onClick = { navController.navigate(CanteenScreen.PaymentHistory.name) { launchSingleTop = true } },
+            icon = { Icon(Icons.Default.History, contentDescription = "Payment History") },
+            label = { Text("History") }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = { /* Report */ },
+            icon = { Icon(Icons.Default.Assessment, contentDescription = "Report") },
+            label = { Text("Report") }
+        )
+    }
 }

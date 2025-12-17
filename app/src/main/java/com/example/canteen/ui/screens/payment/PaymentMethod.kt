@@ -59,25 +59,23 @@ import com.example.canteen.ui.theme.lightRed
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.PaymentMethodViewModel
 import kotlin.math.sin
+import androidx.compose.ui.graphics.Color
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PaymentMethod(
-    cardDetailViewModel: CardDetailViewModel,
     paymentMethodViewModel: PaymentMethodViewModel = viewModel(),
     phoneNumber: String,
-    savedCard: String? = null,          // <-- ONLY ONE CARD
-    onCardSelected: () -> Unit = {}  // Navigate to Card Detail Page
+    onMethodSelected: (String?) -> Unit,
+    onCardValidityChange: (Boolean) -> Unit
 ) {
-    //val savedCard by cardDetailViewModel.savedCard.collectAsState()
-    //var selectedMethod by remember { mutableStateOf<String?>(null) }
-    //var phoneNumber by remember { mutableStateOf("") }
     val selectedMethod = paymentMethodViewModel.selectedMethod.value
 
-    Column(modifier = Modifier.padding(16.dp)) {
-
+    Column {
         Text(
-            "Select Payment Method",
-            style = MaterialTheme.typography.titleMedium
+            text = "Select Payment Method",
+            style = MaterialTheme.typography.titleMedium,
+            fontSize = 25.sp, color = Color.Black
         )
 
         Spacer(Modifier.height(12.dp))
@@ -86,121 +84,50 @@ fun PaymentMethod(
         PaymentOptionCard(
             title = "Credit/Debit Card",
             icon = Icons.Outlined.CreditCard,
-            selected = selectedMethod == "card",
+            selected = selectedMethod == "Card",
             onClick = {
                 //selectedMethod = if (selectedMethod == "card") null else "card"
-                paymentMethodViewModel.select(
-                    if (selectedMethod == "card") null else "card"
-                )
+                val newMethod = if (selectedMethod == "Card") null else "Card"
+                paymentMethodViewModel.select(newMethod)
+                onMethodSelected(newMethod)
             }
         )
 
-        AnimatedVisibility(visible = selectedMethod == "card") {
-            Column(modifier = Modifier.padding(start = 12.dp, top = 10.dp)) {
 
-                // Show saved card if exists
-                if (savedCard != null) {
-
-                    Text("Saved Card", fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(8.dp))
-
-                    // Example UI for saved card
-                    Card(
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = lightBlue
-                        )
-                    ) {
-                        Column(
-                            Modifier
-                                .padding(12.dp)
-                                .fillMaxWidth()
-                        ) {
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-
-                                // LEFT SECTION: Icon + Card Number
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.CheckBox,
-                                        contentDescription = null
-                                    )
-
-                                    Spacer(Modifier.width(10.dp))
-
-                                    Text(
-                                        text = "Visa ending $savedCard",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-
-                                // RIGHT SECTION: Delete Button
-                                Button(
-                                    shape = RoundedCornerShape(8.dp),
-                                    onClick = {cardDetailViewModel.deleteCard()},
-                                    elevation = ButtonDefaults.buttonElevation(8.dp)
-                                ) {
-                                    Text("Delete")
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // No saved card → Allow user to add one
-                    Text("No saved card found.")
-                    Spacer(Modifier.height(12.dp))
-
-                    Button(
-                        onClick = {
-                            onCardSelected() }, // navigate
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = ButtonDefaults.buttonElevation(8.dp)
-                    ) {
-                        Text("Add New Card")
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
         // ------------------- E-WALLET -------------------
         PaymentOptionCard(
             title = "E-Wallet",
             icon = Icons.Outlined.Wallet,
-            selected = selectedMethod == "ewallet",
+            selected = selectedMethod == "E-wallet",
             onClick = {
                 //selectedMethod = if (selectedMethod == "ewallet") null else "ewallet"
-                paymentMethodViewModel.select(
-                    if (selectedMethod == "ewallet") null else "ewallet"
-                )
+                val newMethod = if (selectedMethod == "E-wallet") null else "E-wallet"
+                paymentMethodViewModel.select(newMethod)
+                onMethodSelected(newMethod)
             }
         )
+        AnimatedVisibility(visible = selectedMethod == "Card") {
+            PayByCard(
+                onValidityChange = onCardValidityChange
+            )
+        }
 
         // Expand section for E-Wallet
-        AnimatedVisibility(visible = selectedMethod == "ewallet") {
-            /*val isValid = remember(phoneNumber) { isValidPhoneNumber(phoneNumber) }
-            val showError = phoneNumber.isNotEmpty() && !isValid
-            var showTrailingIcon by remember { mutableStateOf(false) }
-
-            LaunchedEffect(phoneNumber) {
-                showTrailingIcon = phoneNumber.isNotEmpty()
-            }*/
-
+        AnimatedVisibility(visible = selectedMethod == "E-wallet") {
             Column(modifier = Modifier.padding(top = 12.dp)) {
                 val formattedNumber = "${phoneNumber.substring(0, 3)}-${phoneNumber.substring(3, 6)} ${phoneNumber.substring(6)}"
 
-                Text("E-Wallet Phone Number")
+                Spacer(Modifier.height(20.dp))
 
-                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "  E-Wallet Phone Number",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 22.sp, color = Color.Black
+                )
+
+                Spacer(Modifier.height(12.dp))
 
                 Card(
                     shape = RoundedCornerShape(12.dp),
@@ -217,52 +144,15 @@ fun PaymentMethod(
                                 contentDescription = null
                             )
                             Spacer(Modifier.width(10.dp))
-                            Text(text = formattedNumber, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                            Text(text = formattedNumber, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                             //Text("Tap to use this card", fontSize = 14.sp, color = gray)
                         }
                     }
                 }
-
-                /*OutlinedTextField(
-                    value = phoneNumber,
-                    onValueChange = { phoneNumber = it },
-                    placeholder = { Text("0123456789") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    isError = showError,
-                    singleLine = true,
-                    supportingText = {
-                        if (showError) {
-                            Text(
-                                text = "Invalid phone number format",
-                                color = lightRed,
-                                fontSize = 13.sp,
-                                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                            )
-                        }
-                    },
-                    trailingIcon = {
-                        if (showTrailingIcon) {
-                            IconButton(onClick = { phoneNumber = "" }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Clear,
-                                    contentDescription = "Clear"
-                                )
-                            }
-                        }
-                    }
-                )*/
+                Spacer(Modifier.height(8.dp))
             }
         }
     }
-}
-
-fun isValidPhoneNumber(number: String): Boolean {
-    val malaysiaRegex = Regex("^01[0-9]{8,9}$")
-
-    return malaysiaRegex.matches(number)
 }
 
 @Composable
@@ -300,7 +190,7 @@ fun PaymentOptionCard(
 
             Spacer(Modifier.width(10.dp))
 
-            Text(title, fontSize = 18.sp)
+            Text(title, fontSize = 18.sp, color = Color.Black)
         }
     }
 }
@@ -310,6 +200,6 @@ fun PaymentOptionCard(
 @Composable
 fun PaymentOptionPreview() {
     CanteenTheme {
-        PaymentMethod(savedCard = "Visa ending 4321", phoneNumber = "0123456789", cardDetailViewModel = viewModel())
+        //PaymentMethod(savedCard = "Visa ending 4321", phoneNumber = "0123456789", cardDetailViewModel = viewModel())
     }
 }

@@ -6,11 +6,11 @@ import androidx.compose.runtime.State
 
 class PaymentMethodViewModel : ViewModel() {
 
-    // "card", "ewallet", or null
-    private val _selectedMethod = mutableStateOf<String?>(null)
+    private val _selectedMethod = mutableStateOf<String?>("Card")
     val selectedMethod: State<String?> = _selectedMethod
 
     fun select(method: String?) {
         _selectedMethod.value = method
     }
 }
+

@@ -22,13 +22,15 @@ import com.example.canteen.viewmodel.AuthState
 
 @Composable
 fun LoginScreen(
-    authViewModel: AuthViewModel = viewModel(),
+    authViewModel: AuthViewModel,
     onStaffLoginClick: () -> Unit,
-    onLoginSuccess: (String) -> Unit
+    onLoginSuccess: (String) -> Unit,
+    onForgotPasswordClick: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isRegistering by remember { mutableStateOf(false) }
 
@@ -77,6 +79,7 @@ fun LoginScreen(
                     email = ""
                     password = ""
                     username = ""
+                    phoneNumber = ""
                 }) {
                     Text("OK")
                 }
@@ -138,6 +141,16 @@ fun LoginScreen(
                         enabled = authState !is AuthState.Loading
                     )
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = phoneNumber,
+                        onValueChange = { phoneNumber = it },
+                        label = { Text("Phone Number") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = authState !is AuthState.Loading
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
                 OutlinedTextField(
@@ -173,7 +186,15 @@ fun LoginScreen(
                     enabled = authState !is AuthState.Loading
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Forgot Password?",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { onForgotPasswordClick() }.align(Alignment.End)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Show loading text on button if loading, otherwise show normal button text
                 val buttonText = if (authState is AuthState.Loading) {
@@ -187,7 +208,7 @@ fun LoginScreen(
                         if (isRegistering) {
                             // Set flag that we're registering
                             isCurrentlyRegistering.value = true
-                            authViewModel.register(email, password, username, "user")
+                            authViewModel.register(email, password, username, "user", phoneNumber)
                         } else {
                             isCurrentlyRegistering.value = false
                             authViewModel.login(email, password, "user")
@@ -254,6 +275,6 @@ fun LoginScreen(
 @Composable
 fun LoginScreenPreview() {
     CanteenTheme {
-        LoginScreen(onStaffLoginClick = {}, onLoginSuccess = {})
+        LoginScreen(onStaffLoginClick = {}, onLoginSuccess = {}, authViewModel = viewModel(), onForgotPasswordClick = {})
     }
 }
