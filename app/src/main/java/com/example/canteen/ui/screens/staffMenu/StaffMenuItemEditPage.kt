@@ -247,7 +247,7 @@ fun StaffMenuItemEditPage(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
             ) {
-                Text("Delete Item", color = Color.White)
+                Text("Delete", color = Color.White)
             }
         }
     }

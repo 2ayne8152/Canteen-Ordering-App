@@ -51,7 +51,7 @@ fun StaffMenuListPage(
                 .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Title
+
             item {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
