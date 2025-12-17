@@ -167,7 +167,6 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // Preview
         Text("Preview", fontSize = 18.sp)
 
         Card(

@@ -78,7 +78,7 @@ fun StaffDashboardScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // Quick Action Cards for Reports
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -323,7 +323,6 @@ fun MenuItemCard(
 
     }
 }
-
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {

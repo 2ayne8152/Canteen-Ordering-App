@@ -109,11 +109,35 @@ fun StaffMenuItemEditPage(
                 onClick = { imageLauncher.launch("image/*") },
                 modifier = Modifier.align(Alignment.BottomEnd)
             ) {
-                Icon(
-                    Icons.Default.ArrowBack, // you can replace with a gallery icon
-                    contentDescription = "Pick Image",
-                    tint = Color.White
-                )
+                Text("Save", color = Color.White)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Delete Button
+            Button(
+                onClick = {
+                    viewModel.deleteMenuItem(item.id) { success, error ->
+                        coroutineScope.launch {
+                            if (success) {
+                                // Show snackbar
+                                snackbarHostState.showSnackbar("Menu item deleted successfully!")
+                                // Navigate back to dashboard
+                                navController.navigate(CanteenScreen.StaffDashboard.name) {
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                snackbarHostState.showSnackbar("Delete failed: ${error ?: "Unknown error"}")
+                                Log.e("DeleteItem", error ?: "Unknown error")
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) {
+                Text("Delete", color = Color.White)
             }
         }
 
