@@ -26,3 +26,4 @@ class MenuViewModel : ViewModel() {
         }
     }
 }
+

@@ -11,6 +11,25 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+suspend fun generateNextMenuId(): String {
+    val snapshot = Firebase.firestore
+        .collection("MenuItems")
+        .get()
+        .await()
+
+    val existingIds = snapshot.documents.mapNotNull { doc ->
+        doc.getString("id")?.removePrefix("M")?.toIntOrNull()
+    }.sorted()
+
+    // Find the smallest missing number starting from 1
+    var nextNumber = 1
+    for (id in existingIds) {
+        if (id == nextNumber) nextNumber++ else break
+    }
+
+    return "M" + nextNumber.toString().padStart(4, '0')
+}
+
 data class FirestoreMenuItem(
     val id: String = "",
     val name: String = "",
@@ -80,7 +99,6 @@ class MenuViewModel : ViewModel() {
         }
     }
 
-    // Create menu item + optionally category
     fun createMenuItem(
         menuItem: FirestoreMenuItem,
         categoryName: String,
@@ -147,6 +165,31 @@ class MenuViewModel : ViewModel() {
             }
         }
     }
+    fun deleteMenuItem(
+        itemId: String,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        if (itemId.isBlank()) {
+            onComplete(false, "Item ID is empty")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                Firebase.firestore
+                    .collection("MenuItems")
+                    .document(itemId)
+                    .delete()
+                    .await()
+
+                onComplete(true, null)
+            } catch (e: Exception) {
+                onComplete(false, e.message)
+            }
+        }
+    }
+
+
 
     // ---------------- CART ----------------
     fun addToCart(item: FirestoreMenuItem) {
