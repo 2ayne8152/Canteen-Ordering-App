@@ -20,8 +20,8 @@ import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.ui.screens.payment.PaymentHistory
 import com.example.canteen.ui.screens.payment.RefundDetailPage
 import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
-import com.example.canteen.ui.screens.staffMenu.MenuItemForm
-import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
+import com.example.canteen.ui.screens.reporting.ReportScreen
+import com.example.canteen.ui.screens.reporting.OrdersAnalyticsScreen
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
@@ -41,7 +41,9 @@ enum class CanteenScreen(val title: String) {
     RefundManagementScreenWrapper(title = "RefundManagement"),
     RefundDetailPage(title = "RefundDetail"),
     MakePayment(title = "MakePayment"),
-    UserHomeScreen(title = "UserHomeScreen")
+    UserHomeScreen(title = "UserHomeScreen"),
+    ReportScreen(title = "ReportScreen"),
+    OrdersAnalyticsScreen(title = "OrdersAnalyticsScreen")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -186,42 +188,49 @@ fun CanteenScreen(
 
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
-            StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
+            StaffDashboardScreen(navController)
         }
 
-        composable(CanteenScreen.MenuItemForm.name){
-            MenuItemForm(navController)
-        }
-
-        composable (CanteenScreen.MenuListPage.name){
-            StaffMenuListPage(navController)
-        }
-
-        composable (CanteenScreen.RefundManagementScreenWrapper.name){
-            RefundManagementScreenWrapper (
+        // -------------------- REFUND MANAGEMENT --------------------
+        composable(CanteenScreen.RefundManagementScreenWrapper.name) {
+            RefundManagementScreenWrapper(
                 receiptViewModel = receiptViewModel,
                 navController = navController,
-                onClick = {navController.navigate(CanteenScreen.RefundDetailPage.name)}
+                onClick = { navController.navigate(CanteenScreen.RefundDetailPage.name) }
             )
         }
 
-        composable(CanteenScreen.RefundDetailPage.name){
+        composable(CanteenScreen.RefundDetailPage.name) {
             RefundDetailPage(
-                orderViewModel = orderViewModel,
                 receiptViewModel = receiptViewModel,
                 refundViewModel = refundViewModel,
-                onBack = {navController.popBackStack()},
+                onBack = { navController.popBackStack() },
                 userViewModel = userViewModel
             )
         }
 
-        composable(CanteenScreen.PaymentHistory.name){
+        // -------------------- PAYMENT HISTORY --------------------
+        composable(CanteenScreen.PaymentHistory.name) {
             PaymentHistory(
                 navController = navController,
-                receiptViewModel = receiptViewModel,
-                orderViewModel = orderViewModel
+                receiptViewModel = receiptViewModel
+            )
+        }
+
+        // -------------------- REPORTS --------------------
+        // -------------------- REPORTS --------------------
+        composable(CanteenScreen.ReportScreen.name) {
+            ReportScreen(
+                navController = navController,  // Add this line
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(CanteenScreen.OrdersAnalyticsScreen.name) {
+            OrdersAnalyticsScreen(
+                navController = navController,  // Add this line
+                onBack = { navController.popBackStack() }
             )
         }
     }
 }
-

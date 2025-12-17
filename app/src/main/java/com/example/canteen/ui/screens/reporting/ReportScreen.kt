@@ -1,7 +1,5 @@
 package com.example.canteen.ui.screens.reporting
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,148 +14,46 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.*
+import com.example.canteen.viewmodel.reporting.UiState
+import com.example.canteen.viewmodel.reporting.ReportViewModel
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import com.example.canteen.ui.screens.CanteenScreen
+import com.example.menumanagement.BottomNavigationBar
+import kotlin.math.cos
+import kotlin.math.sin
 
-// Mock Data Models
-data class ReportTab(
-    val title: String,
-    val icon: ImageVector
-)
-
-data class MockReportData(
-    val totalSales: String,
-    val salesChange: String,
-    val isPositiveChange: Boolean,
-    val average: String,
-    val averageSubtitle: String,
-    val trendData: List<Float>,
-    val trendLabels: List<String>,
-    val volumeData: List<Float>
-)
-
-// Mock Data Provider
-object MockReportDataProvider {
-    fun getSalesData(period: String): MockReportData {
-        return when (period) {
-            "Daily" -> MockReportData(
-                totalSales = "$37,600",
-                salesChange = "+12.5%",
-                isPositiveChange = true,
-                average = "$5,371",
-                averageSubtitle = "Per period",
-                trendData = listOf(4000f, 3800f, 5000f, 4500f, 6500f, 8000f, 6000f),
-                trendLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
-                volumeData = listOf(3000f, 4000f, 5500f, 6800f, 7200f, 6500f, 5000f)
-            )
-            "Weekly" -> MockReportData(
-                totalSales = "$158,400",
-                salesChange = "+18.3%",
-                isPositiveChange = true,
-                average = "$22,628",
-                averageSubtitle = "Per week",
-                trendData = listOf(18000f, 20000f, 22000f, 25000f, 28000f, 24000f, 21000f),
-                trendLabels = listOf("W1", "W2", "W3", "W4", "W5", "W6", "W7"),
-                volumeData = listOf(15000f, 18000f, 22000f, 26000f, 28000f, 24000f, 19000f)
-            )
-            "Monthly" -> MockReportData(
-                totalSales = "$654,200",
-                salesChange = "+24.7%",
-                isPositiveChange = true,
-                average = "$54,516",
-                averageSubtitle = "Per month",
-                trendData = listOf(45000f, 48000f, 52000f, 58000f, 62000f, 68000f, 75000f, 72000f, 68000f, 64000f, 60000f, 58000f),
-                trendLabels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-                volumeData = listOf(42000f, 46000f, 50000f, 56000f, 60000f, 66000f, 72000f, 70000f, 66000f, 62000f, 58000f, 56000f)
-            )
-            "Yearly" -> MockReportData(
-                totalSales = "$2,458,900",
-                salesChange = "+31.2%",
-                isPositiveChange = true,
-                average = "$204,908",
-                averageSubtitle = "Per year",
-                trendData = listOf(180000f, 195000f, 210000f, 235000f, 268000f),
-                trendLabels = listOf("2020", "2021", "2022", "2023", "2024"),
-                volumeData = listOf(175000f, 190000f, 205000f, 230000f, 265000f)
-            )
-            else -> getSalesData("Daily")
-        }
-    }
-
-    fun getProfitData(period: String): MockReportData {
-        return when (period) {
-            "Daily" -> MockReportData(
-                totalSales = "$18,450",
-                salesChange = "+15.2%",
-                isPositiveChange = true,
-                average = "$2,635",
-                averageSubtitle = "Per period",
-                trendData = listOf(2000f, 1900f, 2500f, 2200f, 3200f, 4000f, 2650f),
-                trendLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
-                volumeData = listOf(1800f, 2100f, 2600f, 3000f, 3400f, 3100f, 2400f)
-            )
-            "Weekly" -> MockReportData(
-                totalSales = "$78,300",
-                salesChange = "+21.4%",
-                isPositiveChange = true,
-                average = "$11,185",
-                averageSubtitle = "Per week",
-                trendData = listOf(9000f, 10000f, 11000f, 12500f, 14000f, 12000f, 9800f),
-                trendLabels = listOf("W1", "W2", "W3", "W4", "W5", "W6", "W7"),
-                volumeData = listOf(7500f, 9000f, 11000f, 13000f, 14000f, 12000f, 9500f)
-            )
-            "Monthly" -> MockReportData(
-                totalSales = "$324,800",
-                salesChange = "+28.3%",
-                isPositiveChange = true,
-                average = "$27,066",
-                averageSubtitle = "Per month",
-                trendData = listOf(22000f, 24000f, 26000f, 29000f, 31000f, 34000f, 37500f, 36000f, 34000f, 32000f, 30000f, 29300f),
-                trendLabels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-                volumeData = listOf(21000f, 23000f, 25000f, 28000f, 30000f, 33000f, 36000f, 35000f, 33000f, 31000f, 29000f, 28800f)
-            )
-            "Yearly" -> MockReportData(
-                totalSales = "$1,215,600",
-                salesChange = "+35.8%",
-                isPositiveChange = true,
-                average = "$101,300",
-                averageSubtitle = "Per year",
-                trendData = listOf(90000f, 97500f, 105000f, 117500f, 134000f),
-                trendLabels = listOf("2020", "2021", "2022", "2023", "2024"),
-                volumeData = listOf(87500f, 95000f, 102500f, 115000f, 132500f)
-            )
-            else -> getProfitData("Daily")
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportScreen(onBack: () -> Unit = {}) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+fun ReportScreen(
+    navController: NavController,
+    onBack: () -> Unit = { navController.popBackStack() }
+) {
+    val viewModel: ReportViewModel = viewModel()
     var selectedPeriod by remember { mutableStateOf("Daily") }
-
-    val tabs = listOf(
-        ReportTab("Profit Summary", Icons.Default.AccountBalance),
-        ReportTab("Sales Report", Icons.Default.TrendingUp)
-    )
+    var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val reportData by viewModel.reportData.collectAsState()
+    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale.US) }
 
     val periods = listOf("Daily", "Weekly", "Monthly", "Yearly")
 
-    // Get mock data based on selected tab and period
-    val currentData = remember(selectedTabIndex, selectedPeriod) {
-        when (selectedTabIndex) {
-            0 -> MockReportDataProvider.getProfitData(selectedPeriod)
-            1 -> MockReportDataProvider.getSalesData(selectedPeriod)
-            else -> MockReportDataProvider.getProfitData(selectedPeriod)
-        }
+    // Load data when period or date changes
+    LaunchedEffect(selectedPeriod, selectedDate.timeInMillis) {
+        viewModel.loadRevenueData(selectedPeriod, selectedDate)
     }
 
     Scaffold(
@@ -165,162 +61,357 @@ fun ReportScreen(onBack: () -> Unit = {}) {
             TopAppBar(
                 title = {
                     Text(
-                        "Reports",
+                        "Revenue Report",
                         fontWeight = FontWeight.SemiBold
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        navController.navigate(CanteenScreen.OrdersAnalyticsScreen.name)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Assessment,
+                            contentDescription = "Orders Analytics"
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
-        }
+        },
+        bottomBar = { BottomNavigationBar(navController) }  // Add this line
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
-            // Tab Row
-            ScrollableTabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
-                edgePadding = 16.dp,
-                indicator = { },
-                divider = { }
-            ) {
-                tabs.forEachIndexed { index, tab ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        modifier = Modifier.padding(horizontal = 4.dp)
+            // ... rest of your existing code
+            when (val state = reportData) {
+                is UiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                is UiState.Error -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.loadRevenueData(selectedPeriod, selectedDate) }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+                is UiState.Success -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Period Selector
                         Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(
-                                    if (selectedTabIndex == index)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        Color.Transparent
-                                )
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.title,
-                                modifier = Modifier.size(18.dp),
-                                tint = if (selectedTabIndex == index)
-                                    MaterialTheme.colorScheme.onPrimary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            periods.forEach { period ->
+                                FilterChip(
+                                    selected = selectedPeriod == period,
+                                    onClick = { selectedPeriod = period },
+                                    label = {
+                                        Text(
+                                            period,
+                                            fontSize = 13.sp
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Date Navigation
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Previous button
+                                IconButton(
+                                    onClick = {
+                                        selectedDate = Calendar.getInstance().apply {
+                                            time = selectedDate.time
+                                            when (selectedPeriod) {
+                                                "Daily" -> add(Calendar.DAY_OF_YEAR, -1)
+                                                "Weekly" -> add(Calendar.WEEK_OF_YEAR, -1)
+                                                "Monthly" -> add(Calendar.MONTH, -1)
+                                                "Yearly" -> add(Calendar.YEAR, -1)
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronLeft,
+                                        contentDescription = "Previous",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                // Date display and calendar button
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    IconButton(onClick = { showDatePicker = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.CalendarToday,
+                                            contentDescription = "Select Date",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Text(
+                                        text = when (selectedPeriod) {
+                                            "Daily" -> SimpleDateFormat("EEEE, MMM dd, yyyy", Locale.getDefault()).format(selectedDate.time)
+                                            "Weekly" -> {
+                                                val weekStart = Calendar.getInstance().apply {
+                                                    time = selectedDate.time
+                                                    set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+                                                }
+                                                val weekEnd = Calendar.getInstance().apply {
+                                                    time = weekStart.time
+                                                    add(Calendar.DAY_OF_YEAR, 6)
+                                                }
+                                                "${SimpleDateFormat("MMM dd", Locale.getDefault()).format(weekStart.time)} - ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(weekEnd.time)}"
+                                            }
+                                            "Monthly" -> SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(selectedDate.time)
+                                            "Yearly" -> SimpleDateFormat("yyyy", Locale.getDefault()).format(selectedDate.time)
+                                            else -> SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(selectedDate.time)
+                                        },
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+
+                                // Next button
+                                IconButton(
+                                    onClick = {
+                                        selectedDate = Calendar.getInstance().apply {
+                                            time = selectedDate.time
+                                            when (selectedPeriod) {
+                                                "Daily" -> add(Calendar.DAY_OF_YEAR, 1)
+                                                "Weekly" -> add(Calendar.WEEK_OF_YEAR, 1)
+                                                "Monthly" -> add(Calendar.MONTH, 1)
+                                                "Yearly" -> add(Calendar.YEAR, 1)
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = "Next",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Metrics Cards
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            MetricCard(
+                                title = "Total Revenue",
+                                value = currencyFormatter.format(state.data.totalRevenue),
+                                change = String.format("%.1f%%", state.data.revenueChange),
+                                isPositive = state.data.isPositiveChange,
+                                modifier = Modifier.weight(1f)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = tab.title,
-                                color = if (selectedTabIndex == index)
-                                    MaterialTheme.colorScheme.onPrimary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 14.sp,
-                                fontWeight = if (selectedTabIndex == index)
-                                    FontWeight.SemiBold
-                                else
-                                    FontWeight.Normal
+                            MetricCard(
+                                title = "Average",
+                                value = currencyFormatter.format(state.data.average),
+                                subtitle = state.data.averageSubtitle,
+                                modifier = Modifier.weight(1f)
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Charts Section
+                        if (state.data.trendData.isNotEmpty()) {
+                            // Chart 1: Revenue Trend
+                            ChartCard(
+                                title = "Revenue Trend"
+                            ) {
+                                LineChart(
+                                    dataPoints = state.data.trendData,
+                                    labels = state.data.trendLabels,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Chart 2: Payment Methods Breakdown
+                            if (state.data.paymentMethodData.isNotEmpty()) {
+                                ChartCard(
+                                    title = "Payment Methods"
+                                ) {
+                                    PaymentMethodChart(
+                                        data = state.data.paymentMethodData,
+                                        currencyFormatter = currencyFormatter,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(250.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            // Chart 3: Average Transaction Value
+                            ChartCard(
+                                title = "Average Transaction Value"
+                            ) {
+                                BarChart(
+                                    dataPoints = state.data.averageTransactionData,
+                                    labels = state.data.trendLabels,
+                                    currencyFormatter = currencyFormatter,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                )
+                            }
+                        } else {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No data available for this period",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Date Picker Dialog
+            if (showDatePicker) {
+                // Convert current selectedDate to UTC milliseconds for the date picker
+                val currentDateInUtc = Calendar.getInstance().apply {
+                    time = selectedDate.time
+                    // Get the year, month, day in local time
+                    val year = get(Calendar.YEAR)
+                    val month = get(Calendar.MONTH)
+                    val day = get(Calendar.DAY_OF_MONTH)
 
-            // Content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp)
-            ) {
-                // Period Selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    periods.forEach { period ->
-                        FilterChip(
-                            selected = selectedPeriod == period,
-                            onClick = { selectedPeriod = period },
-                            label = {
-                                Text(
-                                    period,
-                                    fontSize = 13.sp
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        )
+                    // Set to UTC timezone
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    set(year, month, day, 0, 0, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = currentDateInUtc
+                )
+
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                datePickerState.selectedDateMillis?.let { utcMillis ->
+                                    // Convert UTC date to local date
+                                    val utcCalendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                        timeInMillis = utcMillis
+                                    }
+
+                                    // Create local calendar with the same year/month/day
+                                    selectedDate = Calendar.getInstance().apply {
+                                        set(Calendar.YEAR, utcCalendar.get(Calendar.YEAR))
+                                        set(Calendar.MONTH, utcCalendar.get(Calendar.MONTH))
+                                        set(Calendar.DAY_OF_MONTH, utcCalendar.get(Calendar.DAY_OF_MONTH))
+                                        set(Calendar.HOUR_OF_DAY, 0)
+                                        set(Calendar.MINUTE, 0)
+                                        set(Calendar.SECOND, 0)
+                                        set(Calendar.MILLISECOND, 0)
+                                    }
+                                }
+                                showDatePicker = false
+                            }
+                        ) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text("Cancel")
+                        }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Metrics Cards with mock data
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    MetricCard(
-                        title = if (selectedTabIndex == 0) "Total Profit" else "Total Sales",
-                        value = currentData.totalSales,
-                        change = currentData.salesChange,
-                        isPositive = currentData.isPositiveChange,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricCard(
-                        title = "Average",
-                        value = currentData.average,
-                        subtitle = currentData.averageSubtitle,
-                        modifier = Modifier.weight(1f)
-                    )
+                    DatePicker(state = datePickerState)
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Trend Chart with mock data
-                ChartCard(
-                    title = if (selectedTabIndex == 0) "Profit Trend" else "Sales Trend"
-                ) {
-                    LineChart(
-                        dataPoints = currentData.trendData,
-                        labels = currentData.trendLabels,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Volume Chart with mock data
-                ChartCard(
-                    title = if (selectedTabIndex == 0) "Profit Volume" else "Sales Volume"
-                ) {
-                    AreaChart(
-                        dataPoints = currentData.volumeData,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
@@ -426,6 +517,8 @@ fun LineChart(
     val primaryColor = MaterialTheme.colorScheme.primary
 
     Canvas(modifier = modifier.padding(vertical = 8.dp)) {
+        if (dataPoints.isEmpty()) return@Canvas
+
         val width = size.width
         val height = size.height
         val padding = 40f
@@ -434,7 +527,7 @@ fun LineChart(
 
         val maxValue = dataPoints.maxOrNull() ?: 1f
         val minValue = dataPoints.minOrNull() ?: 0f
-        val range = maxValue - minValue
+        val range = if (maxValue - minValue > 0) maxValue - minValue else 1f
 
         // Draw grid lines
         for (i in 0..4) {
@@ -450,7 +543,7 @@ fun LineChart(
         // Draw line chart
         val path = Path()
         dataPoints.forEachIndexed { index, value ->
-            val x = padding + (chartWidth * index / (dataPoints.size - 1))
+            val x = padding + (chartWidth * index / (dataPoints.size - 1).coerceAtLeast(1))
             val y = padding + chartHeight - ((value - minValue) / range * chartHeight)
 
             if (index == 0) {
@@ -473,31 +566,110 @@ fun LineChart(
             style = Stroke(width = 3f)
         )
 
-        // Draw labels
+        // Draw labels (show every nth label to avoid crowding)
+        val labelStep = (labels.size / 6).coerceAtLeast(1)
         labels.forEachIndexed { index, label ->
-            val x = padding + (chartWidth * index / (labels.size - 1))
-            drawContext.canvas.nativeCanvas.drawText(
-                label,
-                x,
-                height - padding / 4,
-                android.graphics.Paint().apply {
-                    color = android.graphics.Color.GRAY
-                    textSize = 28f
-                    textAlign = android.graphics.Paint.Align.CENTER
-                }
-            )
+            if (index % labelStep == 0 || index == labels.size - 1) {
+                val x = padding + (chartWidth * index / (labels.size - 1).coerceAtLeast(1))
+                drawContext.canvas.nativeCanvas.drawText(
+                    label,
+                    x,
+                    height - padding / 4,
+                    android.graphics.Paint().apply {
+                        color = android.graphics.Color.GRAY
+                        textSize = 24f
+                        textAlign = android.graphics.Paint.Align.CENTER
+                    }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun AreaChart(
+fun PaymentMethodChart(
+    data: Map<String, Double>,
+    currencyFormatter: NumberFormat,
+    modifier: Modifier = Modifier
+) {
+    val colors = listOf(
+        Color(0xFF6366F1), // Indigo
+        Color(0xFF10B981), // Green
+        Color(0xFFF59E0B), // Amber
+        Color(0xFFEF4444), // Red
+        Color(0xFF8B5CF6), // Purple
+        Color(0xFF06B6D4)  // Cyan
+    )
+
+    Canvas(modifier = modifier) {
+        if (data.isEmpty()) return@Canvas
+
+        val total = data.values.sum()
+        if (total == 0.0) return@Canvas
+
+        val centerX = size.width / 2
+        val centerY = size.height / 2
+        val radius = minOf(centerX, centerY) * 0.6f
+
+        var startAngle = -90f
+        data.entries.forEachIndexed { index, (method, amount) ->
+            val sweepAngle = ((amount / total) * 360).toFloat()
+            val color = colors[index % colors.size]
+
+            // Draw pie slice
+            drawArc(
+                color = color,
+                startAngle = startAngle,
+                sweepAngle = sweepAngle,
+                useCenter = true,
+                topLeft = Offset(centerX - radius, centerY - radius),
+                size = Size(radius * 2, radius * 2)
+            )
+
+            startAngle += sweepAngle
+        }
+
+        // Draw legend
+        var legendY = 20f
+        data.entries.forEachIndexed { index, (method, amount) ->
+            val color = colors[index % colors.size]
+            val percentage = (amount / total * 100).toInt()
+
+            // Draw color box
+            drawRect(
+                color = color,
+                topLeft = Offset(size.width - 180f, legendY),
+                size = Size(20f, 20f)
+            )
+
+            // Draw text
+            drawContext.canvas.nativeCanvas.drawText(
+                "$method ($percentage%)",
+                size.width - 150f,
+                legendY + 15f,
+                android.graphics.Paint().apply {
+                    this.color = android.graphics.Color.DKGRAY
+                    textSize = 32f
+                }
+            )
+
+            legendY += 35f
+        }
+    }
+}
+
+@Composable
+fun BarChart(
     dataPoints: List<Float>,
+    labels: List<String>,
+    currencyFormatter: NumberFormat,
     modifier: Modifier = Modifier
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
 
     Canvas(modifier = modifier.padding(vertical = 8.dp)) {
+        if (dataPoints.isEmpty()) return@Canvas
+
         val width = size.width
         val height = size.height
         val padding = 40f
@@ -505,58 +677,39 @@ fun AreaChart(
         val chartHeight = height - padding * 2
 
         val maxValue = dataPoints.maxOrNull() ?: 1f
-        val minValue = 0f
-        val range = maxValue - minValue
+        val barWidth = chartWidth / dataPoints.size * 0.7f
+        val spacing = chartWidth / dataPoints.size * 0.3f
 
-        // Create area path
-        val path = Path()
+        // Draw bars
         dataPoints.forEachIndexed { index, value ->
-            val x = padding + (chartWidth * index / (dataPoints.size - 1))
-            val y = padding + chartHeight - ((value - minValue) / range * chartHeight)
+            val barHeight = if (maxValue > 0) (value / maxValue) * chartHeight else 0f
+            val x = padding + (index * (barWidth + spacing))
+            val y = padding + chartHeight - barHeight
 
-            if (index == 0) {
-                path.moveTo(x, padding + chartHeight)
-                path.lineTo(x, y)
-            } else {
-                path.lineTo(x, y)
-            }
+            drawRect(
+                color = primaryColor,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barHeight)
+            )
         }
 
-        // Complete the area path
-        path.lineTo(width - padding, padding + chartHeight)
-        path.close()
-
-        // Draw filled area
-        drawPath(
-            path = path,
-            color = primaryColor.copy(alpha = 0.3f)
-        )
-
-        // Draw line on top
-        val linePath = Path()
-        dataPoints.forEachIndexed { index, value ->
-            val x = padding + (chartWidth * index / (dataPoints.size - 1))
-            val y = padding + chartHeight - ((value - minValue) / range * chartHeight)
-
-            if (index == 0) {
-                linePath.moveTo(x, y)
-            } else {
-                linePath.lineTo(x, y)
+        // Draw labels (show every nth label)
+        val labelStep = (labels.size / 6).coerceAtLeast(1)
+        labels.forEachIndexed { index, label ->
+            if (index % labelStep == 0 || index == labels.size - 1) {
+                val x = padding + (index * (barWidth + spacing)) + barWidth / 2
+                drawContext.canvas.nativeCanvas.drawText(
+                    label,
+                    x,
+                    height - padding / 4,
+                    android.graphics.Paint().apply {
+                        color = android.graphics.Color.GRAY
+                        textSize = 24f
+                        textAlign = android.graphics.Paint.Align.CENTER
+                    }
+                )
             }
         }
-
-        drawPath(
-            path = linePath,
-            color = primaryColor,
-            style = Stroke(width = 3f)
-        )
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ReportScreenPreview() {
-    MaterialTheme {
-        ReportScreen()
-    }
-}
