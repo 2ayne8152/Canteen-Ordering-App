@@ -123,7 +123,7 @@ fun RefundDetailPage(
                     }
 
                     Spacer(Modifier.height(4.dp))
-                    Text("Total : RM${"%.2f".format(receipt.pay_Amount)}", fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text("Total : RM${receipt.pay_Amount}", fontWeight = FontWeight.Bold, color = Color.Black)
                 }
             }
 

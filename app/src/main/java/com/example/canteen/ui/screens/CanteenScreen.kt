@@ -20,15 +20,15 @@ import com.example.canteen.ui.screens.loginscreens.StaffLoginScreen
 import com.example.canteen.ui.screens.payment.PaymentHistory
 import com.example.canteen.ui.screens.payment.RefundDetailPage
 import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
-import com.example.canteen.ui.screens.staffMenu.MenuItemForm
-import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
+import com.example.canteen.viewmodel.usermenu.CartViewModel
 import com.example.canteen.viewmodel.usermenu.UserMenuViewModel
+import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
 import com.example.menumanagement.StaffDashboardScreen
 
 enum class CanteenScreen(val title: String) {
@@ -47,6 +47,8 @@ enum class CanteenScreen(val title: String) {
 fun CanteenScreen(
     cardDetailViewModel: CardDetailViewModel = viewModel(),
     receiptViewModel: ReceiptViewModel = viewModel(),
+    cartViewModel: CartViewModel = viewModel(),
+    orderViewModel: OrderViewModel = viewModel(),
     refundViewModel: RefundViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel(),
     userViewModel: UserViewModel = viewModel(),
@@ -172,7 +174,9 @@ fun CanteenScreen(
             UserHomeScreen(
                 menuItems = menuItems,
                 onItemClick = {},
-                receiptViewModel = receiptViewModel,  
+                receiptViewModel = receiptViewModel,
+                cartViewModel = cartViewModel,
+                orderViewModel = orderViewModel,
                 userViewModel = userViewModel,
                 onSignOut = { authViewModel.signOut() }
             )
@@ -180,15 +184,7 @@ fun CanteenScreen(
 
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
-            StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
-        }
-
-        composable(CanteenScreen.MenuItemForm.name){
-            MenuItemForm(navController)
-        }
-
-        composable (CanteenScreen.MenuListPage.name){
-            StaffMenuListPage(navController)
+            StaffDashboardScreen(navController)
         }
 
         composable (CanteenScreen.RefundManagementScreenWrapper.name){

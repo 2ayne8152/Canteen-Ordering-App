@@ -34,6 +34,7 @@ import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import kotlinx.coroutines.launch
 import com.example.canteen.viewmodel.AuthViewModel
+import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,10 +43,11 @@ fun UserHomeScreen(
     menuItems: List<MenuItem>,
     onItemClick: (MenuItem) -> Unit = {},
     receiptViewModel: ReceiptViewModel,
+    cartViewModel: CartViewModel,
+    orderViewModel: OrderViewModel,
     userViewModel: UserViewModel,
     onSignOut: () -> Unit  // Add this parameter
 ) {
-    val cartViewModel: CartViewModel = viewModel()
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -151,7 +153,8 @@ fun UserHomeScreen(
                                 launchSingleTop = true
                             }
                         },
-                        cartViewModel = cartViewModel
+                        cartViewModel = cartViewModel,
+                        orderViewModel = orderViewModel
                     )
                 }
 
