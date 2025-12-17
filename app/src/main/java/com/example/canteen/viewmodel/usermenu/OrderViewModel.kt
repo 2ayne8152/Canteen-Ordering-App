@@ -1,19 +1,20 @@
-package com.example.canteen.viewmodel.usermenu.order
+package com.example.canteen.viewmodel.usermenu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.canteen.data.CartItem
 import com.example.canteen.data.Order
 import com.example.canteen.repository.OrderRepository
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class OrderViewModel(
     private val repository: OrderRepository = OrderRepository()
 ) : ViewModel() {
-
     private val _latestOrder = MutableStateFlow<Order?>(null)
     val latestOrder: StateFlow<Order?> = _latestOrder
 
@@ -50,4 +51,37 @@ class OrderViewModel(
             }
         }
     }
+
+    private val _orderHistory = MutableStateFlow<List<Order>>(emptyList())
+    val orderHistory: StateFlow<List<Order>> = _orderHistory
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+
+    private var orderListener: ListenerRegistration? = null
+
+    fun startListeningOrderHistory(userId: String) {
+        stopListeningOrderHistory()
+
+        orderListener = repository.listenOrdersByUserId(
+            userId = userId,
+            onUpdate = { orders ->
+                _orderHistory.value = orders
+            },
+            onError = { throwable ->
+                _error.value = throwable.message
+            }
+        )
+    }
+
+    fun stopListeningOrderHistory() {
+        orderListener?.remove()
+        orderListener = null
+    }
+
+    override fun onCleared() {
+        stopListeningOrderHistory()
+        super.onCleared()
+    }
+
 }

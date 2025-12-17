@@ -31,6 +31,7 @@ import com.example.canteen.viewmodel.login.Category
 import com.example.canteen.viewmodel.login.FirestoreMenuItem
 import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.ui.screens.CanteenScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel = viewModel(), onClick: () -> Unit) {
@@ -228,6 +229,7 @@ fun QuickActionCard(
     }
 }
 
+
 @Composable
 fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
@@ -291,8 +293,10 @@ fun MenuItemCard(item: FirestoreMenuItem, onEditClick: () -> Unit = {}) {
         }
 
         Spacer(Modifier.width(8.dp))
+
     }
 }
+
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
@@ -325,8 +329,8 @@ fun BottomNavigationBar(navController: NavController) {
             label = { Text("History") }
         )
         NavigationBarItem(
-            selected = currentRoute == CanteenScreen.ReportScreen.name || currentRoute == CanteenScreen.OrdersAnalyticsScreen.name,
-            onClick = { navController.navigate(CanteenScreen.ReportScreen.name) { launchSingleTop = true } },
+            selected = false,
+            onClick = { /* Report */ },
             icon = { Icon(Icons.Default.Assessment, contentDescription = "Report") },
             label = { Text("Report") }
         )
