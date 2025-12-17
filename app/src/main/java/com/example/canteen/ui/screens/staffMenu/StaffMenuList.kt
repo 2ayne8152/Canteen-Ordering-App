@@ -3,7 +3,6 @@ package com.example.canteen.ui.screens.staffMenu
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -27,11 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.canteen.ui.screens.CanteenScreen
 import com.example.canteen.viewmodel.login.FirestoreMenuItem
 import com.example.canteen.viewmodel.login.MenuViewModel
-import com.example.canteen.viewmodel.staffMenu.CategoryData
-import kotlinx.coroutines.launch
 
 @Composable
 fun StaffMenuListPage(
@@ -39,49 +35,39 @@ fun StaffMenuListPage(
     viewModel: MenuViewModel = viewModel()
 ) {
     val menuItems by viewModel.menuItems.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }  // Snackbar host
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Title
-            item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF0D47A1)
-                        )
-                    }
-                    Text(
-                        text = "Menu List",
-                        fontSize = 28.sp,
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0D47A1)
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Title
+        item {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color(0xFF0D47A1)
                     )
                 }
-            }
-
-            // Menu Items
-            items(menuItems) { item ->
-                StaffMenuItemCard(
-                    item = item,
-                    viewModel = viewModel,
-                    navController = navController,
-                    snackbarHostState = snackbarHostState
+                Text(
+                    text = "Menu List",
+                    fontSize = 28.sp,
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0D47A1)
                 )
             }
+        }
+
+        // Menu Items
+        items(menuItems) { item ->
+            StaffMenuItemCard(item = item, viewModel = viewModel)
         }
     }
 }
@@ -89,9 +75,7 @@ fun StaffMenuListPage(
 @Composable
 fun StaffMenuItemCard(
     item: FirestoreMenuItem,
-    viewModel: MenuViewModel,
-    navController: NavController,
-    snackbarHostState: SnackbarHostState
+    viewModel: MenuViewModel
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
     var editedName by remember { mutableStateOf(item.name) }
@@ -100,7 +84,6 @@ fun StaffMenuItemCard(
     var editedPrice by remember { mutableStateOf(item.price.toString()) }
     var editedQuantity by remember { mutableStateOf(item.remainQuantity.toString()) }
     var editedImageUri by remember { mutableStateOf<Uri?>(null) }
-    val coroutineScope = rememberCoroutineScope()
 
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -108,9 +91,9 @@ fun StaffMenuItemCard(
         editedImageUri = uri
     }
 
-    // Decode Base64 image
+    // Decode Base64 if needed
     val bitmap = remember(editedImageUri, item.imageUrl) {
-        editedImageUri?.let { null }
+        editedImageUri?.let { null } // new image will be handled differently
             ?: item.imageUrl?.let { base64 ->
                 try {
                     val bytes = Base64.decode(base64, Base64.DEFAULT)
@@ -136,13 +119,22 @@ fun StaffMenuItemCard(
                     .background(Color.LightGray),
                 contentAlignment = Alignment.Center
             ) {
-                bitmap?.let {
+                if (editedImageUri != null) {
                     Image(
-                        bitmap = it.asImageBitmap(),
+                        painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_gallery),
                         contentDescription = editedName,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                } else {
+                    bitmap?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = editedName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
             }
 
@@ -158,7 +150,6 @@ fun StaffMenuItemCard(
 
             Spacer(Modifier.height(8.dp))
 
-            // Edit Button
             Button(
                 onClick = { showEditDialog = true },
                 modifier = Modifier.fillMaxWidth(),
@@ -167,37 +158,9 @@ fun StaffMenuItemCard(
             ) {
                 Text("Edit", color = Color.White)
             }
-
-            Spacer(Modifier.height(4.dp))
-
-            // Delete Button
-            Button(
-                onClick = {
-                    viewModel.deleteMenuItem(item.id) { success, error ->
-                        coroutineScope.launch {
-                            if (success) {
-                                snackbarHostState.showSnackbar("Menu item deleted successfully!")
-                                navController.navigate(CanteenScreen.StaffDashboard.name) {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                snackbarHostState.showSnackbar("Delete failed: ${error ?: "Unknown error"}")
-                                Log.e("DeleteItem", error ?: "Unknown error")
-                            }
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text("Delete Item", color = Color.White)
-            }
         }
     }
 
-    // Edit Dialog
     if (showEditDialog) {
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
@@ -212,7 +175,8 @@ fun StaffMenuItemCard(
                             .background(Color.LightGray),
                         contentAlignment = Alignment.Center
                     ) {
-                        bitmap?.let {
+                        val editBitmap = editedImageUri?.let { null } ?: bitmap
+                        editBitmap?.let {
                             Image(
                                 bitmap = it.asImageBitmap(),
                                 contentDescription = editedName,
@@ -233,8 +197,6 @@ fun StaffMenuItemCard(
                     }
 
                     Spacer(Modifier.height(8.dp))
-
-                    // Name & Description
                     OutlinedTextField(
                         value = editedName,
                         onValueChange = { editedName = it },
@@ -248,37 +210,14 @@ fun StaffMenuItemCard(
                         label = { Text("Description") },
                         modifier = Modifier.fillMaxWidth()
                     )
-
                     Spacer(Modifier.height(8.dp))
-
-                    // Category Dropdown
-                    var expanded by remember { mutableStateOf(false) }
-                    Box {
-                        OutlinedButton(
-                            onClick = { expanded = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(editedCategory)
-                        }
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            CategoryData.category.forEach { category ->
-                                DropdownMenuItem(
-                                    text = { Text(category.name) },
-                                    onClick = {
-                                        editedCategory = category.name
-                                        expanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
+                    OutlinedTextField(
+                        value = editedCategory,
+                        onValueChange = { editedCategory = it },
+                        label = { Text("Category") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(Modifier.height(8.dp))
-
-                    // Price & Quantity
                     OutlinedTextField(
                         value = editedPrice,
                         onValueChange = { editedPrice = it },
@@ -302,10 +241,10 @@ fun StaffMenuItemCard(
                         categoryId = editedCategory,
                         price = String.format("%.2f", editedPrice.toDoubleOrNull() ?: 0.0).toDouble(),
                         remainQuantity = editedQuantity.toIntOrNull() ?: 0,
-                        imageUrl = editedImageUri?.let { null } ?: item.imageUrl
+                        imageUrl = editedImageUri?.let { null } ?: item.imageUrl // Handle image upload separately
                     )
                     viewModel.updateMenuItem(updatedItem) { success, error ->
-                        if (!success) Log.e("UpdateItem", error ?: "Unknown error")
+                        if (!success) println("Error updating: $error")
                     }
                     showEditDialog = false
                 }) { Text("Save") }

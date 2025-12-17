@@ -70,10 +70,10 @@ fun StaffDashboardScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Menu Items ", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
+                    Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
                 }
-                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Black, modifier = Modifier.clickable(onClick = {onClick()}))
+                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue, modifier = Modifier.clickable(onClick = {onClick()}))
             }
 
             Spacer(Modifier.height(20.dp))
@@ -102,6 +102,10 @@ fun StaffDashboardScreen(
             }
 
             Spacer(Modifier.height(20.dp))
+
+            Text("Menu Items ", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
+            Spacer(Modifier.height(16.dp))
 
             // Add & Edit buttons row
             Row(

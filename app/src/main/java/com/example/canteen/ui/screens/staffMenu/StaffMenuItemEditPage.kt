@@ -3,18 +3,14 @@ package com.example.canteen.ui.screens.staffMenu
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,10 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.canteen.ui.screens.CanteenScreen
 import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.viewmodel.staffMenu.CategoryData
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,8 +38,6 @@ fun StaffMenuItemEditPage(
     val item = menuItems.find { it.id == itemId } ?: return
 
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     var editedName by remember { mutableStateOf(item.name) }
     var editedDescription by remember { mutableStateOf(item.description) }
@@ -59,9 +51,12 @@ fun StaffMenuItemEditPage(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> editedImageUri = uri }
 
+    // Decode image from Uri or Base64
     val bitmap = remember(editedImageUri, item.imageUrl) {
         editedImageUri?.let { uri ->
-            context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                BitmapFactory.decodeStream(inputStream)
+            }
         } ?: item.imageUrl?.let {
             try {
                 val bytes = Base64.decode(it, Base64.DEFAULT)
@@ -70,185 +65,153 @@ fun StaffMenuItemEditPage(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Header
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color(0xFF0D47A1))
+            }
+            Text(
+                "Edit Menu Item",
+                fontSize = 28.sp,
+                color = Color(0xFF0D47A1)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Image Picker
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .height(180.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.LightGray),
+            contentAlignment = Alignment.Center
         ) {
-            // Header
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Edit Menu Item", fontSize = 28.sp, color = Color(0xFF0D47A1))
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Image Picker
-            Box(
-                modifier = Modifier
-                    .height(180.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.Center
-            ) {
-                if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = editedName,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text("No Image", color = Color.Gray)
-                }
-
-                IconButton(
-                    onClick = { imageLauncher.launch("image/*") },
-                    modifier = Modifier.align(Alignment.BottomEnd)
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Pick Image", tint = Color.White)
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = editedName,
-                onValueChange = { editedName = it },
-                label = { Text("Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = editedDescription,
-                onValueChange = { editedDescription = it },
-                label = { Text("Description") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            // Category Dropdown
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedCategory,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Category") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = editedName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
+            } else {
+                Text("No Image", color = Color.Gray)
+            }
 
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    CategoryData.category.forEach { category ->
-                        DropdownMenuItem(
-                            text = { Text(category.name) },
-                            onClick = {
-                                selectedCategory = category.name
-                                expanded = false
-                            }
-                        )
-                    }
+            // Button to pick new image
+            IconButton(
+                onClick = { imageLauncher.launch("image/*") },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            ) {
+                Icon(
+                    Icons.Default.ArrowBack, // you can replace with a gallery icon
+                    contentDescription = "Pick Image",
+                    tint = Color.White
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Text Fields
+        OutlinedTextField(
+            value = editedName,
+            onValueChange = { editedName = it },
+            label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = editedDescription,
+            onValueChange = { editedDescription = it },
+            label = { Text("Description") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        // Category Dropdown
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selectedCategory,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Category") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                CategoryData.category.forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category.name) },
+                        onClick = {
+                            selectedCategory = category.name
+                            expanded = false
+                        }
+                    )
                 }
             }
+        }
 
-            Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = editedPrice,
-                onValueChange = { editedPrice = it },
-                label = { Text("Price") },
-                modifier = Modifier.fillMaxWidth()
-            )
+        OutlinedTextField(
+            value = editedPrice,
+            onValueChange = { editedPrice = it },
+            label = { Text("Price") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = editedQuantity,
-                onValueChange = { editedQuantity = it },
-                label = { Text("Quantity") },
-                modifier = Modifier.fillMaxWidth()
-            )
+        OutlinedTextField(
+            value = editedQuantity,
+            onValueChange = { editedQuantity = it },
+            label = { Text("Quantity") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
-            // Save Button
-            Button(
-                onClick = {
-                    val updatedItem = item.copy(
-                        name = editedName,
-                        description = editedDescription,
-                        categoryId = selectedCategory,
-                        price = editedPrice.toDoubleOrNull() ?: 0.0,
-                        remainQuantity = editedQuantity.toIntOrNull() ?: 0,
-                        imageUrl = editedImageUri?.let { uri ->
-                            context.contentResolver.openInputStream(uri)?.use { input ->
-                                val bytes = input.readBytes()
-                                Base64.encodeToString(bytes, Base64.DEFAULT)
-                            }
-                        } ?: item.imageUrl
-                    )
-
-                    viewModel.updateMenuItem(updatedItem) { success, error ->
-                        coroutineScope.launch {
-                            if (success) {
-                                snackbarHostState.showSnackbar("Menu item updated successfully!")
-                                navController.navigate("StaffDashboard") {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                snackbarHostState.showSnackbar("Update failed: ${error ?: "Unknown error"}")
-                            }
+        // Save Button
+        Button(
+            onClick = {
+                val updatedItem = item.copy(
+                    name = editedName,
+                    description = editedDescription,
+                    categoryId = selectedCategory,
+                    price = editedPrice.toDoubleOrNull() ?: 0.0,
+                    remainQuantity = editedQuantity.toIntOrNull() ?: 0,
+                    imageUrl = editedImageUri?.let { uri ->
+                        // Convert picked image to Base64
+                        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                            val bytes = inputStream.readBytes()
+                            Base64.encodeToString(bytes, Base64.DEFAULT)
                         }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1))
-            ) {
-                Text("Save", color = Color.White)
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            // Delete Button
-            Button(
-                onClick = {
-                    viewModel.deleteMenuItem(item.id) { success, error ->
-                        coroutineScope.launch {
-                            if (success) {
-                                // Show snackbar
-                                snackbarHostState.showSnackbar("Menu item deleted successfully!")
-                                // Navigate back to dashboard
-                                navController.navigate(CanteenScreen.StaffDashboard.name) {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                snackbarHostState.showSnackbar("Delete failed: ${error ?: "Unknown error"}")
-                                Log.e("DeleteItem", error ?: "Unknown error")
-                            }
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-            ) {
-                Text("Delete Item", color = Color.White)
-            }
+                    } ?: item.imageUrl
+                )
+                viewModel.updateMenuItem(updatedItem) { _, _ -> }
+                navController.popBackStack()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1))
+        ) {
+            Text("Save", color = Color.White)
         }
     }
 }
