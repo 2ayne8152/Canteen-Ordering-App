@@ -123,6 +123,29 @@ class MenuViewModel : ViewModel() {
             }
         }
     }
+    fun deleteMenuItem(
+        itemId: String,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        if (itemId.isBlank()) {
+            onComplete(false, "Item ID is empty")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                Firebase.firestore
+                    .collection("MenuItems")
+                    .document(itemId)
+                    .delete()
+                    .await()
+
+                onComplete(true, null)
+            } catch (e: Exception) {
+                onComplete(false, e.message)
+            }
+        }
+    }
 
     fun updateMenuItem(
         item: FirestoreMenuItem,
