@@ -78,7 +78,7 @@ fun StaffDashboardScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // Quick Action Cards for Reports
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -144,28 +144,30 @@ fun StaffDashboardScreen(
             Spacer(Modifier.height(16.dp))
 
             // Category Chips
+            // Row for category chips
             Row(
                 modifier = Modifier
                     .horizontalScroll(rememberScrollState())
                     .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                val allCategories = listOf(Category("", "All", "")) + categories
-                allCategories.forEach { category ->
+                // "All" chip
+                CategoryChip(
+                    text = "All",
+                    selected = selectedCategory == "All",
+                    onClick = { selectedCategory = "All" }
+                )
+
+                // Other categories
+                CategoryData.category.forEach { category ->
                     CategoryChip(
-                        text = "All",
-                        selected = selectedCategory == "All",
-                        onClick = { selectedCategory = "All" }
+                        text = category.name,
+                        selected = selectedCategory == category.name,
+                        onClick = { selectedCategory = category.name }
                     )
-                    CategoryData.category.forEach { category ->
-                        CategoryChip(
-                            text = category.name,
-                            selected = selectedCategory == category.name,
-                            onClick = { selectedCategory = category.name}
-                        )
-                    }
                 }
             }
+
 
             // Scrollable list of menu items
             LazyColumn(
@@ -319,7 +321,6 @@ fun MenuItemCard(
 
     }
 }
-
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {

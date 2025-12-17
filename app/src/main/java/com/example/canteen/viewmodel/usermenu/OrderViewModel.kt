@@ -70,12 +70,10 @@ class OrderViewModel(
 
     fun startListeningOrderHistory(userId: String) {
         stopListeningOrderHistory()
-        Log.d("OrderListener", "Listening orders for userId=$userId")
 
         orderListener = repository.listenOrdersByUserId(
             userId = userId,
             onUpdate = { orders ->
-                Log.d("OrderListener", "Orders updated: ${orders.map { it.status }}")
                 _orderHistory.value = orders
             },
             onError = { throwable ->

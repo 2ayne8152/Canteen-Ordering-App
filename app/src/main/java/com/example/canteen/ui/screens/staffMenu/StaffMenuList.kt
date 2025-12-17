@@ -47,10 +47,11 @@ fun StaffMenuListPage(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(16.dp)
+                .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Title
+
             item {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

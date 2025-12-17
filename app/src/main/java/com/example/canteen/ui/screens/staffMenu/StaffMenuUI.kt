@@ -1,7 +1,6 @@
 package com.example.canteen.ui.screens.staffMenu
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.os.Build
 import android.net.Uri
@@ -37,6 +36,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
+import java.util.UUID
 
 @Composable
 fun MenuItemForm(navController: NavController) {
@@ -86,6 +86,7 @@ fun MenuItemForm(navController: NavController) {
             enabled = false,
             label = { Text("Menu ID") },
             modifier = Modifier.fillMaxWidth()
+
         )
 
         Spacer(Modifier.height(12.dp))
@@ -168,7 +169,6 @@ fun MenuItemForm(navController: NavController) {
 
         Spacer(Modifier.height(12.dp))
 
-        // Preview
         Text("Preview", fontSize = 18.sp)
 
         Card(
@@ -258,7 +258,7 @@ fun MenuItemForm(navController: NavController) {
 
                     try {
                         val generatedMenuId = generateNextMenuId()
-
+                        // Convert imageUri to Base64
                         val bitmap = if (Build.VERSION.SDK_INT < 28) {
                             MediaStore.Images.Media.getBitmap(
                                 context.contentResolver, imageUri
@@ -284,7 +284,7 @@ fun MenuItemForm(navController: NavController) {
                             "price" to priceDouble,
                             "remainQuantity" to quantityInt,
                             "categoryId" to selectedCategory,
-                            "imageUrl" to imageBase64
+                            "imageUrl" to imageBase64 // keep field name same as your data class
                         )
 
                         Firebase.firestore
@@ -294,8 +294,7 @@ fun MenuItemForm(navController: NavController) {
                             .await()
 
                         validationMessage = "Menu item added successfully! ($generatedMenuId)"
-
-                        // Reset fields
+                        menuId = ""
                         itemName = ""
                         description = ""
                         unitPrice = ""
@@ -308,7 +307,6 @@ fun MenuItemForm(navController: NavController) {
                             popUpTo(navController.graph.startDestinationId) { inclusive = false }
                             launchSingleTop = true
                         }
-
                     } catch (e: Exception) {
                         validationMessage = "Error: ${e.message}"
                     } finally {
@@ -327,7 +325,7 @@ fun MenuItemForm(navController: NavController) {
                     color = Color.White,
                     modifier = Modifier.size(24.dp),
                     strokeWidth = 2.dp,
-                )
+                    )
             } else {
                 Text("Submit", color = Color.White, fontSize = 16.sp)
             }

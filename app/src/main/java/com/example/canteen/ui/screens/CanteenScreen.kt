@@ -76,17 +76,18 @@ fun CanteenScreen(
     // Firestore menu items
     val menuItems by userMenuViewModel.menuItems.collectAsState()
 
+    // Track if we just cleared an error
+    var justClearedError by remember { mutableStateOf(false) }
+
     // Auto-navigate based on auth state
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Initial -> {
-                // Still checking, do nothing
                 Log.d("CanteenScreen", "Checking for existing session...")
             }
             is AuthState.LoggedIn -> {
-                val currentLoggedInState = authState as AuthState.LoggedIn  // Different variable name
+                val currentLoggedInState = authState as AuthState.LoggedIn
                 Log.d("CanteenScreen", "User logged in with role: ${currentLoggedInState.role}")
-                // Navigate to appropriate screen based on role
                 when (currentLoggedInState.role) {
                     "user" -> {
                         navController.navigate(CanteenScreen.UserHomeScreen.name) {
@@ -101,10 +102,15 @@ fun CanteenScreen(
                 }
             }
             is AuthState.LoggedOut -> {
-                // Navigate to login when logged out
-                Log.d("CanteenScreen", "User logged out, navigating to login")
-                navController.navigate("login") {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                // Only navigate to login if we're not just clearing an error
+                if (!justClearedError) {
+                    Log.d("CanteenScreen", "User logged out, navigating to login")
+                    navController.navigate("login") {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    }
+                } else {
+                    // Reset the flag
+                    justClearedError = false
                 }
             }
             else -> {

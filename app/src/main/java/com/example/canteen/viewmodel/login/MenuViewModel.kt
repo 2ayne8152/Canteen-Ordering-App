@@ -29,7 +29,6 @@ suspend fun generateNextMenuId(): String {
 
     return "M" + nextNumber.toString().padStart(4, '0')
 }
-
 data class FirestoreMenuItem(
     val id: String = "",
     val name: String = "",
@@ -99,6 +98,7 @@ class MenuViewModel : ViewModel() {
         }
     }
 
+    // Create menu item + optionally category
     fun createMenuItem(
         menuItem: FirestoreMenuItem,
         categoryName: String,
@@ -141,30 +141,6 @@ class MenuViewModel : ViewModel() {
             }
         }
     }
-
-    fun updateMenuItem(
-        item: FirestoreMenuItem,
-        onComplete: (Boolean, String?) -> Unit
-    ) {
-        if (item.id.isBlank()) {
-            onComplete(false, "Document ID empty")
-            return
-        }
-
-        viewModelScope.launch {
-            try {
-                db.collection("MenuItems")
-                    .document(item.id)
-                    .set(item)
-                    .await()
-
-                fetchMenuItems()
-                onComplete(true, null)
-            } catch (e: Exception) {
-                onComplete(false, e.message)
-            }
-        }
-    }
     fun deleteMenuItem(
         itemId: String,
         onComplete: (Boolean, String?) -> Unit
@@ -189,7 +165,29 @@ class MenuViewModel : ViewModel() {
         }
     }
 
+    fun updateMenuItem(
+        item: FirestoreMenuItem,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        if (item.id.isBlank()) {
+            onComplete(false, "Document ID empty")
+            return
+        }
 
+        viewModelScope.launch {
+            try {
+                db.collection("MenuItems")
+                    .document(item.id)
+                    .set(item)
+                    .await()
+
+                fetchMenuItems()
+                onComplete(true, null)
+            } catch (e: Exception) {
+                onComplete(false, e.message)
+            }
+        }
+    }
 
     // ---------------- CART ----------------
     fun addToCart(item: FirestoreMenuItem) {

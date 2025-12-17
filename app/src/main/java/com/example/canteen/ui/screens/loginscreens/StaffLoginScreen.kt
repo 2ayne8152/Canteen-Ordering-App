@@ -64,7 +64,6 @@ fun StaffLoginScreen(
     if (authState is AuthState.RegistrationSuccess) {
         AlertDialog(
             onDismissRequest = {
-                authViewModel.resetAuthState()
                 isCurrentlyRegistering.value = false
             },
             title = { Text("Registration Successful!") },
@@ -73,7 +72,8 @@ fun StaffLoginScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    authViewModel.resetAuthState()
+                    // Add sign out for staff registration too
+                    authViewModel.signOut() // <-- ADD THIS LINE
                     isRegistering = false
                     isCurrentlyRegistering.value = false
                     email = ""
@@ -91,7 +91,7 @@ fun StaffLoginScreen(
     if (authState is AuthState.Error) {
         AlertDialog(
             onDismissRequest = {
-                authViewModel.resetAuthState()
+                authViewModel.clearError()  // <-- ADD THIS
                 isCurrentlyRegistering.value = false
             },
             title = { Text("Error") },
@@ -100,7 +100,7 @@ fun StaffLoginScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    authViewModel.resetAuthState()
+                    authViewModel.clearError()  // <-- ADD THIS
                     isCurrentlyRegistering.value = false
                 }) {
                     Text("OK")
@@ -249,7 +249,6 @@ fun StaffLoginScreen(
                         if (authState !is AuthState.Loading) {
                             isRegistering = !isRegistering
                             isCurrentlyRegistering.value = false
-                            authViewModel.resetAuthState()
                             username = ""
                         }
                     }
