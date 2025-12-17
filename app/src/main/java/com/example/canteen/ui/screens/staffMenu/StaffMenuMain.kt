@@ -77,7 +77,7 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 QuickActionCard(
-                    title = "Sales Report",
+                    title = "Revenue Report",
                     subtitle = "View analytics",
                     icon = Icons.Default.TrendingUp,
                     backgroundColor = Color(0xFF0A3D91),

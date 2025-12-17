@@ -186,9 +186,13 @@ fun CanteenScreen(
             )
         }
 
+
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
-            StaffDashboardScreen(navController)
+            StaffDashboardScreen(
+                navController = navController,
+                onClick = { authViewModel.signOut() }
+            )
         }
 
         // -------------------- REFUND MANAGEMENT --------------------
@@ -205,15 +209,17 @@ fun CanteenScreen(
                 receiptViewModel = receiptViewModel,
                 refundViewModel = refundViewModel,
                 onBack = { navController.popBackStack() },
-                userViewModel = userViewModel
+                userViewModel = userViewModel,
+                orderViewModel = orderViewModel  // Add this line
             )
         }
 
-        // -------------------- PAYMENT HISTORY --------------------
+// -------------------- PAYMENT HISTORY --------------------
         composable(CanteenScreen.PaymentHistory.name) {
             PaymentHistory(
                 navController = navController,
-                receiptViewModel = receiptViewModel
+                receiptViewModel = receiptViewModel,
+                orderViewModel = orderViewModel  // Add this line if needed
             )
         }
 
