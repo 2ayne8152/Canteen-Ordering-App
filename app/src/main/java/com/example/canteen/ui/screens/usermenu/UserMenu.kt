@@ -1,5 +1,6 @@
 package com.example.canteen.ui.screens
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,15 +17,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.example.canteen.R
 import com.example.canteen.data.MenuItem
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.viewmodel.staffMenu.Base64Utils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,65 +50,93 @@ fun UserMenu(
                 it.categoryId.equals(categories[selectedTab].lowercase(), ignoreCase = true)
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(AppColors.background)
+    ) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 120.dp, start = 16.dp, end = 16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp, top = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Search Bar
             item {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    placeholder = { Text("Search food...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text("Search food...", color = AppColors.textTertiary)
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = AppColors.textSecondary
+                        )
+                    },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(50.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = AppColors.surface,
+                        unfocusedContainerColor = AppColors.surface,
+                        focusedBorderColor = AppColors.divider,
+                        unfocusedBorderColor = AppColors.divider,
+                        cursorColor = AppColors.primary,
+                        focusedTextColor = AppColors.textPrimary,
+                        unfocusedTextColor = AppColors.textPrimary
+                    )
                 )
             }
 
+            // Category Tabs
             item {
-                TabRow(selectedTabIndex = selectedTab) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     categories.forEachIndexed { index, category ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text(category) }
-                        )
+                        val selected = selectedTab == index
+                        Surface(
+                            color = if (selected) AppColors.primary else AppColors.surface,
+                            shape = RoundedCornerShape(50.dp),
+                            modifier = Modifier.clickable { selectedTab = index },
+                            shadowElevation = if (selected) 0.dp else 2.dp
+                        ) {
+                            Text(
+                                category,
+                                color = if (selected) AppColors.surface else AppColors.textPrimary,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
                 }
             }
 
+            // Category Title
             item {
                 Text(
                     text = "${categories[selectedTab]} Menu",
+                    color = AppColors.textPrimary,
                     style = MaterialTheme.typography.titleLarge,
-                    fontSize = 30.sp,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                    fontSize = 28.sp
                 )
             }
 
+            // Menu Items
             items(filteredMenuItems) { item ->
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    MenuItemCard(
-                        menuItem = item,
-                        onClick = {
-                            selectedItem = item
-                            isSheetOpen = true
-                            onItemClick(item)
-                        },
-                        modifier = Modifier.fillMaxWidth(0.95f)
-                    )
-                }
+                MenuItemCard(
+                    menuItem = item,
+                    onClick = {
+                        selectedItem = item
+                        isSheetOpen = true
+                        onItemClick(item)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
+        // Floating Checkout
         if (totalItemsInCart > 0) {
             FloatingCheckoutBar(
                 numOfItems = totalItemsInCart,
@@ -120,6 +148,7 @@ fun UserMenu(
             )
         }
 
+        // Bottom Sheet
         if (isSheetOpen && selectedItem != null) {
             MenuItemCustomization(
                 item = selectedItem!!,
@@ -139,36 +168,33 @@ fun UserMenu(
 }
 
 @Composable
-fun MenuItemCard(
-    menuItem: MenuItem,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val bitmap = remember(menuItem.imageUrl) {
+fun MenuItemCard(menuItem: MenuItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val bitmap: Bitmap? = remember(menuItem.imageUrl) {
         try {
-            if (menuItem.imageUrl.isNotBlank()) {
-                Base64Utils.base64ToBitmap(menuItem.imageUrl)
-            } else null
-        } catch (e: Exception) {
-            null
-        }
+            if (menuItem.imageUrl.isNotBlank()) Base64Utils.base64ToBitmap(menuItem.imageUrl)
+            else null
+        } catch (e: Exception) { null }
     }
+
+    val imageBitmap = bitmap?.asImageBitmap()
 
     Card(
         modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (bitmap != null) {
+            if (imageBitmap != null) {
                 Image(
-                    bitmap = bitmap.asImageBitmap(),
+                    bitmap = imageBitmap,
                     contentDescription = menuItem.name,
                     modifier = Modifier
-                        .size(70.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
             } else {
@@ -176,20 +202,34 @@ fun MenuItemCard(
                     painter = painterResource(R.drawable.tomyammaggi),
                     contentDescription = menuItem.name,
                     modifier = Modifier
-                        .size(70.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(menuItem.name, style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(menuItem.description, style = MaterialTheme.typography.bodySmall)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("RM %.2f".format(menuItem.price), style = MaterialTheme.typography.bodyMedium)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    menuItem.name,
+                    color = AppColors.textPrimary,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    menuItem.description,
+                    color = AppColors.textSecondary,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "RM %.2f".format(menuItem.price),
+                    color = AppColors.primary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontSize = 16.sp
+                )
             }
         }
     }
@@ -207,9 +247,18 @@ fun FloatingCheckoutBar(
         modifier = modifier
             .fillMaxWidth()
             .height(60.dp),
-        shape = MaterialTheme.shapes.large
+        shape = RoundedCornerShape(50.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = AppColors.primary
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
     ) {
-        Text("$numOfItems items • RM ${"%.2f".format(totalPrice)}")
+        Text(
+            "$numOfItems items • RM ${"%.2f".format(totalPrice)}",
+            color = AppColors.surface,
+            style = MaterialTheme.typography.titleMedium,
+            fontSize = 16.sp
+        )
     }
 }
 
@@ -226,106 +275,110 @@ fun MenuItemCustomization(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        containerColor = AppColors.sheet,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
+        Column(modifier = Modifier.padding(20.dp)) {
 
             Text(
-                text = item.name,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                item.name,
+                color = AppColors.textPrimary,
+                style = MaterialTheme.typography.headlineSmall
             )
-
             Spacer(Modifier.height(6.dp))
-
             Text(
-                text = item.description,
-                color = Color.Gray,
+                item.description,
+                color = AppColors.textSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
 
             Spacer(Modifier.height(16.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Text(
-                    text = "RM %.2f".format(item.price),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                    "RM %.2f".format(item.price),
+                    color = AppColors.primary,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontSize = 24.sp
                 )
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .background(Color(0xFFF2F2F2), RoundedCornerShape(12.dp))
+                        .background(AppColors.surface, RoundedCornerShape(12.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     IconButton(
                         onClick = { if (quantity > 1) quantity-- },
-                        modifier = Modifier.size(36.dp)
+                        enabled = quantity > 1
                     ) {
-                        Icon(Icons.Default.Remove, contentDescription = "Decrease")
+                        Icon(
+                            Icons.Default.Remove,
+                            contentDescription = "Decrease quantity",
+                            tint = if (quantity > 1) AppColors.textPrimary else AppColors.disabled
+                        )
                     }
-
                     Text(
-                        text = quantity.toString(),
-                        fontSize = 18.sp,
-                        modifier = Modifier.padding(horizontal = 8.dp)
+                        quantity.toString(),
+                        color = AppColors.textPrimary,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 12.dp)
                     )
-
-                    IconButton(
-                        onClick = { quantity++ },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Increase")
+                    IconButton(onClick = { quantity++ }) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Increase quantity",
+                            tint = AppColors.textPrimary
+                        )
                     }
                 }
             }
 
             Spacer(Modifier.height(20.dp))
 
-            Text(
-                text = "Subtotal: RM ${(item.price * quantity).format(2)}",
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            Column {
-                Button(
-                    onClick = { onAddToCart(quantity) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                ) {
-                    Text("Add to Cart • RM ${(item.price * quantity).format(2)}")
-                }
-
-                if (cartItemCount > 0) {
-                    Spacer(Modifier.height(12.dp))
-
-                    OutlinedButton(
-                        onClick = onViewCart,
-                        modifier = Modifier.fillMaxWidth(),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50))
-                    ) {
-                        Text("View Cart ($cartItemCount)")
-                    }
-                }
+            Button(
+                onClick = { onAddToCart(quantity) },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.primary
+                )
+            ) {
+                Text(
+                    "Add to Cart • RM ${(item.price * quantity).format(2)}",
+                    color = AppColors.surface,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 16.sp
+                )
             }
 
-            Spacer(Modifier.height(10.dp))
+            if (cartItemCount > 0) {
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onViewCart,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(50.dp),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        width = 1.5.dp,
+                        brush = androidx.compose.ui.graphics.SolidColor(AppColors.primary)
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = AppColors.primary
+                    )
+                ) {
+                    Text(
+                        "View Cart ($cartItemCount)",
+                        color = AppColors.primary,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
         }
     }
 }
 
-// helper
 fun Double.format(digits: Int) = "%.${digits}f".format(this)
