@@ -22,6 +22,8 @@ import com.example.canteen.ui.screens.payment.RefundDetailPage
 import com.example.canteen.ui.screens.payment.RefundManagementScreenWrapper
 import com.example.canteen.ui.screens.reporting.ReportScreen
 import com.example.canteen.ui.screens.reporting.OrdersAnalyticsScreen
+import com.example.canteen.ui.screens.staffMenu.MenuItemForm
+import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
@@ -189,6 +191,14 @@ fun CanteenScreen(
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
             StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
+        }
+
+        composable(CanteenScreen.MenuItemForm.name){
+            MenuItemForm(navController)
+        }
+
+        composable (CanteenScreen.MenuListPage.name){
+            StaffMenuListPage(navController)
         }
 
         // -------------------- REFUND MANAGEMENT --------------------

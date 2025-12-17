@@ -153,7 +153,7 @@ fun PaymentHistoryCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Receipt ID : ${data.first.receiptId.take(6)}", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text("ReceiptID: ${data.first.receiptId.take(6)}", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                 Text("${formatted}", color = Color.Black)
             }
 
