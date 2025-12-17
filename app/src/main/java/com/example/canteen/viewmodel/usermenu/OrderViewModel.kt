@@ -21,12 +21,12 @@ class OrderViewModel(
     private val _orders = MutableStateFlow<Map<String, Order>>(emptyMap())
     val orders: StateFlow<Map<String, Order>> = _orders
 
-    fun createOrder(userId: String, items: List<CartItem>, totalAmount: Double) {
-        viewModelScope.launch {
-            val order = repository.createOrder(userId, items, totalAmount)
-            _latestOrder.value = order
-        }
+    suspend fun createOrder(userId: String, items: List<CartItem>, totalAmount: Double): Order {
+        val order = repository.createOrder(userId, items, totalAmount)
+        _latestOrder.value = order
+        return order
     }
+
 
     fun markOrderPaid(orderId: String) {
         viewModelScope.launch {
