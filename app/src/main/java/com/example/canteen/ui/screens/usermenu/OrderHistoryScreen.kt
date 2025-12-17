@@ -19,6 +19,12 @@ import com.example.canteen.viewmodel.usermenu.OrderViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+private enum class OrderTab(val title: String) {
+    PREPARING("Preparing"),
+    COMPLETED("Completed"),
+    REFUNDED("Refunded")
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderHistoryScreen(
@@ -30,6 +36,7 @@ fun OrderHistoryScreen(
     val userId = user?.UserID?.trim()
 
     val orders by orderViewModel.orderHistory.collectAsState()
+    var selectedTab by remember { mutableStateOf(OrderTab.PREPARING) }
 
     LaunchedEffect(userId) {
         userId?.let {
@@ -44,28 +51,69 @@ fun OrderHistoryScreen(
     }
 
     Scaffold { padding ->
-        if (orders.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No orders found")
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(orders) { order ->
-                    OrderHistoryItem(
-                        order = order,
-                        onOrderClick = onOrderClick
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+
+            // ===== Tabs below TopBar =====
+            TabRow(selectedTabIndex = selectedTab.ordinal) {
+                OrderTab.values().forEach { tab ->
+                    Tab(
+                        selected = selectedTab == tab,
+                        onClick = { selectedTab = tab },
+                        text = { Text(tab.title) }
                     )
+                }
+            }
+
+            val filteredOrders = remember(orders, selectedTab) {
+                when (selectedTab) {
+                    OrderTab.PREPARING ->
+                        orders.filter {
+                            it.status.equals("PENDING", true) ||
+                                    it.status.equals("READY TO PICKUP", true)
+                        }
+
+                    OrderTab.COMPLETED ->
+                        orders.filter {
+                            it.status.equals("COMPLETED", true)
+                        }
+
+                    OrderTab.REFUNDED ->
+                        orders.filter {
+                            it.status.equals("REFUNDED", true)
+                        }
+                }
+            }
+
+            if (filteredOrders.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = when (selectedTab) {
+                            OrderTab.PREPARING -> "No orders being prepared"
+                            OrderTab.COMPLETED -> "No completed orders"
+                            OrderTab.REFUNDED -> "No refunded orders"
+                        }
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filteredOrders) { order ->
+                        OrderHistoryItem(
+                            order = order,
+                            onOrderClick = onOrderClick
+                        )
+                    }
                 }
             }
         }
@@ -96,7 +144,6 @@ fun OrderHistoryItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            // ===== Left Icon (like image in cart) =====
             Icon(
                 imageVector = Icons.Default.ReceiptLong,
                 contentDescription = null,
@@ -106,7 +153,6 @@ fun OrderHistoryItem(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // ===== Main Content =====
             Column(modifier = Modifier.weight(1f)) {
 
                 Text(
@@ -131,7 +177,6 @@ fun OrderHistoryItem(
                 )
             }
 
-            // ===== Right Total (like subtotal) =====
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "Total",
