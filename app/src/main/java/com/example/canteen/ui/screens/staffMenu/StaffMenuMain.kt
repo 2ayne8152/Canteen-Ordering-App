@@ -2,6 +2,7 @@ package com.example.menumanagement
 
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.R.attr.onClick
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,10 +32,15 @@ import com.example.canteen.viewmodel.login.Category
 import com.example.canteen.viewmodel.login.FirestoreMenuItem
 import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.ui.screens.CanteenScreen
-import kotlinx.coroutines.launch
+import com.example.canteen.viewmodel.staffMenu.CategoryData
+
 
 @Composable
-fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel = viewModel(), onClick: () -> Unit) {
+fun StaffDashboardScreen(
+    navController: NavController,
+    onClick: () -> Unit,
+    viewModel: MenuViewModel = viewModel()
+){
 
     var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
@@ -97,7 +103,7 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
 
             Spacer(Modifier.height(20.dp))
 
-            Text("Menu Items Management", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Menu Items ", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text("Total Items: ${menuItems.size}", fontSize = 13.sp, color = Color.Gray)
             Spacer(Modifier.height(16.dp))
 
@@ -123,12 +129,7 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                         .clickable { navController.navigate(CanteenScreen.MenuListPage.name) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Menu",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Menu", tint = Color.White)
                 }
             }
 
@@ -156,10 +157,17 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                 val allCategories = listOf(Category("", "All", "")) + categories
                 allCategories.forEach { category ->
                     CategoryChip(
-                        text = category.Name,
-                        selected = selectedCategory == category.CategoryID || (category.Name == "All" && selectedCategory == "All"),
-                        onClick = { selectedCategory = category.CategoryID.ifBlank { "All" } }
+                        text = "All",
+                        selected = selectedCategory == "All",
+                        onClick = { selectedCategory = "All" }
                     )
+                    CategoryData.category.forEach { category ->
+                        CategoryChip(
+                            text = category.name,
+                            selected = selectedCategory == category.name,
+                            onClick = { selectedCategory = category.name}
+                        )
+                    }
                 }
             }
 
@@ -171,7 +179,14 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                     .padding(bottom = paddingValues.calculateBottomPadding())
             ) {
                 items(filteredMenuItems) { item ->
-                    MenuItemCard(item)
+                    MenuItemCard(
+                        item = item,
+                        onEditClick = {
+                            navController.navigate(
+                                "${CanteenScreen.StaffMenuDetailPage.name}/${item.id}"
+                            )
+                        }
+                    )
                 }
             }
         }
@@ -231,7 +246,11 @@ fun QuickActionCard(
 
 
 @Composable
-fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
+fun CategoryChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -239,15 +258,23 @@ fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        Text(text, color = if (selected) Color.White else Color.Black, fontSize = 13.sp)
+        Text(
+            text,
+            color = if (selected) Color.White else Color.Black,
+            fontSize = 13.sp
+        )
     }
 }
 
 @Composable
-fun MenuItemCard(item: FirestoreMenuItem, onEditClick: () -> Unit = {}) {
+fun MenuItemCard(
+    item: FirestoreMenuItem,
+    onEditClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onEditClick() }
             .background(Color.White, RoundedCornerShape(12.dp))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
