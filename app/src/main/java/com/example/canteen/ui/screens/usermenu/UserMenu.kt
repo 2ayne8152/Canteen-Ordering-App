@@ -42,7 +42,7 @@ fun UserMenu(
     var isSheetOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    val categories = listOf("Food", "Beverages", "Dessert")
+    val categories = listOf("Food", "Beverages", "Desserts")
     var selectedTab by remember { mutableStateOf(0) }
 
     val filteredMenuItems = menuItems.filter {
