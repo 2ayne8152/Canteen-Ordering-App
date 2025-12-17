@@ -73,6 +73,8 @@ fun StaffLoginScreen(
             },
             confirmButton = {
                 Button(onClick = {
+                    // Add sign out for staff registration too
+                    authViewModel.signOut() // <-- ADD THIS LINE
                     authViewModel.resetAuthState()
                     isRegistering = false
                     isCurrentlyRegistering.value = false

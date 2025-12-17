@@ -73,6 +73,8 @@ fun LoginScreen(
             },
             confirmButton = {
                 Button(onClick = {
+                    // Sign out the newly registered user
+                    authViewModel.signOut() // Add this line
                     authViewModel.resetAuthState()
                     isRegistering = false
                     isCurrentlyRegistering.value = false
