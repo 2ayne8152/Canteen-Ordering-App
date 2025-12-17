@@ -60,39 +60,46 @@ fun MakePayment(
                 .padding(bottom = 130.dp)
         )
 
+        var isProcessing by remember { mutableStateOf(false) }
+
         PaymentBottomBar(
             modifier = Modifier.align(Alignment.BottomCenter),
             itemCount = cart.value.sumOf { it.quantity },
             totalAmount = cart.value.sumOf { it.totalPrice },
             enabled = when (selectedMethod) {
-                "Card" -> isCardValid
-                "E-wallet" -> true
+                "Card" -> isCardValid && !isProcessing
+                "E-wallet" -> !isProcessing
                 else -> false
             },
             onSubmit = {
+                if (isProcessing) return@PaymentBottomBar  // prevent double clicks
+                isProcessing = true
+
                 val userId = user?.UserID ?: return@PaymentBottomBar
                 val items = cart.value
                 val total = cart.value.sumOf { it.totalPrice }
 
-                // Use coroutine scope to launch suspend operations
+                // CREATE ORDER & RECEIPT
                 scope.launch {
                     try {
-                        // CREATE ORDER (with remainQuantity updated)
-                        val order = orderViewModel.createOrder(userId, items, total)
-
-                        // CREATE RECEIPT using the returned order
+                        orderViewModel.createOrder(userId, items, total)
                         receiptViewModel.createReceipt(
-                            orderId = order.orderId,
+                            orderId = orderViewModel.latestOrder.value?.orderId ?: "",
                             selectedMethod!!,
                             total
                         )
 
-                        snackbarHostState.showSnackbar("Payment successful 🎉")
-                        onClick()
-                        cartViewModel.clearCart()
+                        cartViewModel.clearCart()  // clear cart immediately
                     } catch (e: Exception) {
                         snackbarHostState.showSnackbar("Payment failed: ${e.message}")
+                        isProcessing = false
+                        return@launch
                     }
+
+                    // show success snackbar without blocking button
+                    snackbarHostState.showSnackbar("Payment successful 🎉")
+                    isProcessing = false
+                    onClick()  // navigate back or update UI
                 }
             }
         )
