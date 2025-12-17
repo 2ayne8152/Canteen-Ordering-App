@@ -1,4 +1,4 @@
-package com.example.canteen.Repository
+package com.example.canteen.repository
 
 import com.example.canteen.DAO.ReceiptDao
 import com.example.canteen.DAO.RefundDao

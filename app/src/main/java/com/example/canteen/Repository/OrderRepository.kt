@@ -1,5 +1,6 @@
 package com.example.canteen.repository
 
+import android.util.Log
 import com.example.canteen.data.CartItem
 import com.example.canteen.data.Order
 import com.google.firebase.firestore.FieldValue
@@ -8,6 +9,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.protobuf.LazyStringArrayList.emptyList
 import kotlinx.coroutines.tasks.await
+import kotlin.collections.emptyList
 
 class OrderRepository {
 
@@ -21,7 +23,7 @@ class OrderRepository {
             userId = userId,
             items = items,
             totalAmount = totalAmount,
-            status = "Pending"
+            status = "PENDING"
         )
 
         val batch = db.batch()
@@ -40,9 +42,8 @@ class OrderRepository {
         return order
     }
 
-
-    suspend fun markOrderPaid(orderId: String) {
-        ordersCollection.document(orderId).update("status", "Paid")
+    suspend fun orderStatusUpdate(orderId: String, status: String) {
+        ordersCollection.document(orderId).update("status", status).await()
     }
 
     suspend fun getOrder(orderId: String): Order? {
@@ -65,6 +66,8 @@ class OrderRepository {
                     onError(error)
                     return@addSnapshotListener
                 }
+
+                if (snapshot == null) return@addSnapshotListener
 
                 val orders: List<Order> = (snapshot?.documents
                     ?.mapNotNull { it.toObject(Order::class.java) }

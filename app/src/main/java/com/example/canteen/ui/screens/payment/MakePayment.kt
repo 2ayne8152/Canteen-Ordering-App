@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -11,13 +12,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.canteen.ui.screens.CanteenScreen
+import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.viewmodel.login.UserViewModel
+import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
+import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import com.example.canteen.viewmodel.usermenu.OrderViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,9 +93,9 @@ fun MakePayment(
                 // CREATE ORDER & RECEIPT
                 scope.launch {
                     try {
-                        orderViewModel.createOrder(userId, items, total)
+                        val order = orderViewModel.createOrder(userId, items, total)
                         receiptViewModel.createReceipt(
-                            orderId = orderViewModel.latestOrder.value?.orderId ?: "",
+                            orderId = order.orderId,
                             selectedMethod!!,
                             total
                         )
@@ -101,7 +112,19 @@ fun MakePayment(
                     isProcessing = false
                     onClick()  // navigate back or update UI
                 }
+
+                cartViewModel.clearCart()
             }
         )
+
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Preview(showBackground = true)
+@Composable
+fun MakePaymentPreview() {
+    CanteenTheme {
+        //MakePayment()
     }
 }

@@ -5,7 +5,6 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -21,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,12 +30,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.canteen.data.MenuItem
 import com.example.canteen.ui.screens.payment.MakePayment
-import com.example.canteen.ui.theme.AppColors
+import com.example.canteen.ui.screens.payment.Refund
 import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import kotlinx.coroutines.launch
 import com.example.canteen.viewmodel.AuthViewModel
+import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.OrderViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -50,7 +49,8 @@ fun UserHomeScreen(
     cartViewModel: CartViewModel,
     orderViewModel: OrderViewModel,
     userViewModel: UserViewModel,
-    onSignOut: () -> Unit
+    refundViewModel: RefundViewModel,
+    onSignOut: () -> Unit  // Add this parameter
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -70,12 +70,14 @@ fun UserHomeScreen(
         "history" -> "Order History"
         "makePayment" -> "Complete your Payment"
         "orderDetail" -> "Order Details"
+        "refund" -> "Request Refund"
         else -> "Canteen"
     }
 
     val isCartScreen = currentRoute == "cart"
     val isMakePaymentScreen = currentRoute == "makePayment"
     val isOrderDetailScreen = currentRoute == "orderDetail"
+    val isRequestRefund = currentRoute == "refund"
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -99,47 +101,30 @@ fun UserHomeScreen(
         }
     ) {
         Scaffold(
-            containerColor = AppColors.background,
             topBar = {
                 TopAppBar(
-                    title = {
-                        Text(
-                            topBarTitle,
-                            color = AppColors.textPrimary,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    },
+                    title = { Text(topBarTitle) },
                     navigationIcon = {
-                        if (isCartScreen || isMakePaymentScreen || isOrderDetailScreen) {
+                        if (isCartScreen || isMakePaymentScreen || isOrderDetailScreen || isRequestRefund) {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     Icons.Default.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = AppColors.textPrimary
+                                    contentDescription = "Back"
                                 )
                             }
                         } else {
                             IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(
-                                    Icons.Default.Menu,
-                                    contentDescription = "Menu",
-                                    tint = AppColors.textPrimary
-                                )
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = AppColors.surface,
-                        titleContentColor = AppColors.textPrimary,
-                        navigationIconContentColor = AppColors.textPrimary
-                    )
+                    }
                 )
             }
         ) { padding ->
             NavHost(
                 navController = navController,
                 startDestination = "order",
-                modifier = Modifier.padding(top = padding.calculateTopPadding())
+                modifier = Modifier.padding(padding)
             ) {
                 composable("order") {
                     UserMenu(
@@ -197,19 +182,29 @@ fun UserHomeScreen(
                     selectedOrder?.let { order ->
                         OrderDetailScreen(
                             order = order,
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack() },
+                            receiptViewModel = receiptViewModel,
+                            onClick = {navController.navigate("refund")}
                         )
                     } ?: Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(AppColors.background),
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "Order not found",
-                            color = AppColors.textPrimary
-                        )
+                        Text("Order not found")
                     }
+                }
+
+                composable("refund") {
+                    Refund(
+                        onBack = {
+                            navController.navigate("history") {
+                                launchSingleTop = true   // avoid duplicate history screens
+                            }
+                        },
+                        refundViewModel = refundViewModel,
+                        receiptViewModel = receiptViewModel,
+                        orderViewModel = orderViewModel
+                    )
                 }
             }
         }
@@ -225,8 +220,7 @@ fun DrawerContent(
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .width(280.dp)
-            .background(AppColors.surface)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(top = 48.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -238,42 +232,37 @@ fun DrawerContent(
 
         // Bottom section - Logout
         Column {
-            HorizontalDivider(
+            Divider(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 thickness = 1.dp,
-                color = AppColors.divider
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
             )
-            DrawerItem(Icons.AutoMirrored.Filled.Logout, "Logout", onSignOut, isLogout = true)
+            DrawerItem(Icons.AutoMirrored.Filled.Logout, "Logout", onSignOut)
         }
     }
 }
 
 @Composable
-fun DrawerItem(
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit,
-    isLogout: Boolean = false
-) {
+fun DrawerItem(icon: ImageVector, text: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(vertical = 16.dp, horizontal = 20.dp),
+            .padding(vertical = 12.dp, horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             icon,
             contentDescription = text,
-            tint = if (isLogout) AppColors.error else AppColors.primary,
-            modifier = Modifier.size(24.dp)
+            tint = if (text == "Logout") MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = text,
-            fontSize = 16.sp,
-            color = if (isLogout) AppColors.error else AppColors.textPrimary,
-            style = MaterialTheme.typography.bodyLarge
+            fontSize = 18.sp,
+            color = if (text == "Logout") MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.onSurface
         )
     }
 }
