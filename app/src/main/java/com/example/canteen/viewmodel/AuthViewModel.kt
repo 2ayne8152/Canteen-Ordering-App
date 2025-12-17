@@ -86,6 +86,20 @@ class AuthViewModel : ViewModel() {
                     return@launch
                 }
 
+                // Phone number validation
+                val cleanPhoneNumber = phoneNumber.trim()
+                if (!cleanPhoneNumber.all { it.isDigit() }) {
+                    Log.d("AuthViewModel", "Validation failed: phone number contains non-digit characters")
+                    _authState.value = AuthState.Error("Phone number must contain only digits")
+                    return@launch
+                }
+
+                if (cleanPhoneNumber.length !in 10..11) {
+                    Log.d("AuthViewModel", "Validation failed: phone number length invalid: ${cleanPhoneNumber.length}")
+                    _authState.value = AuthState.Error("Phone number must be 10-11 digits long")
+                    return@launch
+                }
+
                 Log.d("AuthViewModel", "All validation passed, creating Firebase user...")
                 val authResult = auth.createUserWithEmailAndPassword(email, password).await()
                 val firebaseUser = authResult.user
@@ -234,8 +248,17 @@ class AuthViewModel : ViewModel() {
     }
 
     fun resetAuthState() {
-        Log.d("AuthViewModel", "Resetting auth state to LoggedOut")
+        Log.d("AuthViewModel", "Resetting auth state")
+        // Don't automatically set to LoggedOut
+        // This should only be called when we want to go back to initial state
         _authState.value = AuthState.LoggedOut
+    }
+
+    fun clearError() {
+        if (_authState.value is AuthState.Error) {
+            Log.d("AuthViewModel", "Clearing error state")
+            _authState.value = AuthState.LoggedOut
+        }
     }
 }
 
