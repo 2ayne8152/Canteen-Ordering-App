@@ -31,6 +31,7 @@ import com.example.canteen.viewmodel.login.Category
 import com.example.canteen.viewmodel.login.FirestoreMenuItem
 import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.ui.screens.CanteenScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel = viewModel(), onClick: () -> Unit) {
@@ -92,6 +93,7 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(CanteenScreen.OrdersAnalyticsScreen.name) }
                 )
+                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue, modifier = Modifier.clickable(onClick = {onClick()}))
             }
 
             Spacer(Modifier.height(20.dp))
@@ -183,49 +185,10 @@ fun QuickActionCard(
     subtitle: String,
     icon: ImageVector,
     backgroundColor: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    modifier: Modifier,
+    onClick: () -> Unit
 ) {
-    Card(
-        modifier = modifier
-            .height(100.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
-
-            Column {
-                Text(
-                    text = title,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = subtitle,
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 12.sp
-                )
-            }
-        }
-    }
+    TODO("Not yet implemented")
 }
 
 @Composable
@@ -291,8 +254,10 @@ fun MenuItemCard(item: FirestoreMenuItem, onEditClick: () -> Unit = {}) {
         }
 
         Spacer(Modifier.width(8.dp))
+
     }
 }
+
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
@@ -325,8 +290,8 @@ fun BottomNavigationBar(navController: NavController) {
             label = { Text("History") }
         )
         NavigationBarItem(
-            selected = currentRoute == CanteenScreen.ReportScreen.name || currentRoute == CanteenScreen.OrdersAnalyticsScreen.name,
-            onClick = { navController.navigate(CanteenScreen.ReportScreen.name) { launchSingleTop = true } },
+            selected = false,
+            onClick = { /* Report */ },
             icon = { Icon(Icons.Default.Assessment, contentDescription = "Report") },
             label = { Text("Report") }
         )

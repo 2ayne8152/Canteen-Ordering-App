@@ -46,7 +46,7 @@ import com.example.canteen.ui.theme.lightViolet
 import com.example.canteen.data.Receipt
 import com.example.canteen.data.RefundRequest
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
-import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
+import com.example.canteen.viewmodel.usermenu.OrderViewModel
 import com.example.menumanagement.BottomNavigationBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -129,10 +129,13 @@ fun PaymentHistoryCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val order by orderViewModel.latestOrder.collectAsState()
+    val orders by orderViewModel.orders.collectAsState()
+    val order = orders[data.first.orderId]
 
-    LaunchedEffect(data.first.orderId) {
-        orderViewModel.getOrder(data.first.orderId)
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            orderViewModel.getOrderForHistory(data.first.orderId)
+        }
     }
 
     Surface(
@@ -150,7 +153,7 @@ fun PaymentHistoryCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Receipt ID : ${data.first.receiptId.take(6)}", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text("ReceiptID: ${data.first.receiptId.take(6)}", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                 Text("${formatted}", color = Color.Black)
             }
 

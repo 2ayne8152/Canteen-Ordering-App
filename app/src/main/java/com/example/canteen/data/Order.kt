@@ -7,6 +7,6 @@ data class Order(
     val userId: String = "",
     val items: List<CartItem> = emptyList(),
     val totalAmount: Double = 0.0,
-    val isPaid: Boolean = false,
+    val status: String = "PENDING",
     val createdAt: Timestamp = Timestamp.now()
 )
