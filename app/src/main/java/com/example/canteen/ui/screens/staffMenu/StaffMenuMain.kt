@@ -330,7 +330,7 @@ fun BottomNavigationBar(navController: NavController) {
         )
         NavigationBarItem(
             selected = false,
-            onClick = { /* Report */ },
+            onClick = { navController.navigate(CanteenScreen.ReportScreen.name)  },
             icon = { Icon(Icons.Default.Assessment, contentDescription = "Report") },
             label = { Text("Report") }
         )
