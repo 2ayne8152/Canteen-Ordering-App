@@ -1,4 +1,4 @@
-package com.example.canteen.viewmodel.usermenu.order
+package com.example.canteen.viewmodel.usermenu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,7 +16,14 @@ class OrderViewModel(
     private val _latestOrder = MutableStateFlow<Order?>(null)
     val latestOrder: StateFlow<Order?> = _latestOrder
 
-    fun createOrder(userId: String, items: List<CartItem>, totalAmount: Double) {
+    private val _orders = MutableStateFlow<List<Order>>(emptyList())
+    val orders: StateFlow<List<Order>> = _orders
+
+    fun createOrder(
+        userId: String,
+        items: List<CartItem>,
+        totalAmount: Double
+    ) {
         viewModelScope.launch {
             val order = repository.createOrder(userId, items, totalAmount)
             _latestOrder.value = order
@@ -32,6 +39,18 @@ class OrderViewModel(
     fun getOrder(orderId: String) {
         viewModelScope.launch {
             _latestOrder.value = repository.getOrder(orderId)
+        }
+    }
+
+    fun loadOrdersByUser(userId: String) {
+        val trimmedUserId = userId.trim()
+        viewModelScope.launch {
+            try {
+                val fetchedOrders = repository.getOrdersByUser(trimmedUserId)
+                _orders.value = fetchedOrders
+            } catch (e: Exception) {
+                _orders.value = emptyList() // avoid crash if Firestore fails
+            }
         }
     }
 }

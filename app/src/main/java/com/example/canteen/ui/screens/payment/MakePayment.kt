@@ -47,7 +47,7 @@ import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
-import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
+import com.example.canteen.viewmodel.usermenu.OrderViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.delay

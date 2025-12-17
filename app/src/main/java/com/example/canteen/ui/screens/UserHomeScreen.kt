@@ -34,7 +34,7 @@ import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import kotlinx.coroutines.launch
 import com.example.canteen.viewmodel.AuthViewModel
-import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
+import com.example.canteen.viewmodel.usermenu.OrderViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -159,12 +159,10 @@ fun UserHomeScreen(
                 }
 
                 composable("history") {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Order History (placeholder)", fontSize = 20.sp)
-                    }
+                    OrderHistoryScreen(
+                        userViewModel = userViewModel,
+                        orderViewModel = orderViewModel
+                    )
                 }
             }
         }

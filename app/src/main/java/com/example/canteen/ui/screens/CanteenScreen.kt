@@ -28,7 +28,7 @@ import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
 import com.example.canteen.viewmodel.usermenu.UserMenuViewModel
-import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
+import com.example.canteen.viewmodel.usermenu.OrderViewModel
 import com.example.menumanagement.StaffDashboardScreen
 
 enum class CanteenScreen(val title: String) {
