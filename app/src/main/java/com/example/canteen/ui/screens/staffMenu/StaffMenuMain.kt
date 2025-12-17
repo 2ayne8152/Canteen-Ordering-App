@@ -180,6 +180,18 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
 }
 
 @Composable
+fun QuickActionCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    backgroundColor: Color,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    TODO("Not yet implemented")
+}
+
+@Composable
 fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier

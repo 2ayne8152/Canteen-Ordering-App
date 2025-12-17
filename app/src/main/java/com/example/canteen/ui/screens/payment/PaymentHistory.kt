@@ -46,7 +46,7 @@ import com.example.canteen.ui.theme.lightViolet
 import com.example.canteen.data.Receipt
 import com.example.canteen.data.RefundRequest
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
-import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
+import com.example.canteen.viewmodel.usermenu.OrderViewModel
 import com.example.menumanagement.BottomNavigationBar
 
 @OptIn(ExperimentalMaterial3Api::class)

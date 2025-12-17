@@ -57,7 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import com.example.canteen.viewmodel.login.UserViewModel
-import com.example.canteen.viewmodel.usermenu.order.OrderViewModel
+import com.example.canteen.viewmodel.usermenu.OrderViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
