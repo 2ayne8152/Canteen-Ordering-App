@@ -257,7 +257,8 @@ class AuthViewModel : ViewModel() {
     fun clearError() {
         if (_authState.value is AuthState.Error) {
             Log.d("AuthViewModel", "Clearing error state")
-            _authState.value = AuthState.LoggedOut
+            // Instead of setting to LoggedOut, set to a neutral state
+            _authState.value = AuthState.Initial  // <-- Change this
         }
     }
 }
