@@ -1,6 +1,7 @@
 package com.example.canteen.ui.screens.staffMenu
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.os.Build
 import android.net.Uri
@@ -29,13 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.canteen.viewmodel.login.generateNextMenuId
 import com.example.canteen.viewmodel.staffMenu.CategoryData
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
-import java.util.UUID
 
 @Composable
 fun MenuItemForm(navController: NavController) {
@@ -80,11 +81,11 @@ fun MenuItemForm(navController: NavController) {
 
         // Menu ID
         TextField(
-            value = menuId,
-            onValueChange = { menuId = it },
+            value = "Auto Generated",
+            onValueChange = {},
+            enabled = false,
             label = { Text("Menu ID") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(Modifier.height(12.dp))
@@ -234,7 +235,7 @@ fun MenuItemForm(navController: NavController) {
                     val quantityInt = quantity.toIntOrNull()
 
                     when {
-                        menuId.isBlank() || itemName.isBlank() || description.isBlank() -> {
+                        itemName.isBlank() || description.isBlank() -> {
                             validationMessage = "All text fields must be filled."
                             return@launch
                         }
@@ -256,41 +257,57 @@ fun MenuItemForm(navController: NavController) {
                     isLoading = true
 
                     try {
-                        // Convert imageUri to Base64
+                        val generatedMenuId = generateNextMenuId()
+
                         val bitmap = if (Build.VERSION.SDK_INT < 28) {
-                            MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri)
+                            MediaStore.Images.Media.getBitmap(
+                                context.contentResolver, imageUri
+                            )
                         } else {
-                            val source = ImageDecoder.createSource(context.contentResolver, imageUri!!)
+                            val source = ImageDecoder.createSource(
+                                context.contentResolver, imageUri!!
+                            )
                             ImageDecoder.decodeBitmap(source)
                         }
 
                         val outputStream = ByteArrayOutputStream()
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-                        val byteArray = outputStream.toByteArray()
-                        val imageBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                        val imageBase64 = Base64.encodeToString(
+                            outputStream.toByteArray(),
+                            Base64.DEFAULT
+                        )
 
                         val newMenuItem = mapOf(
-                            "id" to menuId,
+                            "id" to generatedMenuId,
                             "name" to itemName,
                             "description" to description,
                             "price" to priceDouble,
                             "remainQuantity" to quantityInt,
                             "categoryId" to selectedCategory,
-                            "imageUrl" to imageBase64 // keep field name same as your data class
+                            "imageUrl" to imageBase64
                         )
 
-                        Firebase.firestore.collection("MenuItems") // correct collection name
-                            .document(menuId)
+                        Firebase.firestore
+                            .collection("MenuItems")
+                            .document(generatedMenuId)
                             .set(newMenuItem)
                             .await()
 
-                        validationMessage = "Menu item added successfully!"
-                        menuId = ""
+                        validationMessage = "Menu item added successfully! ($generatedMenuId)"
+
+                        // Reset fields
                         itemName = ""
                         description = ""
                         unitPrice = ""
                         quantity = ""
                         imageUri = null
+
+                        // Navigate to StaffDashboard after 1 second
+                        kotlinx.coroutines.delay(1000)
+                        navController.navigate("StaffDashboard") {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                            launchSingleTop = true
+                        }
 
                     } catch (e: Exception) {
                         validationMessage = "Error: ${e.message}"
@@ -309,7 +326,7 @@ fun MenuItemForm(navController: NavController) {
                 CircularProgressIndicator(
                     color = Color.White,
                     modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp
+                    strokeWidth = 2.dp,
                 )
             } else {
                 Text("Submit", color = Color.White, fontSize = 16.sp)
