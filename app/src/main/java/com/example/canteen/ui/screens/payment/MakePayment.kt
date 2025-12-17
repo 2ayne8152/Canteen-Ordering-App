@@ -2,6 +2,7 @@ package com.example.canteen.ui.screens.payment
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.canteen.ui.screens.CanteenScreen
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.CardDetailViewModel
@@ -50,73 +52,90 @@ fun MakePayment(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            PaymentMethod(
-                phoneNumber = user?.PhoneNumber ?: "",
-                onMethodSelected = { selectedMethod = it },
-                onCardValidityChange = { isCardValid = it }
+    Scaffold(
+        containerColor = AppColors.background,
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                snackbar = { data ->
+                    Snackbar(
+                        snackbarData = data,
+                        containerColor = AppColors.success,
+                        contentColor = AppColors.surface,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             )
         }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
+    ) { padding ->
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 130.dp)
-        )
+                .fillMaxSize()
+                .padding(padding)
+                .background(AppColors.background)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 140.dp)
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-        var isProcessing by remember { mutableStateOf(false) }
+                PaymentMethod(
+                    phoneNumber = user?.PhoneNumber ?: "",
+                    onMethodSelected = { selectedMethod = it },
+                    onCardValidityChange = { isCardValid = it }
+                )
+            }
 
-        PaymentBottomBar(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            itemCount = cart.value.sumOf { it.quantity },
-            totalAmount = cart.value.sumOf { it.totalPrice },
-            enabled = when (selectedMethod) {
-                "Card" -> isCardValid && !isProcessing
-                "E-wallet" -> !isProcessing
-                else -> false
-            },
-            onSubmit = {
-                if (isProcessing) return@PaymentBottomBar  // prevent double clicks
-                isProcessing = true
+            var isProcessing by remember { mutableStateOf(false) }
 
-                val userId = user?.UserID ?: return@PaymentBottomBar
-                val items = cart.value
-                val total = cart.value.sumOf { it.totalPrice }
+            PaymentBottomBar(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                itemCount = cart.value.sumOf { it.quantity },
+                totalAmount = cart.value.sumOf { it.totalPrice },
+                enabled = when (selectedMethod) {
+                    "Card" -> isCardValid && !isProcessing
+                    "E-wallet" -> !isProcessing
+                    else -> false
+                },
+                onSubmit = {
+                    if (isProcessing) return@PaymentBottomBar  // prevent double clicks
+                    isProcessing = true
 
-                // CREATE ORDER & RECEIPT
-                scope.launch {
-                    try {
-                        val order = orderViewModel.createOrder(userId, items, total)
-                        receiptViewModel.createReceipt(
-                            orderId = order.orderId,
-                            selectedMethod!!,
-                            total
-                        )
+                    val userId = user?.UserID ?: return@PaymentBottomBar
+                    val items = cart.value
+                    val total = cart.value.sumOf { it.totalPrice }
 
-                        cartViewModel.clearCart()  // clear cart immediately
-                    } catch (e: Exception) {
-                        snackbarHostState.showSnackbar("Payment failed: ${e.message}")
+                    // CREATE ORDER & RECEIPT
+                    scope.launch {
+                        try {
+                            val order = orderViewModel.createOrder(userId, items, total)
+                            receiptViewModel.createReceipt(
+                                orderId = order.orderId,
+                                selectedMethod!!,
+                                total
+                            )
+
+                            cartViewModel.clearCart()  // clear cart immediately
+                        } catch (e: Exception) {
+                            snackbarHostState.showSnackbar("Payment failed: ${e.message}")
+                            isProcessing = false
+                            return@launch
+                        }
+
+                        // show success snackbar without blocking button
+                        snackbarHostState.showSnackbar("Payment successful 🎉")
                         isProcessing = false
-                        return@launch
+                        onClick()  // navigate back or update UI
                     }
 
-                    // show success snackbar without blocking button
-                    snackbarHostState.showSnackbar("Payment successful 🎉")
-                    isProcessing = false
-                    onClick()  // navigate back or update UI
+                    cartViewModel.clearCart()
                 }
-
-                cartViewModel.clearCart()
-            }
-        )
-
+            )
+        }
     }
 }
 

@@ -31,6 +31,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.canteen.data.MenuItem
 import com.example.canteen.ui.screens.payment.MakePayment
 import com.example.canteen.ui.screens.payment.Refund
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.viewmodel.login.UserViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
@@ -50,7 +51,7 @@ fun UserHomeScreen(
     orderViewModel: OrderViewModel,
     userViewModel: UserViewModel,
     refundViewModel: RefundViewModel,
-    onSignOut: () -> Unit  // Add this parameter
+    onSignOut: () -> Unit
 ) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -101,30 +102,47 @@ fun UserHomeScreen(
         }
     ) {
         Scaffold(
+            containerColor = AppColors.background,
             topBar = {
                 TopAppBar(
-                    title = { Text(topBarTitle) },
+                    title = {
+                        Text(
+                            topBarTitle,
+                            color = AppColors.textPrimary,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    },
                     navigationIcon = {
                         if (isCartScreen || isMakePaymentScreen || isOrderDetailScreen || isRequestRefund) {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     Icons.Default.ArrowBack,
-                                    contentDescription = "Back"
+                                    contentDescription = "Back",
+                                    tint = AppColors.textPrimary
                                 )
                             }
                         } else {
                             IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                Icon(
+                                    Icons.Default.Menu,
+                                    contentDescription = "Menu",
+                                    tint = AppColors.textPrimary
+                                )
                             }
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = AppColors.surface,
+                        titleContentColor = AppColors.textPrimary,
+                        navigationIconContentColor = AppColors.textPrimary
+                    )
                 )
             }
         ) { padding ->
             NavHost(
                 navController = navController,
                 startDestination = "order",
-                modifier = Modifier.padding(padding)
+                modifier = Modifier.padding(top = padding.calculateTopPadding())
             ) {
                 composable("order") {
                     UserMenu(
@@ -184,13 +202,18 @@ fun UserHomeScreen(
                             order = order,
                             onBack = { navController.popBackStack() },
                             receiptViewModel = receiptViewModel,
-                            onClick = {navController.navigate("refund")}
+                            onClick = { navController.navigate("refund") }
                         )
                     } ?: Box(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(AppColors.background),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Order not found")
+                        Text(
+                            "Order not found",
+                            color = AppColors.textPrimary
+                        )
                     }
                 }
 
@@ -198,7 +221,7 @@ fun UserHomeScreen(
                     Refund(
                         onBack = {
                             navController.navigate("history") {
-                                launchSingleTop = true   // avoid duplicate history screens
+                                launchSingleTop = true
                             }
                         },
                         refundViewModel = refundViewModel,
@@ -220,7 +243,8 @@ fun DrawerContent(
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .background(MaterialTheme.colorScheme.surface)
+            .width(280.dp)
+            .background(AppColors.surface)
             .padding(top = 48.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -232,37 +256,42 @@ fun DrawerContent(
 
         // Bottom section - Logout
         Column {
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                color = AppColors.divider
             )
-            DrawerItem(Icons.AutoMirrored.Filled.Logout, "Logout", onSignOut)
+            DrawerItem(Icons.AutoMirrored.Filled.Logout, "Logout", onSignOut, isLogout = true)
         }
     }
 }
 
 @Composable
-fun DrawerItem(icon: ImageVector, text: String, onClick: () -> Unit) {
+fun DrawerItem(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    isLogout: Boolean = false
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(vertical = 12.dp, horizontal = 20.dp),
+            .padding(vertical = 16.dp, horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             icon,
             contentDescription = text,
-            tint = if (text == "Logout") MaterialTheme.colorScheme.error
-            else MaterialTheme.colorScheme.primary
+            tint = if (isLogout) AppColors.error else AppColors.primary,
+            modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = text,
-            fontSize = 18.sp,
-            color = if (text == "Logout") MaterialTheme.colorScheme.error
-            else MaterialTheme.colorScheme.onSurface
+            fontSize = 16.sp,
+            color = if (isLogout) AppColors.error else AppColors.textPrimary,
+            style = MaterialTheme.typography.bodyLarge
         )
     }
 }
