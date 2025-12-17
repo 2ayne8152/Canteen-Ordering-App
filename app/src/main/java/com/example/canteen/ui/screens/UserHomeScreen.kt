@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,11 +66,13 @@ fun UserHomeScreen(
         "cart" -> "Your Cart"
         "history" -> "Order History"
         "makePayment" -> "Complete your Payment"
+        "orderDetail" -> "Order Details"
         else -> "Canteen"
     }
 
     val isCartScreen = currentRoute == "cart"
     val isMakePaymentScreen = currentRoute == "makePayment"
+    val isOrderDetailScreen = currentRoute == "orderDetail"
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -97,7 +100,7 @@ fun UserHomeScreen(
                 TopAppBar(
                     title = { Text(topBarTitle) },
                     navigationIcon = {
-                        if (isCartScreen || isMakePaymentScreen) {
+                        if (isCartScreen || isMakePaymentScreen || isOrderDetailScreen) {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
                                     Icons.Default.ArrowBack,
@@ -161,8 +164,27 @@ fun UserHomeScreen(
                 composable("history") {
                     OrderHistoryScreen(
                         userViewModel = userViewModel,
-                        orderViewModel = orderViewModel
+                        orderViewModel = orderViewModel,
+                        onOrderClick = { order ->
+                            orderViewModel.selectOrder(order)
+                            navController.navigate("orderDetail")
+                        }
                     )
+                }
+                composable("orderDetail") {
+                    val selectedOrder by orderViewModel.selectedOrder.collectAsState()
+
+                    selectedOrder?.let { order ->
+                        OrderDetailScreen(
+                            order = order,
+                            onBack = { navController.popBackStack() }
+                        )
+                    } ?: Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Order not found")
+                    }
                 }
             }
         }

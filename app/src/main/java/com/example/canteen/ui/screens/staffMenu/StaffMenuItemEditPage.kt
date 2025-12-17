@@ -1,4 +1,3 @@
-@file:JvmName("StaffMenuItemEditPageKt")
 
 package com.example.canteen.ui.screens.staffMenu
 

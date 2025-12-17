@@ -21,12 +21,12 @@ class OrderViewModel(
     private val _orders = MutableStateFlow<Map<String, Order>>(emptyMap())
     val orders: StateFlow<Map<String, Order>> = _orders
 
-    fun createOrder(userId: String, items: List<CartItem>, totalAmount: Double) {
-        viewModelScope.launch {
-            val order = repository.createOrder(userId, items, totalAmount)
-            _latestOrder.value = order
-        }
+    suspend fun createOrder(userId: String, items: List<CartItem>, totalAmount: Double): Order {
+        val order = repository.createOrder(userId, items, totalAmount)
+        _latestOrder.value = order
+        return order
     }
+
 
     fun markOrderPaid(orderId: String) {
         viewModelScope.launch {
@@ -54,11 +54,11 @@ class OrderViewModel(
 
     private val _orderHistory = MutableStateFlow<List<Order>>(emptyList())
     val orderHistory: StateFlow<List<Order>> = _orderHistory
-
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
-
     private var orderListener: ListenerRegistration? = null
+    private val _selectedOrder = MutableStateFlow<Order?>(null)
+    val selectedOrder: StateFlow<Order?> = _selectedOrder
 
     fun startListeningOrderHistory(userId: String) {
         stopListeningOrderHistory()
@@ -84,4 +84,7 @@ class OrderViewModel(
         super.onCleared()
     }
 
+    fun selectOrder(order: Order) {
+        _selectedOrder.value = order
+    }
 }
