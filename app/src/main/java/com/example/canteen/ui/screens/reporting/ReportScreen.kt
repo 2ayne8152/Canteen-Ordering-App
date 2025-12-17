@@ -23,18 +23,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.canteen.viewmodel.reporting.UiState
 import com.example.canteen.viewmodel.reporting.ReportViewModel
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavController
 import com.example.canteen.ui.screens.CanteenScreen
 import com.example.menumanagement.BottomNavigationBar
+import androidx.compose.ui.tooling.preview.Preview
 import kotlin.math.cos
 import kotlin.math.sin
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,7 +88,7 @@ fun ReportScreen(
                 )
             )
         },
-        bottomBar = { BottomNavigationBar(navController) }  // Add this line
+        bottomBar = { BottomNavigationBar(navController) }
     ) { padding ->
         Box(
             modifier = Modifier
@@ -97,7 +96,6 @@ fun ReportScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
-            // ... rest of your existing code
             when (val state = reportData) {
                 is UiState.Loading -> {
                     CircularProgressIndicator(
@@ -358,15 +356,11 @@ fun ReportScreen(
 
             // Date Picker Dialog
             if (showDatePicker) {
-                // Convert current selectedDate to UTC milliseconds for the date picker
                 val currentDateInUtc = Calendar.getInstance().apply {
                     time = selectedDate.time
-                    // Get the year, month, day in local time
                     val year = get(Calendar.YEAR)
                     val month = get(Calendar.MONTH)
                     val day = get(Calendar.DAY_OF_MONTH)
-
-                    // Set to UTC timezone
                     timeZone = java.util.TimeZone.getTimeZone("UTC")
                     set(year, month, day, 0, 0, 0)
                     set(Calendar.MILLISECOND, 0)
@@ -382,12 +376,9 @@ fun ReportScreen(
                         TextButton(
                             onClick = {
                                 datePickerState.selectedDateMillis?.let { utcMillis ->
-                                    // Convert UTC date to local date
                                     val utcCalendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
                                         timeInMillis = utcMillis
                                     }
-
-                                    // Create local calendar with the same year/month/day
                                     selectedDate = Calendar.getInstance().apply {
                                         set(Calendar.YEAR, utcCalendar.get(Calendar.YEAR))
                                         set(Calendar.MONTH, utcCalendar.get(Calendar.MONTH))
@@ -566,7 +557,7 @@ fun LineChart(
             style = Stroke(width = 3f)
         )
 
-        // Draw labels (show every nth label to avoid crowding)
+        // Draw labels
         val labelStep = (labels.size / 6).coerceAtLeast(1)
         labels.forEachIndexed { index, label ->
             if (index % labelStep == 0 || index == labels.size - 1) {
@@ -593,12 +584,12 @@ fun PaymentMethodChart(
     modifier: Modifier = Modifier
 ) {
     val colors = listOf(
-        Color(0xFF6366F1), // Indigo
-        Color(0xFF10B981), // Green
-        Color(0xFFF59E0B), // Amber
-        Color(0xFFEF4444), // Red
-        Color(0xFF8B5CF6), // Purple
-        Color(0xFF06B6D4)  // Cyan
+        Color(0xFF6366F1),
+        Color(0xFF10B981),
+        Color(0xFFF59E0B),
+        Color(0xFFEF4444),
+        Color(0xFF8B5CF6),
+        Color(0xFF06B6D4)
     )
 
     Canvas(modifier = modifier) {
@@ -616,7 +607,6 @@ fun PaymentMethodChart(
             val sweepAngle = ((amount / total) * 360).toFloat()
             val color = colors[index % colors.size]
 
-            // Draw pie slice
             drawArc(
                 color = color,
                 startAngle = startAngle,
@@ -635,14 +625,12 @@ fun PaymentMethodChart(
             val color = colors[index % colors.size]
             val percentage = (amount / total * 100).toInt()
 
-            // Draw color box
             drawRect(
                 color = color,
                 topLeft = Offset(size.width - 180f, legendY),
                 size = Size(20f, 20f)
             )
 
-            // Draw text
             drawContext.canvas.nativeCanvas.drawText(
                 "$method ($percentage%)",
                 size.width - 150f,
@@ -680,7 +668,6 @@ fun BarChart(
         val barWidth = chartWidth / dataPoints.size * 0.7f
         val spacing = chartWidth / dataPoints.size * 0.3f
 
-        // Draw bars
         dataPoints.forEachIndexed { index, value ->
             val barHeight = if (maxValue > 0) (value / maxValue) * chartHeight else 0f
             val x = padding + (index * (barWidth + spacing))
@@ -693,7 +680,6 @@ fun BarChart(
             )
         }
 
-        // Draw labels (show every nth label)
         val labelStep = (labels.size / 6).coerceAtLeast(1)
         labels.forEachIndexed { index, label ->
             if (index % labelStep == 0 || index == labels.size - 1) {
@@ -712,4 +698,3 @@ fun BarChart(
         }
     }
 }
-
