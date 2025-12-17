@@ -83,7 +83,7 @@ fun PaymentBottomBar(
                 Text("Done", color = Color.White)
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
         }
     }
 }

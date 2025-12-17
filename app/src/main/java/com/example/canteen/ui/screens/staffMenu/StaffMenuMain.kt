@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,6 +67,32 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                     Text("Staff Dashboard", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     Text("Menu Management System", fontSize = 13.sp, color = Color.Gray)
                 }
+                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue, modifier = Modifier.clickable(onClick = {onClick()}))
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Quick Action Cards for Reports
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickActionCard(
+                    title = "Sales Report",
+                    subtitle = "View analytics",
+                    icon = Icons.Default.TrendingUp,
+                    backgroundColor = Color(0xFF0A3D91),
+                    modifier = Modifier.weight(1f),
+                    onClick = { navController.navigate(CanteenScreen.ReportScreen.name) }
+                )
+                QuickActionCard(
+                    title = "Orders Analytics",
+                    subtitle = "Track orders",
+                    icon = Icons.Default.Assessment,
+                    backgroundColor = Color(0xFF1976D2),
+                    modifier = Modifier.weight(1f),
+                    onClick = { navController.navigate(CanteenScreen.OrdersAnalyticsScreen.name) }
+                )
                 Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue, modifier = Modifier.clickable(onClick = {onClick()}))
             }
 

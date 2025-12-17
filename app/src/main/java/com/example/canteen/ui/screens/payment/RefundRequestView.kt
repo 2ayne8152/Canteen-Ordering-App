@@ -194,6 +194,7 @@ fun RefundDetailScreen(
 ) {
     LaunchedEffect(receiptId) {
         receiptViewModel.loadReceipt(receiptId)
+        //receiptViewModel.loadReceiptByOrderId()
     }
 
     val receiptPair by receiptViewModel.receiptLoadById.collectAsState()

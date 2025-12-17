@@ -6,7 +6,6 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
 
 class ReceiptDao {
-
     private val receiptCollection = FirebaseFirestore.getInstance()
         .collection("receipt")
 
@@ -16,6 +15,16 @@ class ReceiptDao {
 
     suspend fun getReceiptById(id: String): Map<String, Any>? {
         return receiptCollection.document(id).get().await().data
+    }
+
+    suspend fun getReceiptByOrderId(orderId: String): Map<String, Any>? {
+        val snapshot = receiptCollection
+            .whereEqualTo("orderId", orderId)
+            .limit(1)
+            .get()
+            .await()
+
+        return snapshot.documents.firstOrNull()?.data
     }
 
     suspend fun updateReceipt(id: String, data: Map<String, Any?>) {
