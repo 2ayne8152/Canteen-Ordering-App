@@ -1,7 +1,11 @@
 package com.example.canteen.viewmodel.reporting
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.canteen.data.Order
+import com.example.canteen.data.Receipt
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,21 +35,6 @@ data class OrdersAnalyticsData(
     val orderTrendLabels: List<String>
 )
 
-data class OrderMenuItem(
-    val orderMenuItemId: String,
-    val orderId: String,
-    val menuItemId: String,
-    val quantity: Int,
-    val price: Double
-)
-
-data class MenuItem(
-    val id: String,
-    val name: String,
-    val categoryId: String,
-    val price: Double
-)
-
 class OrdersAnalyticsViewModel(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : ViewModel() {
@@ -58,152 +47,172 @@ class OrdersAnalyticsViewModel(
             _analyticsData.value = UiState.Loading
 
             try {
-                val orderMenuItems = fetchOrderMenuItems()
-                val menuItems = fetchMenuItems()
+                val orders = fetchOrders()
                 val receipts = fetchReceipts()
 
-                val data = calculateAnalytics(orderMenuItems, menuItems, receipts, period, selectedDate)
+                Log.d("OrdersAnalytics", "Fetched ${orders.size} orders")
+                Log.d("OrdersAnalytics", "Period: $period, Selected Date: ${selectedDate.time}")
+
+                val data = calculateAnalytics(orders, receipts, period, selectedDate)
                 _analyticsData.value = UiState.Success(data)
             } catch (e: Exception) {
+                Log.e("OrdersAnalytics", "Error loading analytics", e)
+                e.printStackTrace()
                 _analyticsData.value = UiState.Error(e.message ?: "Failed to load analytics")
             }
         }
     }
 
-    private suspend fun fetchOrderMenuItems(): List<OrderMenuItem> {
+    private suspend fun fetchOrders(): List<Order> {
         return try {
-            val snapshot = firestore.collection("Order_MenuItem")
+            val snapshot = firestore.collection("orders")
                 .get()
                 .await()
 
-            snapshot.documents.mapNotNull { doc ->
+            Log.d("OrdersAnalytics", "Total documents in orders collection: ${snapshot.documents.size}")
+
+            val orders = snapshot.documents.mapNotNull { doc ->
                 try {
-                    OrderMenuItem(
-                        orderMenuItemId = doc.getString("Order_MenuItem_ID")
-                            ?: doc.getString("order_MenuItem_ID")
-                            ?: doc.id,
-                        orderId = doc.getString("OrderID")
-                            ?: doc.getString("orderId")
-                            ?: "",
-                        menuItemId = doc.getString("MenuItem_ID")
-                            ?: doc.getString("menuItem_ID")
-                            ?: "",
-                        quantity = doc.getLong("Quantity")?.toInt()
-                            ?: doc.getLong("quantity")?.toInt()
-                            ?: 0,
-                        price = doc.getDouble("Price")
-                            ?: doc.getDouble("price")
-                            ?: 0.0
-                    )
+                    Log.d("OrdersAnalytics", "Processing document: ${doc.id}")
+                    Log.d("OrdersAnalytics", "Document data: ${doc.data}")
+
+                    val order = doc.toObject(Order::class.java)?.copy(orderId = doc.id)
+
+                    if (order != null) {
+                        Log.d("OrdersAnalytics", "Successfully parsed order: ${doc.id}")
+                        Log.d("OrdersAnalytics", "  - orderId after copy: ${order.orderId}")
+                        Log.d("OrdersAnalytics", "  - createdAt: ${order.createdAt}")
+                        Log.d("OrdersAnalytics", "  - createdAt.toDate(): ${order.createdAt.toDate()}")
+                        Log.d("OrdersAnalytics", "  - totalAmount: ${order.totalAmount}")
+                        Log.d("OrdersAnalytics", "  - items count: ${order.items.size}")
+                    } else {
+                        Log.w("OrdersAnalytics", "Order is null after parsing: ${doc.id}")
+                    }
+
+                    order
                 } catch (e: Exception) {
+                    Log.e("OrdersAnalytics", "Error parsing order ${doc.id}: ${e.message}", e)
+                    e.printStackTrace()
                     null
                 }
             }
+
+            Log.d("OrdersAnalytics", "Successfully fetched ${orders.size} orders")
+            orders
         } catch (e: Exception) {
-            throw Exception("Failed to fetch order items: ${e.message}")
+            Log.e("OrdersAnalytics", "Failed to fetch orders: ${e.message}", e)
+            e.printStackTrace()
+            throw Exception("Failed to fetch orders: ${e.message}")
         }
     }
 
-    private suspend fun fetchMenuItems(): List<MenuItem> {
-        return try {
-            val snapshot = firestore.collection("MenuItems")
-                .get()
-                .await()
-
-            snapshot.documents.mapNotNull { doc ->
-                try {
-                    MenuItem(
-                        id = doc.getString("id") ?: doc.id,
-                        name = doc.getString("name") ?: "Unknown",
-                        categoryId = doc.getString("CategoryID")
-                            ?: doc.getString("categoryID")
-                            ?: doc.getString("categoryId")
-                            ?: "",
-                        price = doc.getDouble("price") ?: 0.0
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            throw Exception("Failed to fetch menu items: ${e.message}")
-        }
-    }
-
-
-    private suspend fun fetchReceipts(): List<ReceiptWithTimestamp> {
+    private suspend fun fetchReceipts(): List<Receipt> {
         return try {
             val snapshot = firestore.collection("receipt")
                 .get()
                 .await()
 
+            Log.d("OrdersAnalytics", "Total receipts: ${snapshot.documents.size}")
+
             snapshot.documents.mapNotNull { doc ->
                 try {
-                    val timestamp = doc.getTimestamp("payment_Date")
-                        ?: doc.getTimestamp("Payment_Date")
-                        ?: doc.getTimestamp("paymentDate")
-
-                    val orderId = doc.getString("orderId")
-                        ?: doc.getString("orderID")
-                        ?: doc.getString("OrderID")
-                        ?: ""
-
-                    if (timestamp != null) {
-                        ReceiptWithTimestamp(
-                            receiptID = orderId,
-                            paymentDate = timestamp.toDate(),
-                            payAmount = doc.getDouble("pay_Amount")
-                                ?: doc.getDouble("Pay_Amount")
-                                ?: 0.0,
-                            paymentMethod = ""
-                        )
-                    } else {
-                        null
-                    }
+                    val receipt = doc.toObject(Receipt::class.java)
+                    Log.d("OrdersAnalytics", "Fetched receipt for order: ${receipt?.orderId}")
+                    receipt
                 } catch (e: Exception) {
+                    Log.e("OrdersAnalytics", "Error parsing receipt ${doc.id}", e)
                     null
                 }
             }
         } catch (e: Exception) {
+            Log.e("OrdersAnalytics", "Failed to fetch receipts", e)
             emptyList()
         }
     }
 
     private fun calculateAnalytics(
-        orderMenuItems: List<OrderMenuItem>,
-        menuItems: List<MenuItem>,
-        receipts: List<ReceiptWithTimestamp>,
+        orders: List<Order>,
+        receipts: List<Receipt>,
         period: String,
         selectedDate: Calendar
     ): OrdersAnalyticsData {
-        // Filter orders by period
-        val validOrderIds = receipts.filter { receipt ->
-            isWithinPeriod(receipt.paymentDate, selectedDate.time, period)
-        }.map { it.receiptID }.toSet()
+        Log.d("OrdersAnalytics", "Calculating analytics for ${orders.size} orders")
 
-        val filteredOrderItems = orderMenuItems.filter { it.orderId in validOrderIds }
+        // Filter orders by period using createdAt or receipt payment date
+        val validOrderIds = mutableSetOf<String>()
+
+        // Check orders with createdAt dates
+        orders.forEach { order ->
+            try {
+                Log.d("OrdersAnalytics", "Checking order: ${order.orderId}")
+                val orderDate = order.createdAt.toDate()
+                Log.d("OrdersAnalytics", "  Order date: $orderDate")
+                Log.d("OrdersAnalytics", "  Selected date: ${selectedDate.time}")
+                Log.d("OrdersAnalytics", "  Period: $period")
+
+                val isValid = isWithinPeriod(orderDate, selectedDate.time, period)
+                Log.d("OrdersAnalytics", "  Is valid: $isValid")
+
+                if (isValid) {
+                    validOrderIds.add(order.orderId)
+                    Log.d("OrdersAnalytics", "  ✓ Added to valid orders")
+                } else {
+                    Log.d("OrdersAnalytics", "  ✗ Filtered out")
+                }
+            } catch (e: Exception) {
+                Log.e("OrdersAnalytics", "Error processing order ${order.orderId}: ${e.message}", e)
+                e.printStackTrace()
+            }
+        }
+
+        // Also include orders that have receipts in this period
+        receipts.forEach { receipt ->
+            try {
+                val receiptDate = Date(receipt.payment_Date)
+                Log.d("OrdersAnalytics", "Checking receipt for order: ${receipt.orderId}, date: $receiptDate")
+                if (isWithinPeriod(receiptDate, selectedDate.time, period)) {
+                    validOrderIds.add(receipt.orderId)
+                    Log.d("OrdersAnalytics", "  ✓ Added order from receipt")
+                }
+            } catch (e: Exception) {
+                Log.e("OrdersAnalytics", "Error processing receipt", e)
+            }
+        }
+
+        Log.d("OrdersAnalytics", "Valid order IDs: ${validOrderIds.size} - $validOrderIds")
+
+        val filteredOrders = orders.filter { it.orderId in validOrderIds }
+
+        Log.d("OrdersAnalytics", "Filtered orders: ${filteredOrders.size}")
+        filteredOrders.forEach { order ->
+            Log.d("OrdersAnalytics", "  Filtered order ID: ${order.orderId}")
+        }
 
         // Calculate totals
-        val totalOrders = validOrderIds.size
-        val totalItems = filteredOrderItems.sumOf { it.quantity }
-        val totalRevenue = filteredOrderItems.sumOf { it.price * it.quantity }
+        val totalOrders = filteredOrders.size
+        val allItems = filteredOrders.flatMap { it.items }
+        val totalItems = allItems.sumOf { it.quantity }
+        val totalRevenue = filteredOrders.sumOf { it.totalAmount }
         val averageOrderValue = if (totalOrders > 0) totalRevenue / totalOrders else 0.0
 
         // Calculate menu item analytics
-        val itemAnalyticsMap = mutableMapOf<String, MutableList<OrderMenuItem>>()
-        filteredOrderItems.forEach { orderItem ->
-            itemAnalyticsMap.getOrPut(orderItem.menuItemId) { mutableListOf() }.add(orderItem)
+        val itemAnalyticsMap = mutableMapOf<String, MutableList<Pair<Order, com.example.canteen.data.CartItem>>>()
+        filteredOrders.forEach { order ->
+            order.items.forEach { cartItem ->
+                itemAnalyticsMap.getOrPut(cartItem.menuItem.id) { mutableListOf() }
+                    .add(Pair(order, cartItem))
+            }
         }
 
-        val menuItemAnalytics = itemAnalyticsMap.map { (menuItemId, items) ->
-            val menuItem = menuItems.find { it.id == menuItemId }
-            val totalQty = items.sumOf { it.quantity }
-            val totalRev = items.sumOf { it.price * it.quantity }
+        val menuItemAnalytics = itemAnalyticsMap.map { (menuItemId, orderItemPairs) ->
+            val totalQty = orderItemPairs.sumOf { it.second.quantity }
+            val totalRev = orderItemPairs.sumOf { it.second.totalPrice }
+            val uniqueOrders = orderItemPairs.map { it.first.orderId }.distinct().size
 
             MenuItemAnalytics(
                 menuItemId = menuItemId,
-                menuItemName = menuItem?.name ?: "Unknown Item",
-                totalOrders = items.size,
+                menuItemName = orderItemPairs.firstOrNull()?.second?.menuItem?.name ?: "Unknown Item",
+                totalOrders = uniqueOrders,
                 totalQuantity = totalQty,
                 totalRevenue = totalRev,
                 averagePrice = if (totalQty > 0) totalRev / totalQty else 0.0,
@@ -213,17 +222,16 @@ class OrdersAnalyticsViewModel(
 
         // Calculate category breakdown
         val categoryBreakdown = mutableMapOf<String, Double>()
-        filteredOrderItems.forEach { orderItem ->
-            val menuItem = menuItems.find { it.id == orderItem.menuItemId }
-            if (menuItem != null) {
-                val categoryName = menuItem.categoryId
-                val revenue = orderItem.price * orderItem.quantity
+        filteredOrders.forEach { order ->
+            order.items.forEach { cartItem ->
+                val categoryName = cartItem.menuItem.categoryId.ifBlank { "Uncategorized" }
+                val revenue = cartItem.totalPrice
                 categoryBreakdown[categoryName] = categoryBreakdown.getOrDefault(categoryName, 0.0) + revenue
             }
         }
 
         // Calculate order trend
-        val (trendData, trendLabels) = calculateOrderTrend(receipts, period, selectedDate)
+        val (trendData, trendLabels) = calculateOrderTrend(filteredOrders, period, selectedDate)
 
         return OrdersAnalyticsData(
             totalOrders = totalOrders,
@@ -238,46 +246,77 @@ class OrdersAnalyticsViewModel(
     }
 
     private fun isWithinPeriod(date: Date, selectedDate: Date, period: String): Boolean {
-        val cal = Calendar.getInstance().apply { time = selectedDate }
-        val dateCal = Calendar.getInstance().apply { time = date }
+        Log.d("OrdersAnalytics", "isWithinPeriod called - date: $date, selectedDate: $selectedDate, period: $period")
 
-        return when (period) {
+        // Create calendars and normalize times for consistent comparison
+        val selectedCal = Calendar.getInstance().apply {
+            time = selectedDate
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val dateCal = Calendar.getInstance().apply {
+            time = date
+        }
+
+        // Create a normalized version for day comparison
+        val dateCalNormalized = Calendar.getInstance().apply {
+            time = date
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val result = when (period) {
             "Daily" -> {
-                cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
-                        cal.get(Calendar.DAY_OF_YEAR) == dateCal.get(Calendar.DAY_OF_YEAR)
+                val yearMatch = selectedCal.get(Calendar.YEAR) == dateCalNormalized.get(Calendar.YEAR)
+                val dayMatch = selectedCal.get(Calendar.DAY_OF_YEAR) == dateCalNormalized.get(Calendar.DAY_OF_YEAR)
+                Log.d("OrdersAnalytics", "  Daily check - yearMatch: $yearMatch, dayMatch: $dayMatch")
+                Log.d("OrdersAnalytics", "  Selected: year=${selectedCal.get(Calendar.YEAR)}, day=${selectedCal.get(Calendar.DAY_OF_YEAR)}")
+                Log.d("OrdersAnalytics", "  Order: year=${dateCalNormalized.get(Calendar.YEAR)}, day=${dateCalNormalized.get(Calendar.DAY_OF_YEAR)}")
+                yearMatch && dayMatch
             }
             "Weekly" -> {
-                cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
-                cal.set(Calendar.HOUR_OF_DAY, 0)
-                cal.set(Calendar.MINUTE, 0)
-                val weekStart = cal.time
+                // Set to start of week
+                val weekStart = Calendar.getInstance().apply {
+                    time = selectedCal.time
+                    set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
 
-                cal.add(Calendar.DAY_OF_YEAR, 7)
-                val weekEnd = cal.time
+                val weekEnd = Calendar.getInstance().apply {
+                    time = weekStart.time
+                    add(Calendar.DAY_OF_YEAR, 7)
+                }
 
-                !date.before(weekStart) && date.before(weekEnd)
+                !date.before(weekStart.time) && date.before(weekEnd.time)
             }
             "Monthly" -> {
-                cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
-                        cal.get(Calendar.MONTH) == dateCal.get(Calendar.MONTH)
+                selectedCal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR) &&
+                        selectedCal.get(Calendar.MONTH) == dateCal.get(Calendar.MONTH)
             }
             "Yearly" -> {
-                cal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR)
+                selectedCal.get(Calendar.YEAR) == dateCal.get(Calendar.YEAR)
             }
             else -> false
         }
+
+        Log.d("OrdersAnalytics", "  Result: $result")
+        return result
     }
 
     private fun calculateOrderTrend(
-        receipts: List<ReceiptWithTimestamp>,
+        orders: List<Order>,
         period: String,
         selectedDate: Calendar
     ): Pair<List<Float>, List<String>> {
-        val filteredReceipts = receipts.filter {
-            isWithinPeriod(it.paymentDate, selectedDate.time, period)
-        }
-
-        if (filteredReceipts.isEmpty()) {
+        if (orders.isEmpty()) {
             return Pair(emptyList(), emptyList())
         }
 
@@ -292,11 +331,16 @@ class OrdersAnalyticsViewModel(
                     sortOrder[label] = i.toLong()
                 }
 
-                filteredReceipts.forEach { receipt ->
-                    val cal = Calendar.getInstance().apply { time = receipt.paymentDate }
-                    val hour = cal.get(Calendar.HOUR_OF_DAY)
-                    val label = String.format("%02d:00", hour)
-                    groupedData[label] = groupedData.getOrDefault(label, 0) + 1
+                orders.forEach { order ->
+                    try {
+                        val date = order.createdAt.toDate()
+                        val cal = Calendar.getInstance().apply { time = date }
+                        val hour = cal.get(Calendar.HOUR_OF_DAY)
+                        val label = String.format("%02d:00", hour)
+                        groupedData[label] = groupedData.getOrDefault(label, 0) + 1
+                    } catch (e: Exception) {
+                        Log.e("OrdersAnalytics", "Error processing order trend", e)
+                    }
                 }
             }
             "Weekly" -> {
@@ -306,11 +350,16 @@ class OrdersAnalyticsViewModel(
                     sortOrder[day] = index.toLong()
                 }
 
-                filteredReceipts.forEach { receipt ->
-                    val cal = Calendar.getInstance().apply { time = receipt.paymentDate }
-                    val dayIndex = cal.get(Calendar.DAY_OF_WEEK) - 1
-                    val label = daysOfWeek[dayIndex]
-                    groupedData[label] = groupedData.getOrDefault(label, 0) + 1
+                orders.forEach { order ->
+                    try {
+                        val date = order.createdAt.toDate()
+                        val cal = Calendar.getInstance().apply { time = date }
+                        val dayIndex = cal.get(Calendar.DAY_OF_WEEK) - 1
+                        val label = daysOfWeek[dayIndex]
+                        groupedData[label] = groupedData.getOrDefault(label, 0) + 1
+                    } catch (e: Exception) {
+                        Log.e("OrdersAnalytics", "Error processing order trend", e)
+                    }
                 }
             }
             "Monthly" -> {
@@ -323,11 +372,16 @@ class OrdersAnalyticsViewModel(
                     sortOrder[label] = day.toLong()
                 }
 
-                filteredReceipts.forEach { receipt ->
-                    val receiptCal = Calendar.getInstance().apply { time = receipt.paymentDate }
-                    val day = receiptCal.get(Calendar.DAY_OF_MONTH)
-                    val label = day.toString()
-                    groupedData[label] = groupedData.getOrDefault(label, 0) + 1
+                orders.forEach { order ->
+                    try {
+                        val date = order.createdAt.toDate()
+                        val orderCal = Calendar.getInstance().apply { time = date }
+                        val day = orderCal.get(Calendar.DAY_OF_MONTH)
+                        val label = day.toString()
+                        groupedData[label] = groupedData.getOrDefault(label, 0) + 1
+                    } catch (e: Exception) {
+                        Log.e("OrdersAnalytics", "Error processing order trend", e)
+                    }
                 }
             }
             "Yearly" -> {
@@ -338,11 +392,16 @@ class OrdersAnalyticsViewModel(
                     sortOrder[month] = index.toLong()
                 }
 
-                filteredReceipts.forEach { receipt ->
-                    val cal = Calendar.getInstance().apply { time = receipt.paymentDate }
-                    val monthIndex = cal.get(Calendar.MONTH)
-                    val label = months[monthIndex]
-                    groupedData[label] = groupedData.getOrDefault(label, 0) + 1
+                orders.forEach { order ->
+                    try {
+                        val date = order.createdAt.toDate()
+                        val cal = Calendar.getInstance().apply { time = date }
+                        val monthIndex = cal.get(Calendar.MONTH)
+                        val label = months[monthIndex]
+                        groupedData[label] = groupedData.getOrDefault(label, 0) + 1
+                    } catch (e: Exception) {
+                        Log.e("OrdersAnalytics", "Error processing order trend", e)
+                    }
                 }
             }
         }

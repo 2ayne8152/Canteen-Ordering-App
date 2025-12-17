@@ -218,14 +218,17 @@ fun CanteenScreen(
         }
 
         // -------------------- REPORTS --------------------
+        // -------------------- REPORTS --------------------
         composable(CanteenScreen.ReportScreen.name) {
             ReportScreen(
+                navController = navController,  // Add this line
                 onBack = { navController.popBackStack() }
             )
         }
 
         composable(CanteenScreen.OrdersAnalyticsScreen.name) {
             OrdersAnalyticsScreen(
+                navController = navController,  // Add this line
                 onBack = { navController.popBackStack() }
             )
         }

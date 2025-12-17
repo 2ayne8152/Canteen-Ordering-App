@@ -22,10 +22,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.canteen.viewmodel.reporting.OrdersAnalyticsViewModel
 import com.example.canteen.viewmodel.reporting.UiState
 import com.example.canteen.viewmodel.reporting.OrdersAnalyticsData
 import com.example.canteen.viewmodel.reporting.MenuItemAnalytics
+import com.example.menumanagement.BottomNavigationBar
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -33,7 +35,8 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersAnalyticsScreen(
-    onBack: () -> Unit = {}
+    navController: NavController,
+    onBack: () -> Unit = { navController.popBackStack() }
 ) {
     val viewModel: OrdersAnalyticsViewModel = viewModel()
     var selectedPeriod by remember { mutableStateOf("Daily") }
@@ -70,7 +73,8 @@ fun OrdersAnalyticsScreen(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
-        }
+        },
+        bottomBar = { BottomNavigationBar(navController) }  // Add this line
     ) { padding ->
         Box(
             modifier = Modifier
@@ -78,6 +82,7 @@ fun OrdersAnalyticsScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
+            // ... rest of your existing code
             when (val state = analyticsData) {
                 is UiState.Loading -> {
                     CircularProgressIndicator(
@@ -124,18 +129,48 @@ fun OrdersAnalyticsScreen(
             }
 
             // Date Picker Dialog
+            // Replace the entire date picker section in OrdersAnalyticsScreen.kt
+
+// Date Picker Dialog
             if (showDatePicker) {
+                // Convert current selectedDate to UTC milliseconds for the date picker
+                val currentDateInUtc = Calendar.getInstance().apply {
+                    time = selectedDate.time
+                    // Get the year, month, day in local time
+                    val year = get(Calendar.YEAR)
+                    val month = get(Calendar.MONTH)
+                    val day = get(Calendar.DAY_OF_MONTH)
+
+                    // Set to UTC timezone
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    set(year, month, day, 0, 0, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+
                 val datePickerState = rememberDatePickerState(
-                    initialSelectedDateMillis = selectedDate.timeInMillis
+                    initialSelectedDateMillis = currentDateInUtc
                 )
+
                 DatePickerDialog(
                     onDismissRequest = { showDatePicker = false },
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                datePickerState.selectedDateMillis?.let { millis ->
+                                datePickerState.selectedDateMillis?.let { utcMillis ->
+                                    // Convert UTC date to local date
+                                    val utcCalendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                        timeInMillis = utcMillis
+                                    }
+
+                                    // Create local calendar with the same year/month/day
                                     selectedDate = Calendar.getInstance().apply {
-                                        timeInMillis = millis
+                                        set(Calendar.YEAR, utcCalendar.get(Calendar.YEAR))
+                                        set(Calendar.MONTH, utcCalendar.get(Calendar.MONTH))
+                                        set(Calendar.DAY_OF_MONTH, utcCalendar.get(Calendar.DAY_OF_MONTH))
+                                        set(Calendar.HOUR_OF_DAY, 0)
+                                        set(Calendar.MINUTE, 0)
+                                        set(Calendar.SECOND, 0)
+                                        set(Calendar.MILLISECOND, 0)
                                     }
                                 }
                                 showDatePicker = false
@@ -443,10 +478,3 @@ private fun OrdersAnalyticsContent(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun OrdersAnalyticsScreenPreview() {
-    MaterialTheme {
-        OrdersAnalyticsScreen()
-    }
-}

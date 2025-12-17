@@ -29,13 +29,18 @@ import java.util.*
 import com.example.canteen.viewmodel.reporting.UiState
 import com.example.canteen.viewmodel.reporting.ReportViewModel
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import com.example.canteen.ui.screens.CanteenScreen
+import com.example.menumanagement.BottomNavigationBar
 import kotlin.math.cos
 import kotlin.math.sin
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportScreen(
-    onBack: () -> Unit = {}
+    navController: NavController,
+    onBack: () -> Unit = { navController.popBackStack() }
 ) {
     val viewModel: ReportViewModel = viewModel()
     var selectedPeriod by remember { mutableStateOf("Daily") }
@@ -60,12 +65,31 @@ fun ReportScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                 },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        navController.navigate(CanteenScreen.OrdersAnalyticsScreen.name)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Assessment,
+                            contentDescription = "Orders Analytics"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
-        }
+        },
+        bottomBar = { BottomNavigationBar(navController) }  // Add this line
     ) { padding ->
         Box(
             modifier = Modifier
@@ -73,6 +97,7 @@ fun ReportScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
+            // ... rest of your existing code
             when (val state = reportData) {
                 is UiState.Loading -> {
                     CircularProgressIndicator(
@@ -333,17 +358,44 @@ fun ReportScreen(
 
             // Date Picker Dialog
             if (showDatePicker) {
+                // Convert current selectedDate to UTC milliseconds for the date picker
+                val currentDateInUtc = Calendar.getInstance().apply {
+                    time = selectedDate.time
+                    // Get the year, month, day in local time
+                    val year = get(Calendar.YEAR)
+                    val month = get(Calendar.MONTH)
+                    val day = get(Calendar.DAY_OF_MONTH)
+
+                    // Set to UTC timezone
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    set(year, month, day, 0, 0, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+
                 val datePickerState = rememberDatePickerState(
-                    initialSelectedDateMillis = selectedDate.timeInMillis
+                    initialSelectedDateMillis = currentDateInUtc
                 )
+
                 DatePickerDialog(
                     onDismissRequest = { showDatePicker = false },
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                datePickerState.selectedDateMillis?.let { millis ->
+                                datePickerState.selectedDateMillis?.let { utcMillis ->
+                                    // Convert UTC date to local date
+                                    val utcCalendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                                        timeInMillis = utcMillis
+                                    }
+
+                                    // Create local calendar with the same year/month/day
                                     selectedDate = Calendar.getInstance().apply {
-                                        timeInMillis = millis
+                                        set(Calendar.YEAR, utcCalendar.get(Calendar.YEAR))
+                                        set(Calendar.MONTH, utcCalendar.get(Calendar.MONTH))
+                                        set(Calendar.DAY_OF_MONTH, utcCalendar.get(Calendar.DAY_OF_MONTH))
+                                        set(Calendar.HOUR_OF_DAY, 0)
+                                        set(Calendar.MINUTE, 0)
+                                        set(Calendar.SECOND, 0)
+                                        set(Calendar.MILLISECOND, 0)
                                     }
                                 }
                                 showDatePicker = false
@@ -661,10 +713,3 @@ fun BarChart(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ReportScreenPreview() {
-    MaterialTheme {
-        ReportScreen()
-    }
-}
