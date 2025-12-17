@@ -185,11 +185,51 @@ fun QuickActionCard(
     subtitle: String,
     icon: ImageVector,
     backgroundColor: Color,
-    modifier: Modifier,
-    onClick: () -> Unit
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
 ) {
-    TODO("Not yet implemented")
+    Card(
+        modifier = modifier
+            .height(100.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+
+            Column {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = subtitle,
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 12.sp
+                )
+            }
+        }
+    }
 }
+
 
 @Composable
 fun CategoryChip(text: String, selected: Boolean, onClick: () -> Unit) {
