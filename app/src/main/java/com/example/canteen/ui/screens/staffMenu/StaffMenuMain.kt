@@ -93,7 +93,6 @@ fun StaffDashboardScreen(navController: NavController, viewModel: MenuViewModel 
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(CanteenScreen.OrdersAnalyticsScreen.name) }
                 )
-                Icon(Icons.Default.Logout, contentDescription = "Logout", tint = Color.Blue, modifier = Modifier.clickable(onClick = {onClick()}))
             }
 
             Spacer(Modifier.height(20.dp))
