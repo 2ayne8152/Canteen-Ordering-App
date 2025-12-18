@@ -1,5 +1,8 @@
 package com.example.canteen.ui.screens.payment
 
+import android.os.Build
+import android.text.format.DateUtils.isToday
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,7 +51,18 @@ import com.example.canteen.data.RefundRequest
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.usermenu.OrderViewModel
 import com.example.menumanagement.BottomNavigationBar
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material3.*
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.*
 
+enum class TimePeriod {
+    ALL, TODAY, WEEK, MONTH
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentHistory(
@@ -58,13 +72,23 @@ fun PaymentHistory(
 ) {
     val allReceipt by receiptViewModel.receiptList.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var selectedPeriod by remember { mutableStateOf(TimePeriod.ALL) }
 
     // Store which item is expanded
     val expandedMap = remember { mutableStateMapOf<String, Boolean>() }
 
-    val filteredList = allReceipt.filter { pair ->
+    // Filter by search query first
+    val searchFiltered = allReceipt.filter { pair ->
         val receipt = pair.first
         receipt.receiptId.contains(searchQuery.trim(), ignoreCase = true)
+    }
+
+    // Then filter by time period
+    val filteredList = when (selectedPeriod) {
+        TimePeriod.ALL -> searchFiltered
+        TimePeriod.TODAY -> searchFiltered.filter { isToday(it.first.payment_Date) }
+        TimePeriod.WEEK -> searchFiltered.filter { isThisWeek(it.first.payment_Date) }
+        TimePeriod.MONTH -> searchFiltered.filter { isThisMonth(it.first.payment_Date) }
     }
 
     Scaffold(
@@ -82,6 +106,7 @@ fun PaymentHistory(
                 .padding(8.dp)
         ) {
             Spacer(Modifier.height(6.dp))
+
             // -----------------------------------------------------
             // Search Bar
             // -----------------------------------------------------
@@ -97,14 +122,66 @@ fun PaymentHistory(
                     .background(lightViolet, shape = RoundedCornerShape(16))
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
+            // -----------------------------------------------------
+            // Filter Chips
+            // -----------------------------------------------------
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 8.dp)
+            ) {
+                item {
+                    FilterChipItem(
+                        label = "All",
+                        selected = selectedPeriod == TimePeriod.ALL,
+                        onClick = { selectedPeriod = TimePeriod.ALL }
+                    )
+                }
+                item {
+                    FilterChipItem(
+                        label = "Today",
+                        selected = selectedPeriod == TimePeriod.TODAY,
+                        onClick = { selectedPeriod = TimePeriod.TODAY }
+                    )
+                }
+                item {
+                    FilterChipItem(
+                        label = "This Week",
+                        selected = selectedPeriod == TimePeriod.WEEK,
+                        onClick = { selectedPeriod = TimePeriod.WEEK }
+                    )
+                }
+                item {
+                    FilterChipItem(
+                        label = "This Month",
+                        selected = selectedPeriod == TimePeriod.MONTH,
+                        onClick = { selectedPeriod = TimePeriod.MONTH }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(2.dp))
+
+            // Results count
+            Text(
+                text = "${filteredList.size} payment(s) found",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(start = 12.dp)
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            // -----------------------------------------------------
+            // Payment History List
+            // -----------------------------------------------------
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize().padding(start = 12.dp, top = 2.dp, end = 12.dp)
+                    .fillMaxSize()
+                    .padding(start = 12.dp, top = 2.dp, end = 12.dp)
             ) {
                 items(filteredList) { receipt ->
-
                     val expanded = expandedMap[receipt.first.receiptId] ?: false
 
                     PaymentHistoryCard(
@@ -116,9 +193,84 @@ fun PaymentHistory(
                         }
                     )
                 }
+
+                // Empty state
+                if (filteredList.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            Text(
+                                text = "No payments found for this period",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+fun FilterChipItem(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
+            selectedLabelColor = Color.White,
+            containerColor = Color.LightGray.copy(alpha = 0.3f),
+            labelColor = Color.Black
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = if (selected) MaterialTheme.colorScheme.primary else Color.Gray,
+            selectedBorderColor = MaterialTheme.colorScheme.primary,
+            borderWidth = 1.dp,
+            selectedBorderWidth = 2.dp
+        )
+    )
+}
+
+// Helper functions to check date periods
+@RequiresApi(Build.VERSION_CODES.O)
+fun isToday(timestampMillis: Long): Boolean {
+    val paymentDate = Date(timestampMillis).toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+    val today = LocalDate.now()
+    return paymentDate.isEqual(today)
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun isThisWeek(timestampMillis: Long): Boolean {
+    val paymentDate = Date(timestampMillis).toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+    val today = LocalDate.now()
+    val startOfWeek = today.minusDays(today.dayOfWeek.value.toLong() - 1)
+    val endOfWeek = startOfWeek.plusDays(6)
+    return !paymentDate.isBefore(startOfWeek) && !paymentDate.isAfter(endOfWeek)
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun isThisMonth(timestampMillis: Long): Boolean {
+    val paymentDate = Date(timestampMillis).toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+    val today = LocalDate.now()
+    return paymentDate.year == today.year && paymentDate.month == today.month
 }
 
 @Composable
@@ -153,14 +305,22 @@ fun PaymentHistoryCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("ReceiptID: ${data.first.receiptId.take(6)}", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text(
+                    "ReceiptID: ${data.first.receiptId.take(6)}",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
+                )
                 Text("${formatted}", color = Color.Black)
             }
 
             Spacer(Modifier.height(4.dp))
 
             Text("Order ID :  ${data.first.orderId.take(n=6)}", color = Color.Black)
-            Text("Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}", color = Color.Black)
+            Text(
+                "Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}",
+                color = Color.Black
+            )
             Text("Refund : ${data.second?.status ?: "None"}", color = Color.Black)
             if (!expanded) {
                 Text(
@@ -172,14 +332,18 @@ fun PaymentHistoryCard(
 
             // ▼▼▼ ONLY SHOW WHEN EXPANDED ▼▼▼
             AnimatedVisibility(visible = expanded) {
-
                 Column {
                     Spacer(Modifier.height(8.dp))
                     Divider()
 
                     Spacer(Modifier.height(12.dp))
 
-                    Text("Order Items :", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                    Text(
+                        "Order Items :",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    )
 
                     order?.items?.forEach { item ->
                         Row(
