@@ -2,6 +2,7 @@ package com.example.canteen.ui.screens.payment
 
 import android.app.AlertDialog
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -95,7 +96,7 @@ fun Refund(
         }
     }
 
-    LaunchedEffect(newRefundId,receiptPair) {
+    LaunchedEffect(newRefundId, receiptPair) {
         val receiptId = receiptPair?.first?.receiptId
         val refundId = newRefundId
 
@@ -176,13 +177,13 @@ fun Refund(
                 )
 
                 DropdownMenu(
-                    modifier = Modifier.width(textFieldWidth),
+                    modifier = Modifier.width(textFieldWidth).background(AppColors.surface),
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
                     refundReasons.forEach { reason ->
                         DropdownMenuItem(
-                            text = { Text(reason, color = Color.Black) },
+                            text = { Text(reason, color = AppColors.textPrimary) },
                             onClick = {
                                 selectedReason = reason
                                 expanded = false
@@ -246,27 +247,25 @@ fun Refund(
                     disabledContainerColor = AppColors.disabled
                 )
             ) {
-                Text("Submit",
+                Text(
+                    "Submit",
                     color = AppColors.surface,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
-    }
 
-    // --- LOADING DIALOG ---
-    if (loading) {
-        AlertDialog(
-            onDismissRequest = {},
-            confirmButton = {},
-            title = { Text("Submitting...", color = Color.White) }
-        )
+        // --- LOADING DIALOG ---
+        if (loading) {
+            AlertDialog(
+                onDismissRequest = {},
+                confirmButton = {},
+                title = { Text("Submitting...", color = Color.White) }
+            )
+        }
     }
 }
-
-
-
 
 
 @Preview(showBackground = true)

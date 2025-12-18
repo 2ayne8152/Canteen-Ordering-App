@@ -154,7 +154,7 @@ fun RefundDetailPage(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "Order #${receipt.orderId.take(6)}",
+                            "Order #${receipt.orderId.takeLast(6)}",
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
                             color = AppColors.textPrimary
@@ -383,7 +383,6 @@ fun RefundDetailPage(
                                         "status" to "Approved",
                                     )
                                 )
-                                orderViewModel.orderStatusUpdate(receipt.orderId, "APPROVED")
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AppColors.success,
@@ -414,7 +413,6 @@ fun RefundDetailPage(
                                         "status" to "Rejected",
                                     )
                                 )
-                                orderViewModel.orderStatusUpdate(receipt.orderId, "REJECTED")
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AppColors.error,

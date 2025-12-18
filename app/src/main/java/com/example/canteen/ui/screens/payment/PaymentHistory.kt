@@ -306,7 +306,7 @@ fun PaymentHistoryCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "ReceiptID: ${data.first.receiptId.take(6)}",
+                    "ReceiptID: ${data.first.receiptId.takeLast(6)}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.Black
@@ -316,7 +316,7 @@ fun PaymentHistoryCard(
 
             Spacer(Modifier.height(4.dp))
 
-            Text("Order ID :  ${data.first.orderId.take(n=6)}", color = Color.Black)
+            Text("Order ID :  ${data.first.orderId.takeLast(n=6)}", color = Color.Black)
             Text(
                 "Total Payment : RM${String.format("%.2f", data.first.pay_Amount)}",
                 color = Color.Black

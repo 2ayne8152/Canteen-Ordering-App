@@ -188,7 +188,7 @@ fun RefundCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order${data.first.orderId.take(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text("Order #${data.first.orderId.takeLast(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
                 Text(text = formatTime(data.second?.requestTime ?: 0L) , fontSize = 14.sp, color = Color.Black)
             }
 
@@ -225,7 +225,7 @@ fun ApprovedRefundCard(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order ${data.first.orderId.take(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text("Order #${data.first.orderId.takeLast(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
             }
 
             Spacer(Modifier.height(4.dp))
@@ -291,7 +291,7 @@ fun RejectedRefundCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Order${data.first.orderId.take(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text("Order #${data.first.orderId.takeLast(6)}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
             }
 
             Spacer(Modifier.height(4.dp))
