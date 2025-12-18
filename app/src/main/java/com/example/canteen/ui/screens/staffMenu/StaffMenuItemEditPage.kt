@@ -1,10 +1,8 @@
-
 package com.example.canteen.ui.screens.staffMenu
 
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -14,21 +12,25 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.canteen.R
 import com.example.canteen.ui.screens.CanteenScreen
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.viewmodel.login.MenuViewModel
 import com.example.canteen.viewmodel.staffMenu.CategoryData
 import kotlinx.coroutines.launch
@@ -71,69 +73,116 @@ fun StaffMenuItemEditPage(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        containerColor = AppColors.background,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Edit Menu Item",
+                        color = AppColors.textPrimary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = AppColors.textPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AppColors.surface,
+                    titleContentColor = AppColors.textPrimary
+                )
+            )
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
                 .padding(paddingValues)
+                .background(AppColors.background)
                 .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-            // Header
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Edit Menu Item", fontSize = 28.sp, color = Color(0xFF0D47A1))
-            }
-
-            Spacer(Modifier.height(16.dp))
-
             // Image Picker
-            Box(
+            Card(
                 modifier = Modifier
-                    .height(180.dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.Center
+                    .height(200.dp),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = editedName,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text("No Image", color = Color.Gray)
-                }
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (bitmap != null) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = editedName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(R.drawable.tomyammaggi),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
 
-                IconButton(
-                    onClick = { imageLauncher.launch("image/*") },
-                    modifier = Modifier.align(Alignment.BottomEnd)
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Pick Image", tint = Color.White)
+                    FloatingActionButton(
+                        onClick = { imageLauncher.launch("image/*") },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(12.dp),
+                        containerColor = AppColors.primary,
+                        contentColor = AppColors.surface
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Pick Image")
+                    }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
+            // Form Fields
             OutlinedTextField(
                 value = editedName,
                 onValueChange = { editedName = it },
-                label = { Text("Name") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Name", color = AppColors.textSecondary) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppColors.primary,
+                    unfocusedBorderColor = AppColors.divider,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    cursorColor = AppColors.primary
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = editedDescription,
                 onValueChange = { editedDescription = it },
-                label = { Text("Description") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Description", color = AppColors.textSecondary) },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppColors.primary,
+                    unfocusedBorderColor = AppColors.divider,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    cursorColor = AppColors.primary
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Category Dropdown
             ExposedDropdownMenuBox(
@@ -144,18 +193,28 @@ fun StaffMenuItemEditPage(
                     value = selectedCategory,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Category") },
+                    label = { Text("Category", color = AppColors.textSecondary) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppColors.primary,
+                        unfocusedBorderColor = AppColors.divider,
+                        focusedTextColor = AppColors.textPrimary,
+                        unfocusedTextColor = AppColors.textPrimary
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 ExposedDropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.background(AppColors.surface)
                 ) {
                     CategoryData.category.forEach { category ->
                         DropdownMenuItem(
-                            text = { Text(category.name) },
+                            text = { Text(category.name, color = AppColors.textPrimary) },
                             onClick = {
                                 selectedCategory = category.name
                                 expanded = false
@@ -165,25 +224,41 @@ fun StaffMenuItemEditPage(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = editedPrice,
                 onValueChange = { editedPrice = it },
-                label = { Text("Price") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Price (RM)", color = AppColors.textSecondary) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppColors.primary,
+                    unfocusedBorderColor = AppColors.divider,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    cursorColor = AppColors.primary
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = editedQuantity,
                 onValueChange = { editedQuantity = it },
-                label = { Text("Quantity") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Quantity", color = AppColors.textSecondary) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppColors.primary,
+                    unfocusedBorderColor = AppColors.divider,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    cursorColor = AppColors.primary
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
 
             // Save Button
             Button(
@@ -216,39 +291,61 @@ fun StaffMenuItemEditPage(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.primary
+                ),
+                shape = RoundedCornerShape(50.dp)
             ) {
-                Text("Save", color = Color.White)
+                Text(
+                    "Save Changes",
+                    color = AppColors.surface,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Delete Button
-            Button(
+            OutlinedButton(
                 onClick = {
                     viewModel.deleteMenuItem(item.id) { success, error ->
                         coroutineScope.launch {
                             if (success) {
-                                // Show snackbar
                                 snackbarHostState.showSnackbar("Menu item deleted successfully!")
-                                // Navigate back to dashboard
                                 navController.navigate(CanteenScreen.StaffDashboard.name) {
                                     popUpTo(navController.graph.startDestinationId) { inclusive = false }
                                     launchSingleTop = true
                                 }
                             } else {
                                 snackbarHostState.showSnackbar("Delete failed: ${error ?: "Unknown error"}")
-                                Log.e("DeleteItem", error ?: "Unknown error")
                             }
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = AppColors.error
+                ),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    width = 1.5.dp,
+                    brush = androidx.compose.ui.graphics.SolidColor(AppColors.error)
+                ),
+                shape = RoundedCornerShape(50.dp)
             ) {
-                Text("Delete", color = Color.White)
+                Text(
+                    "Delete Item",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
