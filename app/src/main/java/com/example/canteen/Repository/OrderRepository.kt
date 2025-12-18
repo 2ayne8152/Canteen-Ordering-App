@@ -130,4 +130,47 @@ class OrderRepository {
                 onUpdate(orders)
             }
     }
+
+    fun listenAllOrders(
+        onUpdate: (List<Order>) -> Unit,
+        onError: (Throwable) -> Unit
+    ): ListenerRegistration {
+        Log.d("OrderRepository", "Setting up listener for all orders")
+
+        return ordersCollection
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+
+                if (error != null) {
+                    Log.e("OrderRepository", "Listener error: ${error.message}", error)
+                    onError(error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot == null) {
+                    Log.w("OrderRepository", "Snapshot is null")
+                    return@addSnapshotListener
+                }
+
+                Log.d("OrderRepository", "Snapshot received with ${snapshot.size()} documents")
+
+                val orders = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        val order = doc.toObject(Order::class.java)
+                        if (order != null) {
+                            Log.d("OrderRepository", "Parsed order: ${order.orderId}, userId: ${order.userId}, status: ${order.status}")
+                        } else {
+                            Log.w("OrderRepository", "Failed to parse document: ${doc.id}")
+                        }
+                        order
+                    } catch (e: Exception) {
+                        Log.e("OrderRepository", "Error parsing order ${doc.id}: ${e.message}", e)
+                        null
+                    }
+                }
+
+                Log.d("OrderRepository", "Successfully parsed ${orders.size} orders, calling onUpdate")
+                onUpdate(orders)
+            }
+    }
 }

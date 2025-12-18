@@ -2,6 +2,7 @@ package com.example.canteen.DAO
 
 import com.example.canteen.data.MenuItem
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
 
 class MenuItemDao {
@@ -16,6 +17,24 @@ class MenuItemDao {
             }
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    fun listenMenuItems(
+        onUpdate: (List<MenuItem>) -> Unit,
+        onError: (Throwable) -> Unit
+    ): ListenerRegistration {
+        return menuCollection.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                onError(error)
+                return@addSnapshotListener
+            }
+
+            val items = snapshot?.documents?.mapNotNull {
+                it.toObject(MenuItem::class.java)?.copy(id = it.id)
+            } ?: emptyList()
+
+            onUpdate(items)
         }
     }
 
