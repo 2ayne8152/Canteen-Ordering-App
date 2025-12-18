@@ -336,9 +336,9 @@ fun BottomNavigationBar(navController: NavController) {
         )
         NavigationBarItem(
             selected = currentRoute == CanteenScreen.MenuItemForm.name,
-            onClick = { navController.navigate(CanteenScreen.MenuItemForm.name) { launchSingleTop = true } },
-            icon = { Icon(Icons.Default.Add, contentDescription = "AddItem") },
-            label = { Text("AddItem") }
+            onClick = { navController.navigate(CanteenScreen.StaffOrderStatusEdit.name) { launchSingleTop = true } },
+            icon = { Icon(Icons.Default.ReceiptLong, contentDescription = "Edit Order") },
+            label = { Text("Edit Order") }
         )
         NavigationBarItem(
             selected = currentRoute == CanteenScreen.RefundManagementScreenWrapper.name,

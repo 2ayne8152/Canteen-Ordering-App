@@ -1,12 +1,10 @@
 package com.example.canteen.ui.screens
 
 import android.os.Build
-import android.text.Layout
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,11 +28,10 @@ import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.StaffMenuDetailPage
 import com.example.canteen.ui.screens.staffMenu.StaffMenuItemEditPage
 import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
-import com.example.canteen.ui.screens.staffOrder.StaffOrderStatusEdit
+import com.example.canteen.ui.screens.staffMenu.StaffOrderStatusEdit
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
-import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
@@ -262,6 +259,7 @@ fun CanteenScreen(
                 orderViewModel = orderViewModel  // Add this line
             )
         }
+
 
 // -------------------- PAYMENT HISTORY --------------------
         composable(CanteenScreen.PaymentHistory.name) {

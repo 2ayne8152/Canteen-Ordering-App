@@ -1,4 +1,4 @@
-package com.example.canteen.ui.screens.staffOrder
+package com.example.canteen.ui.screens.staffMenu
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
