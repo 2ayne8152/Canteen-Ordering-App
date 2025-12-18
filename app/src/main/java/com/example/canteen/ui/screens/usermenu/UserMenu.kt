@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.canteen.R
@@ -127,9 +128,11 @@ fun UserMenu(
                 MenuItemCard(
                     menuItem = item,
                     onClick = {
-                        selectedItem = item
-                        isSheetOpen = true
-                        onItemClick(item)
+                        if (item.remainQuantity > 0) {
+                            selectedItem = item
+                            isSheetOpen = true
+                            onItemClick(item)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -177,59 +180,113 @@ fun MenuItemCard(menuItem: MenuItem, onClick: () -> Unit, modifier: Modifier = M
     }
 
     val imageBitmap = bitmap?.asImageBitmap()
+    val isOutOfStock = menuItem.remainQuantity <= 0
+    val isLowStock = menuItem.remainQuantity in 1..5
 
     Card(
-        modifier = modifier.clickable { onClick() },
+        modifier = modifier.clickable(enabled = !isOutOfStock) { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isOutOfStock) AppColors.surface.copy(alpha = 0.5f) else AppColors.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isOutOfStock) 0.dp else 2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (imageBitmap != null) {
-                Image(
-                    bitmap = imageBitmap,
-                    contentDescription = menuItem.name,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Image(
-                    painter = painterResource(R.drawable.tomyammaggi),
-                    contentDescription = menuItem.name,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
+        Box {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box {
+                    if (imageBitmap != null) {
+                        Image(
+                            bitmap = imageBitmap,
+                            contentDescription = menuItem.name,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop,
+                            alpha = if (isOutOfStock) 0.4f else 1f
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(R.drawable.tomyammaggi),
+                            contentDescription = menuItem.name,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop,
+                            alpha = if (isOutOfStock) 0.4f else 1f
+                        )
+                    }
 
-            Spacer(Modifier.width(12.dp))
+                    if (isOutOfStock) {
+                        Surface(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            color = AppColors.background.copy(alpha = 0.7f)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "OUT OF\nSTOCK",
+                                    color = AppColors.error,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = 14.sp,
+                                    modifier = Modifier.padding(4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
 
-            Column(Modifier.weight(1f)) {
-                Text(
-                    menuItem.name,
-                    color = AppColors.textPrimary,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    menuItem.description,
-                    color = AppColors.textSecondary,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 2
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "RM %.2f".format(menuItem.price),
-                    color = AppColors.primary,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontSize = 16.sp
-                )
+                Spacer(Modifier.width(12.dp))
+
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        menuItem.name,
+                        color = if (isOutOfStock) AppColors.disabled else AppColors.textPrimary,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        menuItem.description,
+                        color = if (isOutOfStock) AppColors.disabled else AppColors.textSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "RM %.2f".format(menuItem.price),
+                            color = if (isOutOfStock) AppColors.disabled else AppColors.primary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontSize = 16.sp
+                        )
+
+                        if (isLowStock && !isOutOfStock) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = AppColors.warning.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    "Only ${menuItem.remainQuantity} left",
+                                    color = AppColors.warning,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -272,6 +329,7 @@ fun MenuItemCustomization(
     cartItemCount: Int
 ) {
     var quantity by remember { mutableStateOf(1) }
+    val maxQuantity = item.remainQuantity.coerceAtLeast(1) // Available stock
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -291,6 +349,23 @@ fun MenuItemCustomization(
                 color = AppColors.textSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Stock indicator
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (maxQuantity < 5) AppColors.warning.copy(alpha = 0.15f)
+                else AppColors.success.copy(alpha = 0.15f)
+            ) {
+                Text(
+                    "Available: $maxQuantity",
+                    color = if (maxQuantity < 5) AppColors.warning else AppColors.success,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
 
             Spacer(Modifier.height(16.dp))
 
@@ -328,11 +403,14 @@ fun MenuItemCustomization(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
-                    IconButton(onClick = { quantity++ }) {
+                    IconButton(
+                        onClick = { if (quantity < maxQuantity) quantity++ },
+                        enabled = quantity < maxQuantity
+                    ) {
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Increase quantity",
-                            tint = AppColors.textPrimary
+                            tint = if (quantity < maxQuantity) AppColors.textPrimary else AppColors.disabled
                         )
                     }
                 }
