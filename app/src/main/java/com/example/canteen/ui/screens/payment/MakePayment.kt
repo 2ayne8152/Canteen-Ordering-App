@@ -120,19 +120,24 @@ fun MakePayment(
                             )
 
                             cartViewModel.clearCart()  // clear cart immediately
-                        } catch (e: Exception) {
-                            snackbarHostState.showSnackbar("Payment failed: ${e.message}")
+
+                            // show success snackbar
+                            snackbarHostState.showSnackbar("Payment successful 🎉")
                             isProcessing = false
+                            onClick()  // navigate back or update UI
+
+                        } catch (e: Exception) {
+                            // Stock validation failed or other error
+                            snackbarHostState.showSnackbar(
+                                message = e.message ?: "Payment failed. Please try again.",
+                                duration = SnackbarDuration.Long
+                            )
+                            isProcessing = false
+
+                            // Don't clear cart - let user adjust quantities
                             return@launch
                         }
-
-                        // show success snackbar without blocking button
-                        snackbarHostState.showSnackbar("Payment successful 🎉")
-                        isProcessing = false
-                        onClick()  // navigate back or update UI
                     }
-
-                    cartViewModel.clearCart()
                 }
             )
         }
