@@ -40,24 +40,35 @@ fun OrderHistoryScreen(
 ) {
     val user by userViewModel.selectedUser.collectAsState()
     val userId = user?.UserID?.trim()
-    Log.d("OrderListener", "Listening orders for userId=[$userId]")
 
     val orders by orderViewModel.orderHistory.collectAsState()
     var selectedTab by remember { mutableStateOf(OrderTab.PREPARING) }
 
-    Log.d(
-        "OrderListener",
-        "currentUser=${FirebaseAuth.getInstance().currentUser?.uid}"
-    )
+    // Debug logging
+    Log.d("OrderHistory", "Composing OrderHistoryScreen")
+    Log.d("OrderHistory", "userId=[$userId]")
+    Log.d("OrderHistory", "currentUser=${FirebaseAuth.getInstance().currentUser?.uid}")
 
+    // Start listening when userId is available
     LaunchedEffect(userId) {
         userId?.let {
+            Log.d("OrderHistory", "Starting listener with userId: [$it]")
             orderViewModel.startListeningOrderHistory(it)
+        } ?: Log.e("OrderHistory", "userId is NULL!")
+    }
+
+    // Log orders when they update
+    LaunchedEffect(orders) {
+        Log.d("OrderHistory", "Orders updated: ${orders.size} orders")
+        orders.forEach { order ->
+            Log.d("OrderHistory", "  - Order: ${order.orderId}, status: ${order.status}, userId: ${order.userId}")
         }
     }
 
+    // Stop listening when screen is disposed
     DisposableEffect(Unit) {
         onDispose {
+            Log.d("OrderHistory", "Disposing - stopping listener")
             orderViewModel.stopListeningOrderHistory()
         }
     }

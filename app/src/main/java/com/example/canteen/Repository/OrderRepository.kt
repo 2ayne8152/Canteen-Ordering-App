@@ -21,6 +21,7 @@ class OrderRepository {
         // Use Firestore transaction to ensure atomic stock check and update
         return db.runTransaction { transaction ->
             val orderId = ordersCollection.document().id
+            val timestamp = com.google.firebase.Timestamp.now()
 
             // Step 1: Validate stock for ALL items first
             val stockValidation = mutableListOf<Pair<String, Long>>() // itemName, availableStock
@@ -52,7 +53,8 @@ class OrderRepository {
                 userId = userId,
                 items = items,
                 totalAmount = totalAmount,
-                status = "PENDING"
+                status = "PENDING",
+                createdAt = timestamp
             )
 
             // Deduct stock for each item
@@ -69,7 +71,7 @@ class OrderRepository {
             val orderRef = ordersCollection.document(orderId)
             transaction.set(orderRef, order)
 
-            Log.d("OrderRepository", "Order created successfully: $orderId")
+            Log.d("OrderRepository", "Order created successfully: $orderId with timestamp: $timestamp")
             order
 
         }.await()
@@ -89,6 +91,7 @@ class OrderRepository {
         onUpdate: (List<Order>) -> Unit,
         onError: (Throwable) -> Unit
     ): ListenerRegistration {
+        Log.d("OrderRepository", "Setting up listener for userId: [$userId]")
 
         return ordersCollection
             .whereEqualTo("userId", userId)
@@ -96,16 +99,34 @@ class OrderRepository {
             .addSnapshotListener { snapshot, error ->
 
                 if (error != null) {
+                    Log.e("OrderRepository", "Listener error: ${error.message}", error)
                     onError(error)
                     return@addSnapshotListener
                 }
 
-                if (snapshot == null) return@addSnapshotListener
+                if (snapshot == null) {
+                    Log.w("OrderRepository", "Snapshot is null")
+                    return@addSnapshotListener
+                }
 
-                val orders: List<Order> = (snapshot?.documents
-                    ?.mapNotNull { it.toObject(Order::class.java) }
-                    ?: emptyList()) as List<Order>
+                Log.d("OrderRepository", "Snapshot received with ${snapshot.size()} documents")
 
+                val orders = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        val order = doc.toObject(Order::class.java)
+                        if (order != null) {
+                            Log.d("OrderRepository", "Parsed order: ${order.orderId}, userId: ${order.userId}, status: ${order.status}")
+                        } else {
+                            Log.w("OrderRepository", "Failed to parse document: ${doc.id}")
+                        }
+                        order
+                    } catch (e: Exception) {
+                        Log.e("OrderRepository", "Error parsing order ${doc.id}: ${e.message}", e)
+                        null
+                    }
+                }
+
+                Log.d("OrderRepository", "Successfully parsed ${orders.size} orders, calling onUpdate")
                 onUpdate(orders)
             }
     }
