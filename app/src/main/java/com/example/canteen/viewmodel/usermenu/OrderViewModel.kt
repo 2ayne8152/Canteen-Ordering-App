@@ -68,6 +68,10 @@ class OrderViewModel(
     private val _selectedOrder = MutableStateFlow<Order?>(null)
     val selectedOrder: StateFlow<Order?> = _selectedOrder
 
+    private val _allOrders = MutableStateFlow<List<Order>>(emptyList())
+    val allOrders: StateFlow<List<Order>> = _allOrders
+    private var allOrdersListener: ListenerRegistration? = null
+
     fun startListeningOrderHistory(userId: String) {
         stopListeningOrderHistory()
 
@@ -87,8 +91,27 @@ class OrderViewModel(
         orderListener = null
     }
 
+    fun startListeningAllOrders() {
+        stopListeningAllOrders()
+
+        allOrdersListener = repository.listenAllOrders(
+            onUpdate = { orders ->
+                _allOrders.value = orders
+            },
+            onError = { throwable ->
+                _error.value = throwable.message
+            }
+        )
+    }
+
+    fun stopListeningAllOrders() {
+        allOrdersListener?.remove()
+        allOrdersListener = null
+    }
+
     override fun onCleared() {
         stopListeningOrderHistory()
+        stopListeningAllOrders()
         super.onCleared()
     }
 

@@ -30,6 +30,7 @@ import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.StaffMenuDetailPage
 import com.example.canteen.ui.screens.staffMenu.StaffMenuItemEditPage
 import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
+import com.example.canteen.ui.screens.staffOrder.StaffOrderStatusEdit
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
@@ -53,7 +54,8 @@ enum class CanteenScreen(val title: String) {
     ReportScreen(title = "ReportScreen"),
     OrdersAnalyticsScreen(title = "OrdersAnalyticsScreen"),
     StaffMenuDetailPage(title = "StaffMenuDetailPage"),
-    StaffMenuEditPage(title = "StaffMenuEditPage")
+    StaffMenuEditPage(title = "StaffMenuEditPage"),
+    StaffOrderStatusEdit(title = "StaffOrderStatusEdit")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -283,6 +285,14 @@ fun CanteenScreen(
             OrdersAnalyticsScreen(
                 navController = navController,  // Add this line
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        // -------------------- STAFF ORDER MANAGEMENT --------------------
+        composable(CanteenScreen.StaffOrderStatusEdit.name) {
+            StaffOrderStatusEdit(
+                navController = navController,
+                orderViewModel = orderViewModel
             )
         }
     }
