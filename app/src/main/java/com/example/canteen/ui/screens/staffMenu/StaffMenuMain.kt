@@ -195,7 +195,7 @@ fun StaffDashboardScreen(
                 )
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Category Chips
             LazyRow(
@@ -219,7 +219,7 @@ fun StaffDashboardScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Menu items list
             LazyColumn(
@@ -476,7 +476,7 @@ fun BottomNavigationBar(navController: NavController) {
             )
         )
         NavigationBarItem(
-            selected = currentRoute == CanteenScreen.MenuItemForm.name,
+            selected = currentRoute == CanteenScreen.StaffOrderStatusEdit.name,
             onClick = { navController.navigate(CanteenScreen.StaffOrderStatusEdit.name) { launchSingleTop = true } },
             icon = {
                 Icon(
@@ -554,7 +554,7 @@ fun BottomNavigationBar(navController: NavController) {
             )
         )
         NavigationBarItem(
-            selected = false,
+            selected = currentRoute == CanteenScreen.ReportScreen.name,
             onClick = { navController.navigate(CanteenScreen.ReportScreen.name) },
             icon = {
                 Icon(
