@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.canteen.data.CartItem
 import com.example.canteen.data.Order
 import com.example.canteen.repository.OrderRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -102,6 +103,28 @@ class OrderViewModel(
                 _error.value = throwable.message
             }
         )
+    }
+
+    private val _currentOrder = MutableStateFlow<Order?>(null)
+    val currentOrder = _currentOrder.asStateFlow()
+
+    fun startListeningOrder(orderId: String) {
+        orderListener?.remove()
+
+        orderListener = FirebaseFirestore.getInstance()
+            .collection("orders")
+            .document(orderId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null && snapshot.exists()) {
+                    _currentOrder.value = snapshot.toObject(Order::class.java)
+                }
+            }
+    }
+
+    fun stopListeningOrder() {
+        orderListener?.remove()
+        orderListener = null
     }
 
     fun stopListeningAllOrders() {

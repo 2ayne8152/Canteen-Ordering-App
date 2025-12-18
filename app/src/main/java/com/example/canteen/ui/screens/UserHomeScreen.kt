@@ -199,10 +199,11 @@ fun UserHomeScreen(
 
                     selectedOrder?.let { order ->
                         OrderDetailScreen(
-                            order = order,
+                            orderId = order.orderId,
                             onBack = { navController.popBackStack() },
+                            orderViewModel = orderViewModel,
                             receiptViewModel = receiptViewModel,
-                            onClick = { navController.navigate("refund") }
+                            onClick = { navController.navigate("refund") },
                         )
                     } ?: Box(
                         modifier = Modifier

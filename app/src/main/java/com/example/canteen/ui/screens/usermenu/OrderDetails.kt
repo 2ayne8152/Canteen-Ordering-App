@@ -7,10 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,41 +23,64 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.example.canteen.R
 import com.example.canteen.data.CartItem
-import com.example.canteen.data.Order
 import com.example.canteen.ui.screens.payment.RefundDetailScreen
 import com.example.canteen.ui.theme.AppColors
-import com.example.canteen.ui.theme.Green
-import com.example.canteen.ui.theme.black
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.staffMenu.Base64Utils
+import com.example.canteen.viewmodel.usermenu.OrderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderDetailScreen(
-    order: Order,
+    orderId: String,
     onBack: () -> Unit,
     onClick: () -> Unit,
+    orderViewModel: OrderViewModel,
     receiptViewModel: ReceiptViewModel
 ) {
-    val totalItems = order.items.sumOf { it.quantity }
-    val totalPrice = order.totalAmount
-    val status = order.status == "PENDING" || order.status == "PREPARING" || order.status == "Pending"
+    // Listen to order in real-time
+    val order by orderViewModel.currentOrder.collectAsState()
+
+    LaunchedEffect(orderId) {
+        Log.d("OrderListener", "Start listening orderId=$orderId")
+        orderViewModel.startListeningOrder(orderId)
+        receiptViewModel.loadReceiptByOrderId(orderId)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            orderViewModel.stopListeningOrder()
+        }
+    }
+
+    // Loading state
+    if (order == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    val currentOrder = order!!
+    val totalItems = currentOrder.items.sumOf { it.quantity }
+    val totalPrice = currentOrder.totalAmount
+    val status = currentOrder.status == "PENDING" ||
+            currentOrder.status == "PREPARING" ||
+            currentOrder.status == "Pending"
+
     val receiptPair by receiptViewModel.receiptLoadByOrderId.collectAsState()
 
-    val statusColor = when (order.status.uppercase()) {
+    val statusColor = when (currentOrder.status.uppercase()) {
         "PENDING" -> AppColors.warning
         "READY TO PICKUP" -> AppColors.info
         "COMPLETED" -> AppColors.success
         "REFUNDED" -> AppColors.error
         else -> AppColors.textSecondary
-    }
-
-    LaunchedEffect(order.orderId) {
-        Log.d("OrderListener", order.orderId)
-        receiptViewModel.loadReceiptByOrderId(order.orderId)
     }
 
     LaunchedEffect(receiptPair) {
@@ -88,7 +110,7 @@ fun OrderDetailScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Order #${order.orderId.takeLast(6)}",
+                        text = "Order #${currentOrder.orderId.takeLast(6)}",
                         style = MaterialTheme.typography.titleLarge,
                         color = AppColors.textPrimary,
                         fontWeight = FontWeight.Bold,
@@ -113,7 +135,7 @@ fun OrderDetailScreen(
                             color = statusColor.copy(alpha = 0.15f)
                         ) {
                             Text(
-                                text = order.status.uppercase(),
+                                text = currentOrder.status.uppercase(),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 color = statusColor,
@@ -123,7 +145,7 @@ fun OrderDetailScreen(
                         }
                     }
 
-                    if (order.status == "REFUNDED") {
+                    if (currentOrder.status == "REFUNDED") {
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider(
                             thickness = 1.dp,
@@ -131,7 +153,7 @@ fun OrderDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         RefundDetailScreen(
-                            orderId = order.orderId,
+                            orderId = currentOrder.orderId,
                             receiptViewModel = receiptViewModel
                         )
                     }
@@ -156,7 +178,7 @@ fun OrderDetailScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(order.items) { cartItem ->
+                items(currentOrder.items) { cartItem ->
                     OrderItemRow(cartItem = cartItem)
                 }
             }
@@ -188,12 +210,10 @@ fun OrderDetailScreen(
                     ) {
                         Text(
                             "Total Items",
-                            style = MaterialTheme.typography.bodyLarge,
                             color = AppColors.textSecondary
                         )
                         Text(
                             "$totalItems",
-                            style = MaterialTheme.typography.bodyLarge,
                             color = AppColors.textPrimary,
                             fontWeight = FontWeight.Medium
                         )
@@ -210,14 +230,12 @@ fun OrderDetailScreen(
                     ) {
                         Text(
                             "Total Amount",
-                            style = MaterialTheme.typography.titleMedium,
                             color = AppColors.textPrimary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
                         Text(
                             "RM ${"%.2f".format(totalPrice)}",
-                            style = MaterialTheme.typography.titleMedium,
                             color = AppColors.primary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
@@ -241,8 +259,6 @@ fun OrderDetailScreen(
                     Text(
                         text = "Request Refund",
                         color = AppColors.surface,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -252,9 +268,7 @@ fun OrderDetailScreen(
 }
 
 @Composable
-fun OrderItemRow(
-    cartItem: CartItem
-) {
+fun OrderItemRow(cartItem: CartItem) {
     val bitmap = remember(cartItem.menuItem.imageUrl) {
         try {
             if (cartItem.menuItem.imageUrl.isNotBlank()) {
@@ -301,14 +315,12 @@ fun OrderItemRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     cartItem.menuItem.name,
-                    style = MaterialTheme.typography.titleMedium,
                     color = AppColors.textPrimary,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     "RM ${"%.2f".format(cartItem.menuItem.price)}",
-                    style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.textSecondary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -318,13 +330,11 @@ fun OrderItemRow(
                 ) {
                     Text(
                         "Qty: ${cartItem.quantity}",
-                        style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.textSecondary,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
                         "RM ${"%.2f".format(cartItem.totalPrice)}",
-                        style = MaterialTheme.typography.bodyLarge,
                         color = AppColors.primary,
                         fontWeight = FontWeight.Bold
                     )
