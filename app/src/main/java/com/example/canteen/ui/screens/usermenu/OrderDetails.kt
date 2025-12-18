@@ -123,7 +123,7 @@ fun OrderDetailScreen(
                         }
                     }
 
-                    if (receiptPair?.first?.refundId != null) {
+                    if (order.status == "REFUNDED") {
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider(
                             thickness = 1.dp,

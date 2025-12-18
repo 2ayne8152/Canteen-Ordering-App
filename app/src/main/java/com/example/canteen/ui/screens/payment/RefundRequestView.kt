@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.darkGray
 import com.example.canteen.ui.theme.isVeryLightBlue
@@ -68,9 +69,9 @@ enum class RefundStatus {
 @Composable
 fun RefundStatusChip(status: RefundStatus) {
     val (bgColor, textColor, text) = when (status) {
-        RefundStatus.APPROVED -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32), "Approved")
-        RefundStatus.REQUESTED -> Triple(Color(0xFFFFF8E1), Color(0xFFF9A825), "Requested")
-        RefundStatus.REJECTED -> Triple(Color(0xFFFDECEA), Color(0xFFC62828), "Rejected")
+        RefundStatus.APPROVED -> Triple(Color(0xFFE8F5E9), Color(0xFF1E6B21), "Approved")
+        RefundStatus.REQUESTED -> Triple(Color(0xFFFFF8E1), Color(0xFFC97A00), "Requested")
+        RefundStatus.REJECTED -> Triple(Color(0xFFFDECEA), Color(0xFF8C0606), "Rejected")
     }
 
     Surface(
@@ -104,7 +105,7 @@ fun RefundRequestCard(
             Text(
                 text = "Refund Request",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold, color = Color.Black
+                fontWeight = FontWeight.Bold, color = AppColors.textPrimary
             )
 
             RefundStatusChip(status = status)
@@ -115,13 +116,13 @@ fun RefundRequestCard(
         Text(
             text = "Reason: $reason",
             fontSize = 14.sp,
-            color = darkGray
+            color = AppColors.textSecondary
         )
 
         Text(
             text = "Request At : $requestTime",
             fontSize = 14.sp,
-            color = darkGray
+            color = AppColors.textSecondary
         )
 
         if (status.name != "REQUESTED"){
@@ -137,13 +138,13 @@ fun RefundRequestCard(
                     text = "Admin Remark : ",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
+                    color = AppColors.textSecondary
                 )
 
                 Text(
                     text = remark.orEmpty(),
                     fontSize = 13.sp,
-                    color = darkGray
+                    color = AppColors.textSecondary
                 )
             }
         }

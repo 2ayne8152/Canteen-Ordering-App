@@ -27,11 +27,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +56,9 @@ import com.example.canteen.ui.theme.lightRed
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.example.canteen.ui.theme.AppColors
+import com.example.canteen.ui.theme.gray
 import com.example.canteen.viewmodel.usermenu.OrderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -129,7 +134,7 @@ fun Refund(
             Text(
                 text = "Select Refund Reason",
                 style = MaterialTheme.typography.titleMedium,
-                fontSize = 25.sp, color = Color.Black
+                fontSize = 25.sp, color = Color.White
             )
 
             Spacer(Modifier.height(8.dp))
@@ -140,7 +145,7 @@ fun Refund(
                 OutlinedTextField(
                     value = selectedReason,
                     onValueChange = {},
-                    label = { Text("Refund Reason", color = Color.Black) },
+                    label = { Text("Refund Reason", color = Color.White) },
                     readOnly = true,
                     trailingIcon = {
                         Icon(
@@ -153,7 +158,16 @@ fun Refund(
                         .fillMaxWidth()
                         .onGloballyPositioned { coordinates ->
                             textFieldWidth = with(density) { coordinates.size.width.toDp() }
-                        }
+                        },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppColors.primary,
+                        unfocusedBorderColor = AppColors.divider,
+                        focusedTextColor = AppColors.textPrimary,
+                        unfocusedTextColor = AppColors.textPrimary,
+                        cursorColor = AppColors.primary,
+                        errorBorderColor = AppColors.error,
+                        errorCursorColor = AppColors.error
+                    )
                 )
                 Box(
                     modifier = Modifier
@@ -184,7 +198,7 @@ fun Refund(
             OutlinedTextField(
                 value = refundDetails,
                 onValueChange = { refundDetails = it },
-                label = { Text("Refund Details", color = Color.Black) },
+                label = { Text("Refund Details", color = Color.White) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp)
@@ -196,7 +210,16 @@ fun Refund(
                     if (refundDetails.isEmpty() && hasTouchedHolder) {
                         Text("Cannot be empty", color = lightRed, fontSize = 12.sp)
                     }
-                }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppColors.primary,
+                    unfocusedBorderColor = AppColors.divider,
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
+                    cursorColor = AppColors.primary,
+                    errorBorderColor = AppColors.error,
+                    errorCursorColor = AppColors.error
+                )
             )
 
             Spacer(Modifier.height(24.dp))
@@ -208,7 +231,7 @@ fun Refund(
 
                     if (!orderId.isNullOrBlank()) {
                         refundViewModel.createRefund(selectedReason, refundDetails)
-                        orderViewModel.orderStatusUpdate(orderId, "REQUESTED")
+                        orderViewModel.orderStatusUpdate(orderId, "REFUNDED")
                         onBack()
                     }
                 },
@@ -216,10 +239,18 @@ fun Refund(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                shape = RoundedCornerShape(8.dp),
-                elevation = ButtonDefaults.buttonElevation(8.dp)
+                elevation = ButtonDefaults.buttonElevation(8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.primary,
+                    disabledContainerColor = AppColors.disabled
+                )
             ) {
-                Text("Submit", color = Color.Black)
+                Text("Submit",
+                    color = AppColors.surface,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -229,7 +260,7 @@ fun Refund(
         AlertDialog(
             onDismissRequest = {},
             confirmButton = {},
-            title = { Text("Submitting...", color = Color.Black) }
+            title = { Text("Submitting...", color = Color.White) }
         )
     }
 }
