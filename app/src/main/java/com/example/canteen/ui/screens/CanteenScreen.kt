@@ -91,11 +91,13 @@ fun CanteenScreen(
                     "user" -> {
                         navController.navigate(CanteenScreen.UserHomeScreen.name) {
                             popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
                         }
                     }
                     "staff" -> {
                         navController.navigate(CanteenScreen.StaffDashboard.name) {
                             popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
                         }
                     }
                 }
@@ -106,6 +108,7 @@ fun CanteenScreen(
                     Log.d("CanteenScreen", "User logged out, navigating to login")
                     navController.navigate("login") {
                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
                     }
                 } else {
                     // Reset the flag
@@ -197,14 +200,27 @@ fun CanteenScreen(
                 orderViewModel = orderViewModel,
                 userViewModel = userViewModel,
                 refundViewModel = refundViewModel,
-                onSignOut = { authViewModel.signOut() }
+                onSignOut = {
+                    authViewModel.signOut()
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
 
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
-            StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
+            StaffDashboardScreen(navController,
+                onClick = {
+                    authViewModel.signOut()
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                })
         }
 
         // -------------------- Staff Menu --------------------
