@@ -15,12 +15,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.canteen.ui.screens.CanteenScreen
 import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.viewmodel.login.generateNextMenuId
 import com.example.canteen.viewmodel.staffMenu.CategoryData
@@ -44,7 +51,6 @@ import java.io.ByteArrayOutputStream
 fun MenuItemForm(navController: NavController) {
     val categoryOptions = CategoryData.category.map { it.name }
 
-    var menuId by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var itemName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -60,6 +66,7 @@ fun MenuItemForm(navController: NavController) {
 
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         containerColor = AppColors.background,
@@ -69,7 +76,7 @@ fun MenuItemForm(navController: NavController) {
                     Text(
                         "Add Menu Item",
                         color = AppColors.textPrimary,
-                        style = MaterialTheme.typography.titleLarge
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
@@ -82,9 +89,21 @@ fun MenuItemForm(navController: NavController) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AppColors.surface
-                )
+                    containerColor = AppColors.surface,
+                    titleContentColor = AppColors.textPrimary
+                ),
+                modifier = Modifier.shadow(4.dp)
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = AppColors.surface,
+                    contentColor = AppColors.textPrimary,
+                    actionColor = AppColors.primary
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -92,255 +111,296 @@ fun MenuItemForm(navController: NavController) {
                 .fillMaxSize()
                 .background(AppColors.background)
                 .padding(paddingValues)
-                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-
-            // Menu ID
-            OutlinedTextField(
-                value = "Auto Generated",
-                onValueChange = {},
-                enabled = false,
-                label = { Text("Menu ID", color = AppColors.textSecondary) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledContainerColor = AppColors.surface,
-                    disabledBorderColor = AppColors.divider,
-                    disabledTextColor = AppColors.textSecondary,
-                    disabledLabelColor = AppColors.textSecondary
-                )
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Category dropdown
-            Text(
-                "Category",
-                fontSize = 16.sp,
-                color = AppColors.textPrimary,
-                fontWeight = FontWeight.Medium,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(Modifier.height(8.dp))
-            DropdownMenuWrapper(
-                options = categoryOptions,
-                selectedOption = selectedCategory,
-                onOptionSelected = { selectedCategory = it },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Item name
-            OutlinedTextField(
-                value = itemName,
-                onValueChange = { itemName = it },
-                label = { Text("Item Name", color = AppColors.textSecondary) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = AppColors.surface,
-                    unfocusedContainerColor = AppColors.surface,
-                    focusedBorderColor = AppColors.primary,
-                    unfocusedBorderColor = AppColors.divider,
-                    cursorColor = AppColors.primary,
-                    focusedTextColor = AppColors.textPrimary,
-                    unfocusedTextColor = AppColors.textPrimary,
-                    focusedLabelColor = AppColors.primary,
-                    unfocusedLabelColor = AppColors.textSecondary
-                )
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Description
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description", color = AppColors.textSecondary) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                maxLines = 5,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = AppColors.surface,
-                    unfocusedContainerColor = AppColors.surface,
-                    focusedBorderColor = AppColors.primary,
-                    unfocusedBorderColor = AppColors.divider,
-                    cursorColor = AppColors.primary,
-                    focusedTextColor = AppColors.textPrimary,
-                    unfocusedTextColor = AppColors.textPrimary,
-                    focusedLabelColor = AppColors.primary,
-                    unfocusedLabelColor = AppColors.textSecondary
-                )
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Price and Quantity
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = unitPrice,
-                    onValueChange = { input ->
-                        if (input.isEmpty() || input.matches(Regex("^[0-9]*\\.?[0-9]*$"))) {
-                            unitPrice = input
-                        }
-                    },
-                    label = { Text("Unit Price", color = AppColors.textSecondary) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = AppColors.surface,
-                        unfocusedContainerColor = AppColors.surface,
-                        focusedBorderColor = AppColors.primary,
-                        unfocusedBorderColor = AppColors.divider,
-                        cursorColor = AppColors.primary,
-                        focusedTextColor = AppColors.textPrimary,
-                        unfocusedTextColor = AppColors.textPrimary,
-                        focusedLabelColor = AppColors.primary,
-                        unfocusedLabelColor = AppColors.textSecondary
-                    )
-                )
-
-                OutlinedTextField(
-                    value = quantity,
-                    onValueChange = { input ->
-                        if (input.isEmpty() || input.matches(Regex("^[0-9]+$"))) {
-                            quantity = input
-                        }
-                    },
-                    label = { Text("Quantity", color = AppColors.textSecondary) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = AppColors.surface,
-                        unfocusedContainerColor = AppColors.surface,
-                        focusedBorderColor = AppColors.primary,
-                        unfocusedBorderColor = AppColors.divider,
-                        cursorColor = AppColors.primary,
-                        focusedTextColor = AppColors.textPrimary,
-                        unfocusedTextColor = AppColors.textPrimary,
-                        focusedLabelColor = AppColors.primary,
-                        unfocusedLabelColor = AppColors.textSecondary
-                    )
-                )
-            }
-
-            Spacer(Modifier.height(20.dp))
-
-            // Image picker
-            Button(
-                onClick = { imagePickerLauncher.launch("image/*") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.primary
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-            ) {
-                Text(
-                    "Upload Image",
-                    color = AppColors.surface,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = 16.sp
-                )
-            }
-
-            Spacer(Modifier.height(20.dp))
-
-            Text(
-                "Preview",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.textPrimary,
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            Spacer(Modifier.height(12.dp))
-
+            // Image Upload Card
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = AppColors.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                colors = CardDefaults.cardColors(
+                    containerColor = AppColors.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                onClick = { imagePickerLauncher.launch("image/*") }
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .height(180.dp)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(AppColors.divider),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (imageUri != null) {
-                            val bitmap = if (Build.VERSION.SDK_INT < 28) {
-                                MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri)
-                            } else {
-                                val source = ImageDecoder.createSource(context.contentResolver, imageUri!!)
-                                ImageDecoder.decodeBitmap(source)
-                            }
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
+                Box(
+                    modifier = Modifier
+                        .height(200.dp)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (imageUri != null) {
+                        val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                            MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri)
                         } else {
+                            val source = ImageDecoder.createSource(context.contentResolver, imageUri!!)
+                            ImageDecoder.decodeBitmap(source)
+                        }
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudUpload,
+                                contentDescription = null,
+                                tint = AppColors.primary,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(Modifier.height(16.dp))
                             Text(
-                                "No Image",
+                                "Tap to Upload Image",
+                                color = AppColors.textPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "JPG or PNG format",
                                 color = AppColors.textSecondary,
-                                style = MaterialTheme.typography.bodyLarge
+                                fontSize = 13.sp
                             )
                         }
                     }
 
+                    // Change Image Button (when image exists)
+                    if (imageUri != null) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(12.dp)
+                        ) {
+                            FloatingActionButton(
+                                onClick = { imagePickerLauncher.launch("image/*") },
+                                containerColor = AppColors.primary,
+                                contentColor = AppColors.surface,
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = "Change Image"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Form Fields Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = AppColors.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Item Information",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.textPrimary
+                    )
+
                     Spacer(Modifier.height(16.dp))
 
-                    PreviewTextRow("Menu ID", menuId.ifEmpty { "Auto Generated" })
-                    PreviewTextRow("Category", selectedCategory)
-                    PreviewTextRow("Name", itemName.ifEmpty { "Item Name" })
-                    PreviewTextRow("Description", description.ifEmpty { "Description" })
-                    PreviewTextRow("Price", "RM ${unitPrice.ifEmpty { "0.00" }}")
-                    PreviewTextRow("Remaining Quantity", quantity.ifEmpty { "0" })
-                }
-            }
+                    // Category Dropdown
+                    var categoryExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = categoryExpanded,
+                        onExpandedChange = { categoryExpanded = !categoryExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedCategory,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Category", color = AppColors.textSecondary) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.primary,
+                                unfocusedBorderColor = AppColors.divider,
+                                focusedTextColor = AppColors.textPrimary,
+                                unfocusedTextColor = AppColors.textPrimary,
+                                focusedContainerColor = AppColors.background,
+                                unfocusedContainerColor = AppColors.background
+                            )
+                        )
 
-            Spacer(Modifier.height(16.dp))
+                        ExposedDropdownMenu(
+                            expanded = categoryExpanded,
+                            onDismissRequest = { categoryExpanded = false },
+                            modifier = Modifier.background(AppColors.surface)
+                        ) {
+                            categoryOptions.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { Text(category, color = AppColors.textPrimary) },
+                                    onClick = {
+                                        selectedCategory = category
+                                        categoryExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
 
-            if (validationMessage.isNotEmpty()) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (validationMessage.contains("success", ignoreCase = true))
-                        AppColors.success.copy(alpha = 0.15f)
-                    else
-                        AppColors.error.copy(alpha = 0.15f)
-                ) {
-                    Text(
-                        text = validationMessage,
-                        color = if (validationMessage.contains("success", ignoreCase = true))
-                            AppColors.success
-                        else
-                            AppColors.error,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(12.dp)
+                    Spacer(Modifier.height(12.dp))
+
+                    // Item Name
+                    OutlinedTextField(
+                        value = itemName,
+                        onValueChange = { itemName = it },
+                        label = { Text("Item Name", color = AppColors.textSecondary) },
+                        placeholder = { Text("Enter item name", color = AppColors.textTertiary) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AppColors.primary,
+                            unfocusedBorderColor = AppColors.divider,
+                            focusedTextColor = AppColors.textPrimary,
+                            unfocusedTextColor = AppColors.textPrimary,
+                            cursorColor = AppColors.primary,
+                            focusedContainerColor = AppColors.background,
+                            unfocusedContainerColor = AppColors.background
+                        )
                     )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Description
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description", color = AppColors.textSecondary) },
+                        placeholder = { Text("Describe the item", color = AppColors.textTertiary) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        maxLines = 5,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AppColors.primary,
+                            unfocusedBorderColor = AppColors.divider,
+                            focusedTextColor = AppColors.textPrimary,
+                            unfocusedTextColor = AppColors.textPrimary,
+                            cursorColor = AppColors.primary,
+                            focusedContainerColor = AppColors.background,
+                            unfocusedContainerColor = AppColors.background
+                        )
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Price and Quantity Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = unitPrice,
+                            onValueChange = { input ->
+                                if (input.isEmpty() || input.matches(Regex("^[0-9]*\\.?[0-9]*$"))) {
+                                    unitPrice = input
+                                }
+                            },
+                            label = { Text("Price (RM)", color = AppColors.textSecondary) },
+                            placeholder = { Text("0.00", color = AppColors.textTertiary) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.primary,
+                                unfocusedBorderColor = AppColors.divider,
+                                focusedTextColor = AppColors.textPrimary,
+                                unfocusedTextColor = AppColors.textPrimary,
+                                cursorColor = AppColors.primary,
+                                focusedContainerColor = AppColors.background,
+                                unfocusedContainerColor = AppColors.background
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = quantity,
+                            onValueChange = { input ->
+                                if (input.isEmpty() || input.matches(Regex("^[0-9]+$"))) {
+                                    quantity = input
+                                }
+                            },
+                            label = { Text("Quantity", color = AppColors.textSecondary) },
+                            placeholder = { Text("0", color = AppColors.textTertiary) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.primary,
+                                unfocusedBorderColor = AppColors.divider,
+                                focusedTextColor = AppColors.textPrimary,
+                                unfocusedTextColor = AppColors.textPrimary,
+                                cursorColor = AppColors.primary,
+                                focusedContainerColor = AppColors.background,
+                                unfocusedContainerColor = AppColors.background
+                            )
+                        )
+                    }
                 }
             }
 
-            // Submit button
+            Spacer(Modifier.height(20.dp))
+
+            // Validation Message
+            if (validationMessage.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (validationMessage.contains("success"))
+                            AppColors.success.copy(alpha = 0.2f)
+                        else
+                            AppColors.error.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (validationMessage.contains("success"))
+                                Icons.Default.CheckCircle
+                            else
+                                Icons.Default.Error,
+                            contentDescription = null,
+                            tint = if (validationMessage.contains("success"))
+                                AppColors.success
+                            else
+                                AppColors.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            validationMessage,
+                            color = if (validationMessage.contains("success"))
+                                AppColors.success
+                            else
+                                AppColors.error,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Submit Button
             Button(
                 onClick = {
                     coroutineScope.launch {
@@ -348,20 +408,24 @@ fun MenuItemForm(navController: NavController) {
                         val quantityInt = quantity.toIntOrNull()
 
                         when {
-                            itemName.isBlank() || description.isBlank() -> {
-                                validationMessage = "All text fields must be filled."
+                            itemName.isBlank() -> {
+                                validationMessage = "Please enter item name"
                                 return@launch
                             }
-                            priceDouble == null -> {
-                                validationMessage = "Unit Price must be a valid number."
+                            description.isBlank() -> {
+                                validationMessage = "Please enter description"
                                 return@launch
                             }
-                            quantityInt == null -> {
-                                validationMessage = "Quantity must be an integer."
+                            priceDouble == null || priceDouble <= 0 -> {
+                                validationMessage = "Please enter a valid price"
+                                return@launch
+                            }
+                            quantityInt == null || quantityInt < 0 -> {
+                                validationMessage = "Please enter a valid quantity"
                                 return@launch
                             }
                             imageUri == null -> {
-                                validationMessage = "Please upload an image."
+                                validationMessage = "Please upload an image"
                                 return@launch
                             }
                         }
@@ -371,7 +435,6 @@ fun MenuItemForm(navController: NavController) {
 
                         try {
                             val generatedMenuId = generateNextMenuId()
-                            // Convert imageUri to Base64
                             val bitmap = if (Build.VERSION.SDK_INT < 28) {
                                 MediaStore.Images.Media.getBitmap(
                                     context.contentResolver, imageUri
@@ -406,17 +469,19 @@ fun MenuItemForm(navController: NavController) {
                                 .set(newMenuItem)
                                 .await()
 
-                            validationMessage = "Menu item added successfully! ($generatedMenuId)"
-                            menuId = ""
+                            validationMessage = "Menu item added successfully!"
+
+                            // Clear form
                             itemName = ""
                             description = ""
                             unitPrice = ""
                             quantity = ""
                             imageUri = null
+                            selectedCategory = categoryOptions.first()
 
-                            // Navigate to StaffDashboard after 1 second
-                            kotlinx.coroutines.delay(1000)
-                            navController.navigate("StaffDashboard") {
+                            // Navigate to dashboard after delay
+                            kotlinx.coroutines.delay(1500)
+                            navController.navigate(CanteenScreen.StaffDashboard.name) {
                                 popUpTo(navController.graph.startDestinationId) { inclusive = false }
                                 launchSingleTop = true
                             }
@@ -427,12 +492,15 @@ fun MenuItemForm(navController: NavController) {
                         }
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.primary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(50.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.primary,
+                    disabledContainerColor = AppColors.disabled
+                ),
+                shape = RoundedCornerShape(16.dp),
+                enabled = !isLoading
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -441,99 +509,22 @@ fun MenuItemForm(navController: NavController) {
                         strokeWidth = 2.dp
                     )
                 } else {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = AppColors.surface
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Text(
-                        "Submit",
+                        "Add Menu Item",
                         color = AppColors.surface,
                         fontSize = 16.sp,
-                        style = MaterialTheme.typography.titleMedium
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-        }
-    }
-}
-
-@Composable
-fun PreviewTextRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Text(
-            "$label: ",
-            fontSize = 14.sp,
-            color = AppColors.textSecondary,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.4f)
-        )
-        Text(
-            value,
-            fontSize = 14.sp,
-            color = AppColors.textPrimary,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(0.6f)
-        )
-    }
-}
-
-@Composable
-fun DropdownMenuWrapper(
-    options: List<String>,
-    selectedOption: String,
-    onOptionSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box(modifier) {
-        OutlinedButton(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = AppColors.surface,
-                contentColor = AppColors.textPrimary
-            ),
-            border = ButtonDefaults.outlinedButtonBorder.copy(
-                width = 1.dp,
-                brush = androidx.compose.ui.graphics.SolidColor(AppColors.divider)
-            )
-        ) {
-            Text(
-                selectedOption,
-                color = AppColors.textPrimary,
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppColors.surface)
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            option,
-                            color = AppColors.textPrimary,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
-                    onClick = {
-                        onOptionSelected(option)
-                        expanded = false
-                    },
-                    colors = MenuDefaults.itemColors(
-                        textColor = AppColors.textPrimary
-                    )
-                )
-            }
+            Spacer(Modifier.height(20.dp))
         }
     }
 }
