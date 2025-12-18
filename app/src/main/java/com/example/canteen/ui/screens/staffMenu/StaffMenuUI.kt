@@ -15,20 +15,29 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.canteen.ui.screens.CanteenScreen
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.viewmodel.login.generateNextMenuId
 import com.example.canteen.viewmodel.staffMenu.CategoryData
 import com.google.firebase.firestore.ktx.firestore
@@ -38,11 +47,11 @@ import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuItemForm(navController: NavController) {
     val categoryOptions = CategoryData.category.map { it.name }
 
-    var menuId by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var itemName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -58,133 +67,68 @@ fun MenuItemForm(navController: NavController) {
 
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-
-        // Back button
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+    Scaffold(
+        containerColor = AppColors.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Add Menu Item",
+                        color = AppColors.textPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = AppColors.textPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AppColors.surface,
+                    titleContentColor = AppColors.textPrimary
+                ),
+                modifier = Modifier.shadow(4.dp)
+            )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = AppColors.surface,
+                    contentColor = AppColors.textPrimary,
+                    actionColor = AppColors.primary
+                )
             }
         }
-
-        Spacer(Modifier.height(8.dp))
-
-        // Menu ID
-        TextField(
-            value = "Auto Generated",
-            onValueChange = {},
-            enabled = false,
-            label = { Text("Menu ID") },
-            modifier = Modifier.fillMaxWidth()
-
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        // Category dropdown
-        Text("Category", fontSize = 16.sp)
-        DropdownMenuWrapper(
-            options = categoryOptions,
-            selectedOption = selectedCategory,
-            onOptionSelected = { selectedCategory = it },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        // Item name
-        TextField(
-            value = itemName,
-            onValueChange = { itemName = it },
-            label = { Text("Item Name") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        // Description
-        TextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Description") },
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
-            maxLines = 5,
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        // Price and Quantity
-        Row(modifier = Modifier.fillMaxWidth()) {
-            TextField(
-                value = unitPrice,
-                onValueChange = { input ->
-                    if (input.isEmpty() || input.matches(Regex("^[0-9]*\\.?[0-9]*$"))) {
-                        unitPrice = input
-                    }
-                },
-                label = { Text("Unit Price") },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(Modifier.width(8.dp))
-
-            TextField(
-                value = quantity,
-                onValueChange = { input ->
-                    if (input.isEmpty() || input.matches(Regex("^[0-9]+$"))) {
-                        quantity = input
-                    }
-                },
-                label = { Text("Quantity") },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        // Image picker
-        Button(
-            onClick = { imagePickerLauncher.launch("image/*") },
-            modifier = Modifier.align(Alignment.Start),
-            shape = RoundedCornerShape(10.dp)
+                .fillMaxSize()
+                .background(AppColors.background)
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-            Text("Upload Image")
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Text("Preview", fontSize = 18.sp)
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            // Image Upload Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = AppColors.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                onClick = { imagePickerLauncher.launch("image/*") }
+            ) {
                 Box(
                     modifier = Modifier
-                        .height(150.dp)
-                        .fillMaxWidth()
-                        .background(Color.LightGray, RoundedCornerShape(12.dp)),
+                        .height(200.dp)
+                        .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     if (imageUri != null) {
@@ -201,175 +145,387 @@ fun MenuItemForm(navController: NavController) {
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Text("No Image")
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudUpload,
+                                contentDescription = null,
+                                tint = AppColors.primary,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                "Tap to Upload Image",
+                                color = AppColors.textPrimary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "JPG or PNG format",
+                                color = AppColors.textSecondary,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+
+                    // Change Image Button (when image exists)
+                    if (imageUri != null) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(12.dp)
+                        ) {
+                            FloatingActionButton(
+                                onClick = { imagePickerLauncher.launch("image/*") },
+                                containerColor = AppColors.primary,
+                                contentColor = AppColors.surface,
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = "Change Image"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Form Fields Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = AppColors.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Item Information",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.textPrimary
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Category Dropdown
+                    var categoryExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = categoryExpanded,
+                        onExpandedChange = { categoryExpanded = !categoryExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedCategory,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Category", color = AppColors.textSecondary) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.primary,
+                                unfocusedBorderColor = AppColors.divider,
+                                focusedTextColor = AppColors.textPrimary,
+                                unfocusedTextColor = AppColors.textPrimary,
+                                focusedContainerColor = AppColors.background,
+                                unfocusedContainerColor = AppColors.background
+                            )
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = categoryExpanded,
+                            onDismissRequest = { categoryExpanded = false },
+                            modifier = Modifier.background(AppColors.surface)
+                        ) {
+                            categoryOptions.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { Text(category, color = AppColors.textPrimary) },
+                                    onClick = {
+                                        selectedCategory = category
+                                        categoryExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Item Name
+                    OutlinedTextField(
+                        value = itemName,
+                        onValueChange = { itemName = it },
+                        label = { Text("Item Name", color = AppColors.textSecondary) },
+                        placeholder = { Text("Enter item name", color = AppColors.textTertiary) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AppColors.primary,
+                            unfocusedBorderColor = AppColors.divider,
+                            focusedTextColor = AppColors.textPrimary,
+                            unfocusedTextColor = AppColors.textPrimary,
+                            cursorColor = AppColors.primary,
+                            focusedContainerColor = AppColors.background,
+                            unfocusedContainerColor = AppColors.background
+                        )
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Description
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description", color = AppColors.textSecondary) },
+                        placeholder = { Text("Describe the item", color = AppColors.textTertiary) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        maxLines = 5,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AppColors.primary,
+                            unfocusedBorderColor = AppColors.divider,
+                            focusedTextColor = AppColors.textPrimary,
+                            unfocusedTextColor = AppColors.textPrimary,
+                            cursorColor = AppColors.primary,
+                            focusedContainerColor = AppColors.background,
+                            unfocusedContainerColor = AppColors.background
+                        )
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Price and Quantity Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = unitPrice,
+                            onValueChange = { input ->
+                                if (input.isEmpty() || input.matches(Regex("^[0-9]*\\.?[0-9]*$"))) {
+                                    unitPrice = input
+                                }
+                            },
+                            label = { Text("Price (RM)", color = AppColors.textSecondary) },
+                            placeholder = { Text("0.00", color = AppColors.textTertiary) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.primary,
+                                unfocusedBorderColor = AppColors.divider,
+                                focusedTextColor = AppColors.textPrimary,
+                                unfocusedTextColor = AppColors.textPrimary,
+                                cursorColor = AppColors.primary,
+                                focusedContainerColor = AppColors.background,
+                                unfocusedContainerColor = AppColors.background
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = quantity,
+                            onValueChange = { input ->
+                                if (input.isEmpty() || input.matches(Regex("^[0-9]+$"))) {
+                                    quantity = input
+                                }
+                            },
+                            label = { Text("Quantity", color = AppColors.textSecondary) },
+                            placeholder = { Text("0", color = AppColors.textTertiary) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.primary,
+                                unfocusedBorderColor = AppColors.divider,
+                                focusedTextColor = AppColors.textPrimary,
+                                unfocusedTextColor = AppColors.textPrimary,
+                                cursorColor = AppColors.primary,
+                                focusedContainerColor = AppColors.background,
+                                unfocusedContainerColor = AppColors.background
+                            )
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Validation Message
+            if (validationMessage.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (validationMessage.contains("success"))
+                            AppColors.success.copy(alpha = 0.2f)
+                        else
+                            AppColors.error.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (validationMessage.contains("success"))
+                                Icons.Default.CheckCircle
+                            else
+                                Icons.Default.Error,
+                            contentDescription = null,
+                            tint = if (validationMessage.contains("success"))
+                                AppColors.success
+                            else
+                                AppColors.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            validationMessage,
+                            color = if (validationMessage.contains("success"))
+                                AppColors.success
+                            else
+                                AppColors.error,
+                            fontSize = 14.sp
+                        )
                     }
                 }
 
                 Spacer(Modifier.height(12.dp))
-
-                PreviewTextRow("Menu ID", menuId.ifEmpty { "ID" })
-                PreviewTextRow("Category", selectedCategory)
-                PreviewTextRow("Name", itemName.ifEmpty { "Item Name" })
-                PreviewTextRow("Description", description.ifEmpty { "Description" })
-                PreviewTextRow("Price", "RM ${unitPrice.ifEmpty { "0.00" }}")
-                PreviewTextRow("Remaining Quantity", quantity.ifEmpty { "0" })
             }
-        }
 
-        Spacer(Modifier.height(16.dp))
+            // Submit Button
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        val priceDouble = unitPrice.toDoubleOrNull()
+                        val quantityInt = quantity.toIntOrNull()
 
-        if (validationMessage.isNotEmpty()) {
-            Text(
-                text = validationMessage,
-                color = Color.Red,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-        }
-
-        // Submit button
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    val priceDouble = unitPrice.toDoubleOrNull()
-                    val quantityInt = quantity.toIntOrNull()
-
-                    when {
-                        itemName.isBlank() || description.isBlank() -> {
-                            validationMessage = "All text fields must be filled."
-                            return@launch
+                        when {
+                            itemName.isBlank() -> {
+                                validationMessage = "Please enter item name"
+                                return@launch
+                            }
+                            description.isBlank() -> {
+                                validationMessage = "Please enter description"
+                                return@launch
+                            }
+                            priceDouble == null || priceDouble <= 0 -> {
+                                validationMessage = "Please enter a valid price"
+                                return@launch
+                            }
+                            quantityInt == null || quantityInt < 0 -> {
+                                validationMessage = "Please enter a valid quantity"
+                                return@launch
+                            }
+                            imageUri == null -> {
+                                validationMessage = "Please upload an image"
+                                return@launch
+                            }
                         }
-                        priceDouble == null -> {
-                            validationMessage = "Unit Price must be a valid number."
-                            return@launch
-                        }
-                        quantityInt == null -> {
-                            validationMessage = "Quantity must be an integer."
-                            return@launch
-                        }
-                        imageUri == null -> {
-                            validationMessage = "Please upload an image."
-                            return@launch
+
+                        validationMessage = ""
+                        isLoading = true
+
+                        try {
+                            val generatedMenuId = generateNextMenuId()
+                            val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                                MediaStore.Images.Media.getBitmap(
+                                    context.contentResolver, imageUri
+                                )
+                            } else {
+                                val source = ImageDecoder.createSource(
+                                    context.contentResolver, imageUri!!
+                                )
+                                ImageDecoder.decodeBitmap(source)
+                            }
+
+                            val outputStream = ByteArrayOutputStream()
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                            val imageBase64 = Base64.encodeToString(
+                                outputStream.toByteArray(),
+                                Base64.DEFAULT
+                            )
+
+                            val newMenuItem = mapOf(
+                                "id" to generatedMenuId,
+                                "name" to itemName,
+                                "description" to description,
+                                "price" to priceDouble,
+                                "remainQuantity" to quantityInt,
+                                "categoryId" to selectedCategory,
+                                "imageUrl" to imageBase64
+                            )
+
+                            Firebase.firestore
+                                .collection("MenuItems")
+                                .document(generatedMenuId)
+                                .set(newMenuItem)
+                                .await()
+
+                            validationMessage = "Menu item added successfully!"
+
+                            // Clear form
+                            itemName = ""
+                            description = ""
+                            unitPrice = ""
+                            quantity = ""
+                            imageUri = null
+                            selectedCategory = categoryOptions.first()
+
+                            // Navigate to dashboard after delay
+                            kotlinx.coroutines.delay(1500)
+                            navController.navigate(CanteenScreen.StaffDashboard.name) {
+                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        } catch (e: Exception) {
+                            validationMessage = "Error: ${e.message}"
+                        } finally {
+                            isLoading = false
                         }
                     }
-
-                    validationMessage = ""
-                    isLoading = true
-
-                    try {
-                        val generatedMenuId = generateNextMenuId()
-                        // Convert imageUri to Base64
-                        val bitmap = if (Build.VERSION.SDK_INT < 28) {
-                            MediaStore.Images.Media.getBitmap(
-                                context.contentResolver, imageUri
-                            )
-                        } else {
-                            val source = ImageDecoder.createSource(
-                                context.contentResolver, imageUri!!
-                            )
-                            ImageDecoder.decodeBitmap(source)
-                        }
-
-                        val outputStream = ByteArrayOutputStream()
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-                        val imageBase64 = Base64.encodeToString(
-                            outputStream.toByteArray(),
-                            Base64.DEFAULT
-                        )
-
-                        val newMenuItem = mapOf(
-                            "id" to generatedMenuId,
-                            "name" to itemName,
-                            "description" to description,
-                            "price" to priceDouble,
-                            "remainQuantity" to quantityInt,
-                            "categoryId" to selectedCategory,
-                            "imageUrl" to imageBase64 // keep field name same as your data class
-                        )
-
-                        Firebase.firestore
-                            .collection("MenuItems")
-                            .document(generatedMenuId)
-                            .set(newMenuItem)
-                            .await()
-
-                        validationMessage = "Menu item added successfully! ($generatedMenuId)"
-                        menuId = ""
-                        itemName = ""
-                        description = ""
-                        unitPrice = ""
-                        quantity = ""
-                        imageUri = null
-
-                        // Navigate to StaffDashboard after 1 second
-                        kotlinx.coroutines.delay(1000)
-                        navController.navigate("StaffDashboard") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                            launchSingleTop = true
-                        }
-                    } catch (e: Exception) {
-                        validationMessage = "Error: ${e.message}"
-                    } finally {
-                        isLoading = false
-                    }
-                }
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp,
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.primary,
+                    disabledContainerColor = AppColors.disabled
+                ),
+                shape = RoundedCornerShape(16.dp),
+                enabled = !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = AppColors.surface,
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
                     )
-            } else {
-                Text("Submit", color = Color.White, fontSize = 16.sp)
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = AppColors.surface
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Add Menu Item",
+                        color = AppColors.surface,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-        }
-    }
-}
 
-@Composable
-fun PreviewTextRow(label: String, value: String) {
-    Row(modifier = Modifier.padding(vertical = 2.dp)) {
-        Text("$label: ", fontSize = 14.sp, color = Color.DarkGray)
-        Text(value, fontSize = 14.sp, color = Color.Black)
-    }
-}
-
-@Composable
-fun DropdownMenuWrapper(
-    options: List<String>,
-    selectedOption: String,
-    onOptionSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box(modifier) {
-        OutlinedButton(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        ) { Text(selectedOption) }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = {
-                        onOptionSelected(option)
-                        expanded = false
-                    }
-                )
-            }
+            Spacer(Modifier.height(20.dp))
         }
     }
 }

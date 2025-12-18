@@ -3,6 +3,8 @@ package com.example.canteen.ui.screens.reporting
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -12,17 +14,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.viewmodel.reporting.OrdersAnalyticsViewModel
 import com.example.canteen.viewmodel.reporting.UiState
 import com.example.canteen.viewmodel.reporting.OrdersAnalyticsData
@@ -52,26 +57,30 @@ fun OrdersAnalyticsScreen(
     }
 
     Scaffold(
+        containerColor = AppColors.background,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         "Orders Analytics",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.textPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = AppColors.textPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    containerColor = AppColors.surface,
+                    titleContentColor = AppColors.textPrimary
+                ),
+                modifier = Modifier.shadow(4.dp)
             )
         },
         bottomBar = { BottomNavigationBar(navController) }
@@ -80,12 +89,13 @@ fun OrdersAnalyticsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(AppColors.background)
         ) {
             when (val state = analyticsData) {
                 is UiState.Loading -> {
                     CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = AppColors.primary
                     )
                 }
                 is UiState.Error -> {
@@ -99,18 +109,24 @@ fun OrdersAnalyticsScreen(
                             imageVector = Icons.Default.Error,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.error
+                            tint = AppColors.error
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = state.message,
-                            color = MaterialTheme.colorScheme.error
+                            color = AppColors.error,
+                            textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = {
-                            viewModel.loadOrdersAnalytics(selectedPeriod, selectedDate)
-                        }) {
-                            Text("Retry")
+                        Button(
+                            onClick = {
+                                viewModel.loadOrdersAnalytics(selectedPeriod, selectedDate)
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AppColors.primary
+                            )
+                        ) {
+                            Text("Retry", color = AppColors.surface)
                         }
                     }
                 }
@@ -165,16 +181,27 @@ fun OrdersAnalyticsScreen(
                                 showDatePicker = false
                             }
                         ) {
-                            Text("OK")
+                            Text("OK", color = AppColors.primary)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showDatePicker = false }) {
-                            Text("Cancel")
+                            Text("Cancel", color = AppColors.textSecondary)
                         }
-                    }
+                    },
+                    colors = DatePickerDefaults.colors(
+                        containerColor = AppColors.surface
+                    )
                 ) {
-                    DatePicker(state = datePickerState)
+                    DatePicker(
+                        state = datePickerState,
+                        colors = DatePickerDefaults.colors(
+                            containerColor = AppColors.surface,
+                            selectedDayContainerColor = AppColors.primary,
+                            todayContentColor = AppColors.primary,
+                            todayDateBorderColor = AppColors.primary
+                        )
+                    )
                 }
             }
         }
@@ -202,23 +229,26 @@ private fun OrdersAnalyticsContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Period Selector
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            periods.forEach { period ->
+            items(periods) { period ->
                 FilterChip(
                     selected = selectedPeriod == period,
                     onClick = { onPeriodChange(period) },
                     label = {
                         Text(
                             period,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            fontWeight = if (selectedPeriod == period) FontWeight.Bold else FontWeight.Normal
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        selectedContainerColor = AppColors.primary,
+                        selectedLabelColor = AppColors.surface,
+                        containerColor = AppColors.surface,
+                        labelColor = AppColors.textSecondary
                     )
                 )
             }
@@ -229,11 +259,11 @@ private fun OrdersAnalyticsContent(
         // Date Navigation
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                containerColor = AppColors.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -258,7 +288,7 @@ private fun OrdersAnalyticsContent(
                     Icon(
                         imageVector = Icons.Default.ChevronLeft,
                         contentDescription = "Previous",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = AppColors.primary
                     )
                 }
 
@@ -270,7 +300,7 @@ private fun OrdersAnalyticsContent(
                         Icon(
                             imageVector = Icons.Default.CalendarToday,
                             contentDescription = "Select Date",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = AppColors.primary
                         )
                     }
                     Text(
@@ -293,7 +323,7 @@ private fun OrdersAnalyticsContent(
                         },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = AppColors.textPrimary
                     )
                 }
 
@@ -313,7 +343,7 @@ private fun OrdersAnalyticsContent(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Next",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = AppColors.primary
                     )
                 }
             }
@@ -377,11 +407,11 @@ private fun OrdersAnalyticsContent(
         if (state.data.topSellingItems.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    containerColor = AppColors.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -389,8 +419,8 @@ private fun OrdersAnalyticsContent(
                     Text(
                         text = "Top Selling Items",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.textPrimary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -398,7 +428,7 @@ private fun OrdersAnalyticsContent(
                         if (index > 0) {
                             Divider(
                                 modifier = Modifier.padding(vertical = 12.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                color = AppColors.divider
                             )
                         }
 
@@ -412,13 +442,13 @@ private fun OrdersAnalyticsContent(
                                     text = "${index + 1}. ${item.menuItemName}",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = AppColors.textPrimary
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "${item.totalQuantity} sold • ${item.totalOrders} orders",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = AppColors.textSecondary
                                 )
                             }
 
@@ -428,13 +458,13 @@ private fun OrdersAnalyticsContent(
                                 Text(
                                     text = currencyFormatter.format(item.totalRevenue),
                                     fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.primary
                                 )
                                 Text(
                                     text = "${String.format("%.1f", item.percentage)}%",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = AppColors.textSecondary
                                 )
                             }
                         }
@@ -444,10 +474,11 @@ private fun OrdersAnalyticsContent(
         } else {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
+                    containerColor = AppColors.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -455,10 +486,21 @@ private fun OrdersAnalyticsContent(
                         .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "No orders data available for this period",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            tint = AppColors.textTertiary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = "No orders data available for this period",
+                            color = AppColors.textSecondary
+                        )
+                    }
                 }
             }
         }

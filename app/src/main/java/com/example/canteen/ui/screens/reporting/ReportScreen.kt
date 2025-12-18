@@ -3,6 +3,8 @@ package com.example.canteen.ui.screens.reporting
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -13,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -20,6 +23,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,6 +36,7 @@ import com.example.canteen.viewmodel.reporting.ReportViewModel
 import com.example.canteen.ui.screens.CanteenScreen
 import com.example.menumanagement.BottomNavigationBar
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.canteen.ui.theme.AppColors
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -56,19 +61,22 @@ fun ReportScreen(
     }
 
     Scaffold(
+        containerColor = AppColors.background,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         "Revenue Report",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.textPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = AppColors.textPrimary
                         )
                     }
                 },
@@ -78,14 +86,16 @@ fun ReportScreen(
                     }) {
                         Icon(
                             imageVector = Icons.Default.Assessment,
-                            contentDescription = "Orders Analytics"
+                            contentDescription = "Orders Analytics",
+                            tint = AppColors.primary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    containerColor = AppColors.surface,
+                    titleContentColor = AppColors.textPrimary
+                ),
+                modifier = Modifier.shadow(4.dp)
             )
         },
         bottomBar = { BottomNavigationBar(navController) }
@@ -94,12 +104,13 @@ fun ReportScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(AppColors.background)
         ) {
             when (val state = reportData) {
                 is UiState.Loading -> {
                     CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = AppColors.primary
                     )
                 }
                 is UiState.Error -> {
@@ -113,16 +124,22 @@ fun ReportScreen(
                             imageVector = Icons.Default.Error,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.error
+                            tint = AppColors.error
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = state.message,
-                            color = MaterialTheme.colorScheme.error
+                            color = AppColors.error,
+                            textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadRevenueData(selectedPeriod, selectedDate) }) {
-                            Text("Retry")
+                        Button(
+                            onClick = { viewModel.loadRevenueData(selectedPeriod, selectedDate) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AppColors.primary
+                            )
+                        ) {
+                            Text("Retry", color = AppColors.surface)
                         }
                     }
                 }
@@ -136,23 +153,26 @@ fun ReportScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // Period Selector
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            periods.forEach { period ->
+                            items(periods) { period ->
                                 FilterChip(
                                     selected = selectedPeriod == period,
                                     onClick = { selectedPeriod = period },
                                     label = {
                                         Text(
                                             period,
-                                            fontSize = 13.sp
+                                            fontSize = 13.sp,
+                                            fontWeight = if (selectedPeriod == period) FontWeight.Bold else FontWeight.Normal
                                         )
                                     },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                        selectedContainerColor = AppColors.primary,
+                                        selectedLabelColor = AppColors.surface,
+                                        containerColor = AppColors.surface,
+                                        labelColor = AppColors.textSecondary
                                     )
                                 )
                             }
@@ -163,11 +183,11 @@ fun ReportScreen(
                         // Date Navigation
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                containerColor = AppColors.surface
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -176,7 +196,6 @@ fun ReportScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Previous button
                                 IconButton(
                                     onClick = {
                                         selectedDate = Calendar.getInstance().apply {
@@ -193,11 +212,10 @@ fun ReportScreen(
                                     Icon(
                                         imageVector = Icons.Default.ChevronLeft,
                                         contentDescription = "Previous",
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = AppColors.primary
                                     )
                                 }
 
-                                // Date display and calendar button
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -206,7 +224,7 @@ fun ReportScreen(
                                         Icon(
                                             imageVector = Icons.Default.CalendarToday,
                                             contentDescription = "Select Date",
-                                            tint = MaterialTheme.colorScheme.primary
+                                            tint = AppColors.primary
                                         )
                                     }
                                     Text(
@@ -229,11 +247,10 @@ fun ReportScreen(
                                         },
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        color = AppColors.textPrimary
                                     )
                                 }
 
-                                // Next button
                                 IconButton(
                                     onClick = {
                                         selectedDate = Calendar.getInstance().apply {
@@ -250,7 +267,7 @@ fun ReportScreen(
                                     Icon(
                                         imageVector = Icons.Default.ChevronRight,
                                         contentDescription = "Next",
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = AppColors.primary
                                     )
                                 }
                             }
@@ -282,10 +299,7 @@ fun ReportScreen(
 
                         // Charts Section
                         if (state.data.trendData.isNotEmpty()) {
-                            // Chart 1: Revenue Trend
-                            ChartCard(
-                                title = "Revenue Trend"
-                            ) {
+                            ChartCard(title = "Revenue Trend") {
                                 LineChart(
                                     dataPoints = state.data.trendData,
                                     labels = state.data.trendLabels,
@@ -297,11 +311,8 @@ fun ReportScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Chart 2: Payment Methods Breakdown
                             if (state.data.paymentMethodData.isNotEmpty()) {
-                                ChartCard(
-                                    title = "Payment Methods"
-                                ) {
+                                ChartCard(title = "Payment Methods") {
                                     PaymentMethodChart(
                                         data = state.data.paymentMethodData,
                                         currencyFormatter = currencyFormatter,
@@ -314,10 +325,7 @@ fun ReportScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
 
-                            // Chart 3: Average Transaction Value
-                            ChartCard(
-                                title = "Average Transaction Value"
-                            ) {
+                            ChartCard(title = "Average Transaction Value") {
                                 BarChart(
                                     dataPoints = state.data.averageTransactionData,
                                     labels = state.data.trendLabels,
@@ -330,10 +338,11 @@ fun ReportScreen(
                         } else {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                )
+                                    containerColor = AppColors.surface
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -341,10 +350,21 @@ fun ReportScreen(
                                         .height(200.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = "No data available for this period",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.TrendingDown,
+                                            contentDescription = null,
+                                            tint = AppColors.textTertiary,
+                                            modifier = Modifier.size(48.dp)
+                                        )
+                                        Spacer(Modifier.height(12.dp))
+                                        Text(
+                                            text = "No data available for this period",
+                                            color = AppColors.textSecondary
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -392,16 +412,27 @@ fun ReportScreen(
                                 showDatePicker = false
                             }
                         ) {
-                            Text("OK")
+                            Text("OK", color = AppColors.primary)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showDatePicker = false }) {
-                            Text("Cancel")
+                            Text("Cancel", color = AppColors.textSecondary)
                         }
-                    }
+                    },
+                    colors = DatePickerDefaults.colors(
+                        containerColor = AppColors.surface
+                    )
                 ) {
-                    DatePicker(state = datePickerState)
+                    DatePicker(
+                        state = datePickerState,
+                        colors = DatePickerDefaults.colors(
+                            containerColor = AppColors.surface,
+                            selectedDayContainerColor = AppColors.primary,
+                            todayContentColor = AppColors.primary,
+                            todayDateBorderColor = AppColors.primary
+                        )
+                    )
                 }
             }
         }
@@ -419,11 +450,11 @@ fun MetricCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = AppColors.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -432,13 +463,14 @@ fun MetricCard(
             Text(
                 text = title,
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = AppColors.textSecondary,
+                fontWeight = FontWeight.Medium
             )
             Text(
                 text = value,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = AppColors.textPrimary
             )
             if (change != null) {
                 Row(
@@ -449,12 +481,12 @@ fun MetricCard(
                         imageVector = if (isPositive) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = if (isPositive) Color(0xFF4CAF50) else Color(0xFFF44336)
+                        tint = if (isPositive) AppColors.success else AppColors.error
                     )
                     Text(
                         text = change,
                         fontSize = 13.sp,
-                        color = if (isPositive) Color(0xFF4CAF50) else Color(0xFFF44336),
+                        color = if (isPositive) AppColors.success else AppColors.error,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -463,7 +495,7 @@ fun MetricCard(
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = AppColors.textTertiary
                 )
             }
         }
@@ -478,11 +510,11 @@ fun ChartCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = AppColors.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -490,8 +522,8 @@ fun ChartCard(
             Text(
                 text = title,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.Bold,
+                color = AppColors.textPrimary
             )
             Spacer(modifier = Modifier.height(16.dp))
             content()
@@ -505,7 +537,7 @@ fun LineChart(
     labels: List<String>,
     modifier: Modifier = Modifier
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
+    val primaryColor = AppColors.primary
 
     Canvas(modifier = modifier.padding(vertical = 8.dp)) {
         if (dataPoints.isEmpty()) return@Canvas
@@ -524,7 +556,7 @@ fun LineChart(
         for (i in 0..4) {
             val y = padding + (chartHeight * i / 4)
             drawLine(
-                color = Color.Gray.copy(alpha = 0.2f),
+                color = AppColors.divider,
                 start = Offset(padding, y),
                 end = Offset(width - padding, y),
                 strokeWidth = 1f
@@ -567,7 +599,7 @@ fun LineChart(
                     x,
                     height - padding / 4,
                     android.graphics.Paint().apply {
-                        color = android.graphics.Color.GRAY
+                        color = android.graphics.Color.parseColor("#B0B0B0")
                         textSize = 24f
                         textAlign = android.graphics.Paint.Align.CENTER
                     }
@@ -584,12 +616,12 @@ fun PaymentMethodChart(
     modifier: Modifier = Modifier
 ) {
     val colors = listOf(
-        Color(0xFF6366F1),
-        Color(0xFF10B981),
-        Color(0xFFF59E0B),
-        Color(0xFFEF4444),
-        Color(0xFF8B5CF6),
-        Color(0xFF06B6D4)
+        AppColors.primary,
+        AppColors.info,
+        AppColors.success,
+        AppColors.warning,
+        AppColors.error,
+        Color(0xFF8B5CF6)
     )
 
     Canvas(modifier = modifier) {
@@ -636,7 +668,7 @@ fun PaymentMethodChart(
                 size.width - 150f,
                 legendY + 15f,
                 android.graphics.Paint().apply {
-                    this.color = android.graphics.Color.DKGRAY
+                    this.color = android.graphics.Color.parseColor("#E8E8E8")
                     textSize = 32f
                 }
             )
@@ -653,7 +685,7 @@ fun BarChart(
     currencyFormatter: NumberFormat,
     modifier: Modifier = Modifier
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
+    val primaryColor = AppColors.primary
 
     Canvas(modifier = modifier.padding(vertical = 8.dp)) {
         if (dataPoints.isEmpty()) return@Canvas
@@ -689,7 +721,7 @@ fun BarChart(
                     x,
                     height - padding / 4,
                     android.graphics.Paint().apply {
-                        color = android.graphics.Color.GRAY
+                        color = android.graphics.Color.parseColor("#B0B0B0")
                         textSize = 24f
                         textAlign = android.graphics.Paint.Align.CENTER
                     }
