@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,17 +42,13 @@ fun StaffOrderStatusEdit(
     val allOrders by orderViewModel.allOrders.collectAsState()
     val error by orderViewModel.error.collectAsState()
 
-    var selectedStatusFilter by remember { mutableStateOf("ALL") }
+    var selectedStatusFilter by remember { mutableStateOf("PENDING") }
     var expandedOrderId by remember { mutableStateOf<String?>(null) }
 
-    val statusFilters = listOf("ALL", "PENDING", "READY TO PICKUP", "COMPLETED", "REFUNDED")
+    val statusFilters = listOf("PENDING", "READY TO PICKUP", "COMPLETED")
 
     val filteredOrders = remember(allOrders, selectedStatusFilter) {
-        if (selectedStatusFilter == "ALL") {
-            allOrders
-        } else {
-            allOrders.filter { it.status.equals(selectedStatusFilter, ignoreCase = true) }
-        }
+        allOrders.filter { it.status.equals(selectedStatusFilter, ignoreCase = true) }
     }
 
     LaunchedEffect(Unit) {
@@ -92,117 +88,126 @@ fun StaffOrderStatusEdit(
             )
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .background(AppColors.background)
+                .background(AppColors.background),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = padding.calculateTopPadding() + 16.dp,
+                bottom = 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 16.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                statusFilters.forEach { status ->
-                    FilterChip(
-                        selected = selectedStatusFilter == status,
-                        onClick = { selectedStatusFilter = status },
-                        label = {
+            // Filter chips
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    statusFilters.forEach { status ->
+                        val isSelected = selectedStatusFilter == status
+                        Surface(
+                            color = if (isSelected) AppColors.primary else AppColors.surface,
+                            shape = RoundedCornerShape(50.dp),
+                            modifier = Modifier.clickable { selectedStatusFilter = status },
+                            shadowElevation = if (isSelected) 0.dp else 2.dp
+                        ) {
                             Text(
                                 status,
-                                fontSize = 12.sp
+                                color = if (isSelected) AppColors.surface else AppColors.textPrimary,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                fontSize = 13.sp,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AppColors.primary,
-                            selectedLabelColor = AppColors.surface,
-                            containerColor = AppColors.surface,
-                            labelColor = AppColors.textPrimary
-                        )
-                    )
+                        }
+                    }
                 }
             }
 
+            // Order count header
+            item {
+                Text(
+                    text = "${filteredOrders.size} Order${if (filteredOrders.size != 1) "s" else ""}",
+                    fontSize = 28.sp,
+                    color = AppColors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+
+            // Error message
             if (error != null) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = AppColors.error.copy(alpha = 0.1f)
-                    )
-                ) {
-                    Text(
-                        text = "Error: $error",
-                        color = AppColors.error,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = AppColors.error.copy(alpha = 0.1f)
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "Error: $error",
+                            color = AppColors.error,
+                            modifier = Modifier.padding(16.dp),
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
 
-            Text(
-                text = "${filteredOrders.size} order(s) found",
-                fontSize = 13.sp,
-                color = AppColors.textSecondary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
+            // Empty state
             if (filteredOrders.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 80.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Receipt,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = AppColors.textSecondary.copy(alpha = 0.5f)
-                        )
-                        Text(
-                            text = "No orders found",
-                            color = AppColors.textSecondary,
-                            fontSize = 16.sp
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Receipt,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = AppColors.textSecondary.copy(alpha = 0.5f)
+                            )
+                            Text(
+                                text = "No orders found",
+                                color = AppColors.textSecondary,
+                                fontSize = 16.sp
+                            )
+                        }
                     }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filteredOrders, key = { it.orderId }) { order ->
-                        StaffOrderCard(
-                            order = order,
-                            isExpanded = expandedOrderId == order.orderId,
-                            onExpandClick = {
-                                expandedOrderId = if (expandedOrderId == order.orderId) {
-                                    null
-                                } else {
-                                    order.orderId
-                                }
-                            },
-                            onStatusChange = { newStatus ->
-                                orderViewModel.orderStatusUpdate(order.orderId, newStatus)
+                // Order cards
+                items(filteredOrders, key = { it.orderId }) { order ->
+                    StaffOrderCard(
+                        order = order,
+                        isExpanded = expandedOrderId == order.orderId,
+                        onExpandClick = {
+                            expandedOrderId = if (expandedOrderId == order.orderId) {
+                                null
+                            } else {
+                                order.orderId
                             }
-                        )
-                    }
+                        },
+                        onStatusChange = { newStatus ->
+                            orderViewModel.orderStatusUpdate(order.orderId, newStatus)
+                        }
+                    )
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StaffOrderCard(
     order: Order,
@@ -221,13 +226,12 @@ fun StaffOrderCard(
     val dateFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
     val formattedDate = dateFormat.format(order.createdAt.toDate())
 
-    val statusOptions = listOf("PENDING", "READY TO PICKUP", "COMPLETED", "REFUNDED")
+    val statusOptions = listOf("PENDING", "READY TO PICKUP", "COMPLETED")
     var showStatusMenu by remember { mutableStateOf(false) }
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.surface)
     ) {
@@ -236,6 +240,7 @@ fun StaffOrderCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Header: Order ID and Price
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -247,81 +252,15 @@ fun StaffOrderCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.textPrimary,
-                        fontSize = 17.sp
+                        fontSize = 18.sp
                     )
-
                     Spacer(modifier = Modifier.height(4.dp))
-
                     Text(
                         text = formattedDate,
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.textSecondary,
                         fontSize = 13.sp
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "Status:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.textSecondary,
-                            fontSize = 14.sp
-                        )
-
-                        Box {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = statusColor.copy(alpha = 0.15f),
-                                modifier = Modifier.clickable { showStatusMenu = true }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = order.status.uppercase(),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Medium,
-                                        color = statusColor,
-                                        fontSize = 12.sp
-                                    )
-                                    Icon(
-                                        Icons.Default.ArrowDropDown,
-                                        contentDescription = "Change status",
-                                        tint = statusColor,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-
-                            DropdownMenu(
-                                expanded = showStatusMenu,
-                                onDismissRequest = { showStatusMenu = false },
-                                modifier = Modifier.background(AppColors.surface)
-                            ) {
-                                statusOptions.forEach { status ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                status,
-                                                color = AppColors.textPrimary,
-                                                fontSize = 14.sp
-                                            )
-                                        },
-                                        onClick = {
-                                            onStatusChange(status)
-                                            showStatusMenu = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
 
                 Column(
@@ -332,11 +271,9 @@ fun StaffOrderCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.primary,
-                        fontSize = 18.sp
+                        fontSize = 20.sp
                     )
-
                     Spacer(modifier = Modifier.height(4.dp))
-
                     Text(
                         text = "${order.items.sumOf { it.quantity }} item(s)",
                         style = MaterialTheme.typography.bodySmall,
@@ -348,18 +285,79 @@ fun StaffOrderCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            TextButton(
-                onClick = onExpandClick,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = AppColors.primary
-                )
+            // Status selector and View Details button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    if (isExpanded) "Hide Details" else "View Details",
-                    fontSize = 13.sp
-                )
+                Box {
+                    Surface(
+                        shape = RoundedCornerShape(50.dp),
+                        color = statusColor.copy(alpha = 0.15f),
+                        modifier = Modifier.clickable { showStatusMenu = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = order.status.uppercase(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = statusColor,
+                                fontSize = 13.sp
+                            )
+                            Icon(
+                                Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Change status",
+                                tint = statusColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = showStatusMenu,
+                        onDismissRequest = { showStatusMenu = false },
+                        modifier = Modifier.background(AppColors.surface)
+                    ) {
+                        statusOptions.forEach { status ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        status,
+                                        color = AppColors.textPrimary,
+                                        fontSize = 14.sp
+                                    )
+                                },
+                                onClick = {
+                                    onStatusChange(status)
+                                    showStatusMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                TextButton(
+                    onClick = onExpandClick,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = AppColors.primary
+                    )
+                ) {
+                    Text(
+                        if (isExpanded) "Hide Details" else "View Details >",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Expanded details
             AnimatedVisibility(visible = isExpanded) {
                 Column(
                     modifier = Modifier
@@ -405,7 +403,7 @@ fun StaffOrderCard(
                                     contentDescription = cartItem.menuItem.name,
                                     modifier = Modifier
                                         .size(50.dp)
-                                        .clip(RoundedCornerShape(8.dp)),
+                                        .clip(RoundedCornerShape(12.dp)),
                                     contentScale = ContentScale.Crop
                                 )
                             } else {
@@ -414,7 +412,7 @@ fun StaffOrderCard(
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(50.dp)
-                                        .clip(RoundedCornerShape(8.dp)),
+                                        .clip(RoundedCornerShape(12.dp)),
                                     contentScale = ContentScale.Crop
                                 )
                             }
@@ -461,7 +459,7 @@ fun StaffOrderCard(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "User ID:",
+                            text = "User Id:",
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.textSecondary,
                             fontSize = 13.sp
