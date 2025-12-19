@@ -51,7 +51,23 @@ fun OrdersAnalyticsScreen(
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
     var showDatePicker by remember { mutableStateOf(false) }
     val analyticsData by viewModel.analyticsData.collectAsState()
-    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale.US) }
+    val currencyFormatter = remember {
+        object : NumberFormat() {
+            private val decimalFormat = java.text.DecimalFormat("#,##0.00")
+
+            override fun format(number: Double, toAppendTo: StringBuffer, pos: java.text.FieldPosition): StringBuffer {
+                return toAppendTo.append("RM ").append(decimalFormat.format(number))
+            }
+
+            override fun format(number: Long, toAppendTo: StringBuffer, pos: java.text.FieldPosition): StringBuffer {
+                return toAppendTo.append("RM ").append(decimalFormat.format(number))
+            }
+
+            override fun parse(source: String, parsePosition: java.text.ParsePosition): Number? {
+                return null
+            }
+        }
+    }
 
     val periods = listOf("Daily", "Weekly", "Monthly", "Yearly")
 
