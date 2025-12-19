@@ -30,6 +30,7 @@ import com.example.canteen.data.Order
 import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.viewmodel.staffMenu.Base64Utils
 import com.example.canteen.viewmodel.usermenu.OrderViewModel
+import com.example.menumanagement.BottomNavigationBar
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -72,21 +73,13 @@ fun StaffOrderStatusEdit(
                         fontWeight = FontWeight.SemiBold
                     )
                 },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = AppColors.textPrimary
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = AppColors.surface,
                     titleContentColor = AppColors.textPrimary
                 )
             )
-        }
+        },
+        bottomBar = { BottomNavigationBar(navController) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -96,7 +89,7 @@ fun StaffOrderStatusEdit(
                 start = 16.dp,
                 end = 16.dp,
                 top = padding.calculateTopPadding() + 16.dp,
-                bottom = 16.dp
+                bottom = padding.calculateBottomPadding() + 16.dp
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -355,7 +348,7 @@ fun StaffOrderCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Expanded details
             AnimatedVisibility(visible = isExpanded) {
