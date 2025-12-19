@@ -225,7 +225,16 @@ fun OrdersAnalyticsScreen(
                             selectedDayContentColor = Color.White,
                             selectedDayContainerColor = AccentOrange,
                             todayContentColor = AccentOrange,
-                            todayDateBorderColor = AccentOrange
+                            todayDateBorderColor = AccentOrange,
+                            dateTextFieldColors = TextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedContainerColor = Color.Black,
+                                unfocusedContainerColor = Color.Black,
+                                cursorColor = AccentOrange,
+                                focusedIndicatorColor = AccentOrange,
+                                unfocusedIndicatorColor = TextSecondary
+                            )
                         )
                     )
                 }
