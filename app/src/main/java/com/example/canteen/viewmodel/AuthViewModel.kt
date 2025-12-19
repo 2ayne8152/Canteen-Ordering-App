@@ -75,21 +75,37 @@ class AuthViewModel : ViewModel() {
             try {
                 // Validate inputs first
                 if (email.isEmpty() || password.isEmpty() || username.isEmpty() || phoneNumber.isEmpty()) {
+                    Log.d("AuthViewModel", "Validation failed: empty fields")
                     _authState.value = AuthState.Error("Please fill in all fields")
                     return@launch
                 }
 
                 if (password.length < 6) {
+                    Log.d("AuthViewModel", "Validation failed: password too short")
                     _authState.value = AuthState.Error("Password must be at least 6 characters")
                     return@launch
                 }
 
-                Log.d("AuthViewModel", "Creating user with Firebase...")
+                // Phone number validation
+                val cleanPhoneNumber = phoneNumber.trim()
+                if (!cleanPhoneNumber.all { it.isDigit() }) {
+                    Log.d("AuthViewModel", "Validation failed: phone number contains non-digit characters")
+                    _authState.value = AuthState.Error("Phone number must contain only digits")
+                    return@launch
+                }
+
+                if (cleanPhoneNumber.length !in 10..11) {
+                    Log.d("AuthViewModel", "Validation failed: phone number length invalid: ${cleanPhoneNumber.length}")
+                    _authState.value = AuthState.Error("Phone number must be 10-11 digits long")
+                    return@launch
+                }
+
+                Log.d("AuthViewModel", "All validation passed, creating Firebase user...")
                 val authResult = auth.createUserWithEmailAndPassword(email, password).await()
                 val firebaseUser = authResult.user
 
                 if (firebaseUser != null) {
-                    Log.d("AuthViewModel", "User created successfully, UID: ${firebaseUser.uid}")
+                    Log.d("AuthViewModel", "Firebase user created successfully, UID: ${firebaseUser.uid}")
 
                     val user = hashMapOf(
                         "UserID" to firebaseUser.uid,
@@ -101,31 +117,30 @@ class AuthViewModel : ViewModel() {
 
                     Log.d("AuthViewModel", "Saving user data to Firestore...")
                     db.collection("users").document(firebaseUser.uid).set(user).await()
-                    Log.d("AuthViewModel", "User data saved successfully")
-
-                    // Sign out immediately after registration
-                    auth.signOut()
-                    Log.d("AuthViewModel", "User signed out after registration")
+                    Log.d("AuthViewModel", "User data saved successfully to Firestore")
 
                     _authState.value = AuthState.RegistrationSuccess("Registration successful! You can now log in.")
-                    Log.d("AuthViewModel", "Registration state set to Success")
+                    Log.d("AuthViewModel", "Registration complete - showing success message")
 
                 } else {
-                    Log.e("AuthViewModel", "Registration failed: user is null")
+                    Log.e("AuthViewModel", "Registration failed: Firebase user is null")
                     _authState.value = AuthState.Error("Registration failed: user is null.")
                 }
 
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Registration error: ${e.message}", e)
+                Log.e("AuthViewModel", "Registration error: ${e.javaClass.name} - ${e.message}", e)
 
-                val errorMessage = when {
-                    e.message?.contains("already in use") == true ->
+                val errorMessage = when (e) {
+                    is com.google.firebase.auth.FirebaseAuthUserCollisionException ->
                         "This email is already registered."
-                    e.message?.contains("badly formatted") == true ->
+                    is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException ->
                         "Please enter a valid email address."
-                    e.message?.contains("at least 6 characters") == true ->
-                        "Password should be at least 6 characters."
-                    else -> e.message ?: "An unknown error occurred."
+                    is com.google.firebase.FirebaseNetworkException ->
+                        "Network error. Please check your connection."
+                    else -> {
+                        Log.e("AuthViewModel", "Unknown error type: ${e.javaClass.name}")
+                        e.message ?: "An unknown error occurred."
+                    }
                 }
 
                 _authState.value = AuthState.Error(errorMessage)
@@ -233,8 +248,18 @@ class AuthViewModel : ViewModel() {
     }
 
     fun resetAuthState() {
-        Log.d("AuthViewModel", "Resetting auth state to LoggedOut")
+        Log.d("AuthViewModel", "Resetting auth state")
+        // Don't automatically set to LoggedOut
+        // This should only be called when we want to go back to initial state
         _authState.value = AuthState.LoggedOut
+    }
+
+    fun clearError() {
+        if (_authState.value is AuthState.Error) {
+            Log.d("AuthViewModel", "Clearing error state")
+            // Instead of setting to LoggedOut, set to a neutral state
+            _authState.value = AuthState.Initial  // <-- Change this
+        }
     }
 }
 

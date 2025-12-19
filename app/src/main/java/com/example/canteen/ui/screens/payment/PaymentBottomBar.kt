@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
+import com.example.canteen.ui.theme.AppColors
 
 @Composable
 fun PaymentBottomBar(
@@ -33,42 +34,53 @@ fun PaymentBottomBar(
 ) {
     Surface(
         modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 20.dp,
-                shape = RectangleShape,
-                clip = false
-            ),
-        tonalElevation = 10.dp,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            .fillMaxWidth(),
+        color = AppColors.surface,
+        shadowElevation = 12.dp,
+        tonalElevation = 2.dp,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
             // 🧾 Summary row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "$itemCount item(s)",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.DarkGray
-                )
+                Column {
+                    Text(
+                        text = "Total Items",
+                        fontSize = 12.sp,
+                        color = AppColors.textSecondary
+                    )
+                    Text(
+                        text = "$itemCount items",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.textPrimary
+                    )
+                }
 
-                Text(
-                    text = "RM %.2f".format(totalAmount),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Total Amount",
+                        fontSize = 12.sp,
+                        color = AppColors.textSecondary
+                    )
+                    Text(
+                        text = "RM %.2f".format(totalAmount),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.primary
+                    )
+                }
             }
-
-            Spacer(Modifier.height(16.dp))
 
             // ✅ Submit button
             Button(
@@ -76,14 +88,20 @@ fun PaymentBottomBar(
                 enabled = enabled,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(8.dp),
-                elevation = ButtonDefaults.buttonElevation(8.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.primary,
+                    disabledContainerColor = AppColors.disabled
+                )
             ) {
-                Text("Done", color = Color.White)
+                Text(
+                    "Complete Payment",
+                    color = AppColors.surface,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
-
-            Spacer(Modifier.height(4.dp))
         }
     }
 }

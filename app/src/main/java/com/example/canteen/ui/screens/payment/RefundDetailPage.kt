@@ -1,5 +1,6 @@
 package com.example.canteen.ui.screens.payment
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -20,9 +22,12 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +49,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.lightBlue
 import com.example.canteen.ui.theme.lightGreen
@@ -69,7 +75,7 @@ fun RefundDetailPage(
     userViewModel: UserViewModel,
     onBack: () -> Unit = {}
 ) {
-    val order by orderViewModel.latestOrder.collectAsState()
+    val order by orderViewModel.refundOrder.collectAsState()
     val user by userViewModel.selectedUser.collectAsState()
     val selected by receiptViewModel.selectedRefund.collectAsState()
     var responseBy by remember { mutableStateOf("") }
@@ -79,7 +85,14 @@ fun RefundDetailPage(
     val isValid = responseBy.isNotBlank() && responseRemark.isNotBlank()
 
     if (selected == null) {
-        Text("Loading...", color = Color.Black)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .background(AppColors.background)
+        ) {
+            Text("Loading...", color = AppColors.textPrimary)
+        }
         return
     }
 
@@ -91,23 +104,37 @@ fun RefundDetailPage(
     }
 
     Scaffold(
+        containerColor = AppColors.background,
         topBar = {
-            Surface(shadowElevation = 6.dp) {
-                TopAppBar(
-                    title = { Text("Refund Detail") },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
+            TopAppBar(
+                title = {
+                    Text(
+                        "Refund Details",
+                        color = AppColors.textPrimary
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = AppColors.textPrimary
+                        )
                     }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AppColors.surface,
+                    titleContentColor = AppColors.textPrimary
                 )
-            }
+            )
         }
     ) { padding ->
 
         Column(
             modifier = Modifier
                 .padding(padding)
+                .fillMaxWidth()
+                .background(AppColors.background)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -116,22 +143,36 @@ fun RefundDetailPage(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = softGreen
+                    containerColor = AppColors.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(Modifier.padding(16.dp)) {
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Order ${receipt.orderId.take(6)}", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
-                        Text(text = formatTime(refund?.requestTime ?: 0L), color = Color.Black)
+                        Text(
+                            "Order #${receipt.orderId.takeLast(6)}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = AppColors.textPrimary
+                        )
+                        Text(
+                            text = formatTime(refund?.requestTime ?: 0L),
+                            color = AppColors.textSecondary,
+                            fontSize = 14.sp
+                        )
                     }
 
-                    Spacer(Modifier.height(4.dp))
-                    Text("Total : RM${"%.2f".format(receipt.pay_Amount)}", fontWeight = FontWeight.Bold, color = Color.Black)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Total: RM${"%.2f".format(receipt.pay_Amount)}",
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.primary,
+                        fontSize = 18.sp
+                    )
                 }
             }
 
@@ -141,30 +182,40 @@ fun RefundDetailPage(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = lightBlue
+                    containerColor = AppColors.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(Modifier.padding(16.dp)) {
+                    Text(
+                        "Order Items",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = AppColors.textPrimary
+                    )
 
-                    Text("Order Items :", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
+                    Spacer(Modifier.height(12.dp))
 
                     order?.items?.forEach { item ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
                                 text = "${item.menuItem.name} x${item.quantity}",
-                                color = Color.Black
+                                color = AppColors.textSecondary,
+                                modifier = Modifier.weight(1f)
                             )
                             Text(
                                 text = "RM ${"%.2f".format(item.totalPrice)}",
-                                color = Color.Black
+                                color = AppColors.textPrimary,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
-
                 }
             }
 
@@ -174,21 +225,46 @@ fun RefundDetailPage(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = lightViolet
+                    containerColor = AppColors.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(Modifier.padding(16.dp)) {
+                    Text(
+                        "Refund Request",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = AppColors.textPrimary
+                    )
 
-                    Text("Refund Request :", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
+                    Spacer(Modifier.height(12.dp))
 
-                    Text("Reason : ${refund?.reason}", fontWeight = FontWeight.SemiBold, color = Color.Black)
+                    Text(
+                        "Reason:",
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.textSecondary,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        refund?.reason ?: "",
+                        fontWeight = FontWeight.Medium,
+                        color = AppColors.textPrimary,
+                        fontSize = 16.sp
+                    )
 
-                    Spacer(Modifier.height(4.dp))
-                    Text("Detail :", fontWeight = FontWeight.SemiBold, color = Color.Black)
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        "Details:",
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.textSecondary,
+                        fontSize = 14.sp
+                    )
                     Text(
                         refund?.refundDetail ?: "",
-                        lineHeight = 20.sp, color = Color.Black
+                        lineHeight = 20.sp,
+                        color = AppColors.textPrimary
                     )
                 }
             }
@@ -199,38 +275,34 @@ fun RefundDetailPage(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = veryLightRed
+                    containerColor = AppColors.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(Modifier.padding(16.dp)) {
+                    Text(
+                        "Refund Response",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = AppColors.textPrimary
+                    )
 
-                    Text("Refund Response :", fontWeight = FontWeight.Bold, color = Color.Black)
-
-                    Spacer(Modifier.height(4.dp))
-
-                    /*OutlinedTextField(
-                        value = responseBy,
-                        onValueChange = { responseBy = it },
-                        label = { Text("Response By", color = Color.Black) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )*/
+                    Spacer(Modifier.height(16.dp))
 
                     Box {
                         val density = LocalDensity.current
                         OutlinedTextField(
                             value = responseBy,
-                            onValueChange = {
-                                responseBy = it
-                                            },
-                            label = { Text("Response By", color = Color.Black) },
+                            onValueChange = { responseBy = it },
+                            label = { Text("Response By", color = AppColors.textSecondary) },
                             singleLine = true,
                             trailingIcon = {
                                 Icon(
                                     if (expanded) Icons.Default.KeyboardArrowUp
                                     else Icons.Default.KeyboardArrowDown,
                                     contentDescription = null,
+                                    tint = AppColors.textSecondary,
                                     modifier = Modifier.clickable {
                                         expanded = !expanded
                                     }
@@ -241,16 +313,30 @@ fun RefundDetailPage(
                                 .onGloballyPositioned { coordinates ->
                                     textFieldWidth = with(density) { coordinates.size.width.toDp() }
                                 },
-                            keyboardActions = KeyboardActions(onDone = {expanded = false})
+                            keyboardActions = KeyboardActions(onDone = { expanded = false }),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.primary,
+                                unfocusedBorderColor = AppColors.divider,
+                                focusedTextColor = AppColors.textPrimary,
+                                unfocusedTextColor = AppColors.textPrimary,
+                                cursorColor = AppColors.primary
+                            )
                         )
 
                         DropdownMenu(
-                            modifier = Modifier.width(textFieldWidth),
+                            modifier = Modifier
+                                .width(textFieldWidth)
+                                .background(AppColors.surface),
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text(text = user?.Name.orEmpty(), color = Color.Black) },
+                                text = {
+                                    Text(
+                                        text = user?.Name.orEmpty(),
+                                        color = AppColors.textPrimary
+                                    )
+                                },
                                 onClick = {
                                     responseBy = user?.Name.orEmpty()
                                     expanded = false
@@ -259,26 +345,33 @@ fun RefundDetailPage(
                         }
                     }
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
 
                     OutlinedTextField(
                         value = responseRemark,
                         onValueChange = { responseRemark = it },
-                        label = { Text("Remark", color = Color.Black) },
+                        label = { Text("Remark", color = AppColors.textSecondary) },
+                        placeholder = { Text("Enter your remark...", color = AppColors.textTertiary) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
-                        maxLines = 5
+                        maxLines = 5,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AppColors.primary,
+                            unfocusedBorderColor = AppColors.divider,
+                            focusedTextColor = AppColors.textPrimary,
+                            unfocusedTextColor = AppColors.textPrimary,
+                            cursorColor = AppColors.primary
+                        )
                     )
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(20.dp))
 
                     // Buttons Row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-
                         Button(
                             onClick = {
                                 onBack()
@@ -292,14 +385,21 @@ fun RefundDetailPage(
                                 )
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = lightGreen
+                                containerColor = AppColors.success,
+                                disabledContainerColor = AppColors.disabled
                             ),
-                            elevation = ButtonDefaults.buttonElevation(8.dp),
-                            enabled = isValid
+                            enabled = isValid,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
-                            /*Icon(Icons.Default.CheckCircle, contentDescription = null)
-                            Spacer(Modifier.width(6.dp))*/
-                            Text("Approve Refund", color = Color.White)
+                            Text(
+                                "Approve",
+                                color = AppColors.surface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
                         }
 
                         Button(
@@ -311,18 +411,25 @@ fun RefundDetailPage(
                                         "refundBy" to responseBy,
                                         "remark" to responseRemark,
                                         "status" to "Rejected",
-                                        )
+                                    )
                                 )
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = lightRed// red
+                                containerColor = AppColors.error,
+                                disabledContainerColor = AppColors.disabled
                             ),
-                            elevation = ButtonDefaults.buttonElevation(8.dp),
-                            enabled = isValid
+                            enabled = isValid,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
-                            /*Icon(Icons.Default.Close, contentDescription = null)
-                            Spacer(Modifier.width(6.dp))*/
-                            Text("Reject Refund", color = Color.White)
+                            Text(
+                                "Reject",
+                                color = AppColors.surface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
                         }
                     }
                 }

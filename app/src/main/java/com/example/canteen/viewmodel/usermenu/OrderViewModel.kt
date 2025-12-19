@@ -1,10 +1,12 @@
 package com.example.canteen.viewmodel.usermenu
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.canteen.data.CartItem
 import com.example.canteen.data.Order
 import com.example.canteen.repository.OrderRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,25 +20,32 @@ class OrderViewModel(
     private val _latestOrder = MutableStateFlow<Order?>(null)
     val latestOrder: StateFlow<Order?> = _latestOrder
 
+    private val _refundOrder = MutableStateFlow<Order?>(null)
+    val refundOrder: StateFlow<Order?> = _refundOrder
+
     private val _orders = MutableStateFlow<Map<String, Order>>(emptyMap())
     val orders: StateFlow<Map<String, Order>> = _orders
 
-    suspend fun createOrder(userId: String, items: List<CartItem>, totalAmount: Double): Order {
+    suspend fun createOrder(
+        userId: String,
+        items: List<CartItem>,
+        totalAmount: Double
+    ): Order {
         val order = repository.createOrder(userId, items, totalAmount)
         _latestOrder.value = order
         return order
     }
 
 
-    fun markOrderPaid(orderId: String) {
+    fun orderStatusUpdate(orderId: String, status: String) {
         viewModelScope.launch {
-            repository.markOrderPaid(orderId)
+            repository.orderStatusUpdate(orderId, status)
         }
     }
 
     fun getOrder(orderId: String) {
         viewModelScope.launch {
-            _latestOrder.value = repository.getOrder(orderId)
+            _refundOrder.value = repository.getOrder(orderId)
         }
     }
 
@@ -60,6 +69,10 @@ class OrderViewModel(
     private val _selectedOrder = MutableStateFlow<Order?>(null)
     val selectedOrder: StateFlow<Order?> = _selectedOrder
 
+    private val _allOrders = MutableStateFlow<List<Order>>(emptyList())
+    val allOrders: StateFlow<List<Order>> = _allOrders
+    private var allOrdersListener: ListenerRegistration? = null
+
     fun startListeningOrderHistory(userId: String) {
         stopListeningOrderHistory()
 
@@ -79,8 +92,49 @@ class OrderViewModel(
         orderListener = null
     }
 
+    fun startListeningAllOrders() {
+        stopListeningAllOrders()
+
+        allOrdersListener = repository.listenAllOrders(
+            onUpdate = { orders ->
+                _allOrders.value = orders
+            },
+            onError = { throwable ->
+                _error.value = throwable.message
+            }
+        )
+    }
+
+    private val _currentOrder = MutableStateFlow<Order?>(null)
+    val currentOrder = _currentOrder.asStateFlow()
+
+    fun startListeningOrder(orderId: String) {
+        orderListener?.remove()
+
+        orderListener = FirebaseFirestore.getInstance()
+            .collection("orders")
+            .document(orderId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null && snapshot.exists()) {
+                    _currentOrder.value = snapshot.toObject(Order::class.java)
+                }
+            }
+    }
+
+    fun stopListeningOrder() {
+        orderListener?.remove()
+        orderListener = null
+    }
+
+    fun stopListeningAllOrders() {
+        allOrdersListener?.remove()
+        allOrdersListener = null
+    }
+
     override fun onCleared() {
         stopListeningOrderHistory()
+        stopListeningAllOrders()
         super.onCleared()
     }
 

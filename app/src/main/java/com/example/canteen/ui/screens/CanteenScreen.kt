@@ -1,12 +1,10 @@
 package com.example.canteen.ui.screens
 
 import android.os.Build
-import android.text.Layout
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,10 +28,10 @@ import com.example.canteen.ui.screens.staffMenu.MenuItemForm
 import com.example.canteen.ui.screens.staffMenu.StaffMenuDetailPage
 import com.example.canteen.ui.screens.staffMenu.StaffMenuItemEditPage
 import com.example.canteen.ui.screens.staffMenu.StaffMenuListPage
+import com.example.canteen.ui.screens.staffMenu.StaffOrderStatusEdit
 import com.example.canteen.viewmodel.AuthState
 import com.example.canteen.viewmodel.AuthViewModel
 import com.example.canteen.viewmodel.login.UserViewModel
-import com.example.canteen.viewmodel.payment.CardDetailViewModel
 import com.example.canteen.viewmodel.payment.ReceiptViewModel
 import com.example.canteen.viewmodel.payment.RefundViewModel
 import com.example.canteen.viewmodel.usermenu.CartViewModel
@@ -53,13 +51,13 @@ enum class CanteenScreen(val title: String) {
     ReportScreen(title = "ReportScreen"),
     OrdersAnalyticsScreen(title = "OrdersAnalyticsScreen"),
     StaffMenuDetailPage(title = "StaffMenuDetailPage"),
-    StaffMenuEditPage(title = "StaffMenuEditPage")
+    StaffMenuEditPage(title = "StaffMenuEditPage"),
+    StaffOrderStatusEdit(title = "StaffOrderStatusEdit")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CanteenScreen(
-    cardDetailViewModel: CardDetailViewModel = viewModel(),
     receiptViewModel: ReceiptViewModel = viewModel(),
     cartViewModel: CartViewModel = viewModel(),
     orderViewModel: OrderViewModel = viewModel(),
@@ -77,35 +75,44 @@ fun CanteenScreen(
     // Firestore menu items
     val menuItems by userMenuViewModel.menuItems.collectAsState()
 
+    // Track if we just cleared an error
+    var justClearedError by remember { mutableStateOf(false) }
+
     // Auto-navigate based on auth state
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Initial -> {
-                // Still checking, do nothing
                 Log.d("CanteenScreen", "Checking for existing session...")
             }
             is AuthState.LoggedIn -> {
-                val currentLoggedInState = authState as AuthState.LoggedIn  // Different variable name
+                val currentLoggedInState = authState as AuthState.LoggedIn
                 Log.d("CanteenScreen", "User logged in with role: ${currentLoggedInState.role}")
-                // Navigate to appropriate screen based on role
                 when (currentLoggedInState.role) {
                     "user" -> {
                         navController.navigate(CanteenScreen.UserHomeScreen.name) {
                             popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
                         }
                     }
                     "staff" -> {
                         navController.navigate(CanteenScreen.StaffDashboard.name) {
                             popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
                         }
                     }
                 }
             }
             is AuthState.LoggedOut -> {
-                // Navigate to login when logged out
-                Log.d("CanteenScreen", "User logged out, navigating to login")
-                navController.navigate("login") {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                // Only navigate to login if we're not just clearing an error
+                if (!justClearedError) {
+                    Log.d("CanteenScreen", "User logged out, navigating to login")
+                    navController.navigate("login") {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                } else {
+                    // Reset the flag
+                    justClearedError = false
                 }
             }
             else -> {
@@ -192,14 +199,28 @@ fun CanteenScreen(
                 cartViewModel = cartViewModel,
                 orderViewModel = orderViewModel,
                 userViewModel = userViewModel,
-                onSignOut = { authViewModel.signOut() }
+                refundViewModel = refundViewModel,
+                onSignOut = {
+                    authViewModel.signOut()
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
 
         // -------------------- STAFF DASHBOARD --------------------
         composable(CanteenScreen.StaffDashboard.name) {
-            StaffDashboardScreen(navController, onClick = { authViewModel.signOut() })
+            StaffDashboardScreen(navController,
+                onClick = {
+                    authViewModel.signOut()
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                })
         }
 
         // -------------------- Staff Menu --------------------
@@ -255,6 +276,7 @@ fun CanteenScreen(
             )
         }
 
+
 // -------------------- PAYMENT HISTORY --------------------
         composable(CanteenScreen.PaymentHistory.name) {
             PaymentHistory(
@@ -277,6 +299,14 @@ fun CanteenScreen(
             OrdersAnalyticsScreen(
                 navController = navController,  // Add this line
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        // -------------------- STAFF ORDER MANAGEMENT --------------------
+        composable(CanteenScreen.StaffOrderStatusEdit.name) {
+            StaffOrderStatusEdit(
+                navController = navController,
+                orderViewModel = orderViewModel
             )
         }
     }

@@ -1,5 +1,6 @@
 package com.example.canteen.ui.screens.payment
 
+import android.util.Log
 import android.view.Surface
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -39,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.canteen.ui.theme.AppColors
 import com.example.canteen.ui.theme.CanteenTheme
 import com.example.canteen.ui.theme.darkGray
 import com.example.canteen.ui.theme.isVeryLightBlue
@@ -48,7 +50,7 @@ import com.example.canteen.viewmodel.payment.ReceiptViewModel
 
 enum class RefundStatus {
     APPROVED,
-    PENDING,
+    REQUESTED,
     REJECTED;
 
     companion object {
@@ -56,8 +58,8 @@ enum class RefundStatus {
             return when (value?.lowercase()) {
                 "approved" -> APPROVED
                 "rejected" -> REJECTED
-                "pending" -> PENDING
-                else -> PENDING
+                "requested" -> REQUESTED
+                else -> REQUESTED
             }
         }
     }
@@ -67,9 +69,9 @@ enum class RefundStatus {
 @Composable
 fun RefundStatusChip(status: RefundStatus) {
     val (bgColor, textColor, text) = when (status) {
-        RefundStatus.APPROVED -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32), "Approved")
-        RefundStatus.PENDING -> Triple(Color(0xFFFFF8E1), Color(0xFFF9A825), "Pending")
-        RefundStatus.REJECTED -> Triple(Color(0xFFFDECEA), Color(0xFFC62828), "Rejected")
+        RefundStatus.APPROVED -> Triple(Color(0xFFE8F5E9), Color(0xFF1E6B21), "Approved")
+        RefundStatus.REQUESTED -> Triple(Color(0xFFFFF8E1), Color(0xFFC97A00), "Requested")
+        RefundStatus.REJECTED -> Triple(Color(0xFFFDECEA), Color(0xFF8C0606), "Rejected")
     }
 
     Surface(
@@ -90,114 +92,78 @@ fun RefundRequestCard(
     reason: String,
     requestTime: String,
     status: RefundStatus,
-    remark: String? = null,
-    modifier: Modifier = Modifier
+    remark: String? = null
 ) {
-    val canExpand =
-        (status == RefundStatus.APPROVED || status == RefundStatus.REJECTED)
-                && !remark.isNullOrBlank()
-    var expanded by remember { mutableStateOf(false) }
+    Column(modifier = Modifier
+        .animateContentSize()) {
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp)
-            .clickable(
-                enabled = canExpand,
-                indication = if (canExpand) LocalIndication.current else null,
-                interactionSource = remember { MutableInteractionSource() }
-            ) {
-                expanded = !expanded
-            },
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = isVeryLightBlue, // Set the card's background color
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Refund Request",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold, color = AppColors.textPrimary
+            )
+
+            RefundStatusChip(status = status)
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Reason: $reason",
+            fontSize = 14.sp,
+            color = AppColors.textSecondary
         )
-    ) {
-        Column(modifier = Modifier
-            .padding(16.dp)
-            .animateContentSize()) {
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Text(
+            text = "Request At : $requestTime",
+            fontSize = 14.sp,
+            color = AppColors.textSecondary
+        )
+
+        if (status.name != "REQUESTED"){
+            Column(
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .fillMaxWidth()
             ) {
+
+                Divider(modifier = Modifier.padding(bottom = 8.dp))
+
                 Text(
-                    text = "Refund Request",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold, color = Color.Black
+                    text = "Admin Remark : ",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.textSecondary
                 )
 
-                RefundStatusChip(status = status)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Reason: $reason",
-                fontSize = 14.sp,
-                color = darkGray
-            )
-
-            Text(
-                text = "Requested: $requestTime",
-                fontSize = 14.sp,
-                color = darkGray
-            )
-
-            if (canExpand && !expanded) {
                 Text(
-                    text = "Tap to view admin remark",
-                    fontSize = 11.sp,
-                    color = Color.Gray
+                    text = remark.orEmpty(),
+                    fontSize = 13.sp,
+                    color = AppColors.textSecondary
                 )
-            }
-
-            AnimatedVisibility(
-                visible = expanded && canExpand,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .fillMaxWidth()
-                ) {
-
-                    Divider(modifier = Modifier.padding(bottom = 8.dp))
-
-                    Text(
-                        text = "Admin Remark : ",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black
-                    )
-
-                    Text(
-                        text = remark.orEmpty(),
-                        fontSize = 13.sp,
-                        color = darkGray
-                    )
-                }
             }
         }
+
     }
 }
 
+
 @Composable
 fun RefundDetailScreen(
-    receiptId: String,
-    receiptViewModel: ReceiptViewModel,
-    onBack: () -> Unit
+    orderId: String,
+    receiptViewModel: ReceiptViewModel
 ) {
-    LaunchedEffect(receiptId) {
-        receiptViewModel.loadReceipt(receiptId)
-        //receiptViewModel.loadReceiptByOrderId()
-    }
+    /*LaunchedEffect(orderId) {
+        receiptViewModel.loadReceiptByOrderId(orderId)
+    }*/
 
-    val receiptPair by receiptViewModel.receiptLoadById.collectAsState()
+    val receiptPair by receiptViewModel.receiptLoadByOrderId.collectAsState()
+    Log.w("Refund", receiptPair?.first?.receiptId ?: "")
 
     when {
         receiptPair == null -> {
@@ -206,23 +172,12 @@ fun RefundDetailScreen(
 
         else -> {
             val (receipt, refund) = receiptPair!!
-
-            Column(modifier = Modifier.padding(8.dp)) {
-                Text(
-                    text = "Payment Method : ${if (receipt.payment_Method == "card") "Credit Card" else "E-Wallet"}",
-                    fontSize = 14.sp,
-                    color = darkGray
-                )
-
-                Divider(modifier = Modifier.padding(8.dp))
-
                 RefundRequestCard(
                     reason = refund?.reason ?: "No reason provided",
                     requestTime = refund?.requestTime?.let { formatTime(it) } ?: "-",
                     status = RefundStatus.from(refund?.status),
                     remark = refund?.remark
                 )
-            }
         }
     }
 }
@@ -232,7 +187,7 @@ fun RefundDetailScreen(
 @Composable
 fun RefundCardPreview() {
     RefundDetailScreen(
-        receiptId = "78885366-5bc4-479f-9721-0546c7f149ab", receiptViewModel = viewModel(), onBack = {})
+        orderId = "874cc51d-bca3-4248-a6fd-46c6f33fbea2", receiptViewModel = viewModel())
 }
 
 @Preview(showBackground = true)

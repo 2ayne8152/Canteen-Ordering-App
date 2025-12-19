@@ -32,6 +32,14 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Theme colors matching the photo
+private val DarkBackground = Color(0xFF1C1C1E)
+private val CardBackground = Color(0xFF2C2C2E)
+private val AccentOrange = Color(0xFFFF6B35)
+private val TextPrimary = Color(0xFFFFFFFF)
+private val TextSecondary = Color(0xFF8E8E93)
+private val DividerColor = Color(0xFF3A3A3C)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersAnalyticsScreen(
@@ -57,20 +65,22 @@ fun OrdersAnalyticsScreen(
                 title = {
                     Text(
                         "Orders Analytics",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = TextPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = DarkBackground,
+                    titleContentColor = TextPrimary
                 )
             )
         },
@@ -80,12 +90,13 @@ fun OrdersAnalyticsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(DarkBackground)
         ) {
             when (val state = analyticsData) {
                 is UiState.Loading -> {
                     CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = AccentOrange
                     )
                 }
                 is UiState.Error -> {
@@ -99,18 +110,23 @@ fun OrdersAnalyticsScreen(
                             imageVector = Icons.Default.Error,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.error
+                            tint = Color(0xFFFF3B30)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = state.message,
-                            color = MaterialTheme.colorScheme.error
+                            color = Color(0xFFFF3B30)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = {
-                            viewModel.loadOrdersAnalytics(selectedPeriod, selectedDate)
-                        }) {
-                            Text("Retry")
+                        Button(
+                            onClick = {
+                                viewModel.loadOrdersAnalytics(selectedPeriod, selectedDate)
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AccentOrange
+                            )
+                        ) {
+                            Text("Retry", color = TextPrimary)
                         }
                     }
                 }
@@ -165,16 +181,37 @@ fun OrdersAnalyticsScreen(
                                 showDatePicker = false
                             }
                         ) {
-                            Text("OK")
+                            Text("OK", color = AccentOrange)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showDatePicker = false }) {
-                            Text("Cancel")
+                            Text("Cancel", color = TextSecondary)
                         }
-                    }
+                    },
+                    colors = DatePickerDefaults.colors(
+                        containerColor = CardBackground
+                    )
                 ) {
-                    DatePicker(state = datePickerState)
+                    DatePicker(
+                        state = datePickerState,
+                        colors = DatePickerDefaults.colors(
+                            containerColor = CardBackground,
+                            titleContentColor = TextPrimary,
+                            headlineContentColor = TextPrimary,
+                            weekdayContentColor = TextSecondary,
+                            subheadContentColor = TextPrimary,
+                            yearContentColor = TextPrimary,
+                            currentYearContentColor = AccentOrange,
+                            selectedYearContentColor = Color.White,
+                            selectedYearContainerColor = AccentOrange,
+                            dayContentColor = TextPrimary,
+                            selectedDayContentColor = Color.White,
+                            selectedDayContainerColor = AccentOrange,
+                            todayContentColor = AccentOrange,
+                            todayDateBorderColor = AccentOrange
+                        )
+                    )
                 }
             }
         }
@@ -217,8 +254,16 @@ private fun OrdersAnalyticsContent(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        containerColor = CardBackground,
+                        selectedContainerColor = AccentOrange,
+                        labelColor = TextSecondary,
+                        selectedLabelColor = Color.Black
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selectedPeriod == period,
+                        borderColor = Color.Transparent,
+                        selectedBorderColor = Color.Transparent
                     )
                 )
             }
@@ -231,7 +276,7 @@ private fun OrdersAnalyticsContent(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                containerColor = CardBackground
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
@@ -258,7 +303,7 @@ private fun OrdersAnalyticsContent(
                     Icon(
                         imageVector = Icons.Default.ChevronLeft,
                         contentDescription = "Previous",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = AccentOrange
                     )
                 }
 
@@ -270,7 +315,7 @@ private fun OrdersAnalyticsContent(
                         Icon(
                             imageVector = Icons.Default.CalendarToday,
                             contentDescription = "Select Date",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = AccentOrange
                         )
                     }
                     Text(
@@ -293,7 +338,7 @@ private fun OrdersAnalyticsContent(
                         },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = TextPrimary
                     )
                 }
 
@@ -313,7 +358,7 @@ private fun OrdersAnalyticsContent(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Next",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = AccentOrange
                     )
                 }
             }
@@ -379,7 +424,7 @@ private fun OrdersAnalyticsContent(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    containerColor = CardBackground
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
@@ -390,7 +435,7 @@ private fun OrdersAnalyticsContent(
                         text = "Top Selling Items",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -398,7 +443,7 @@ private fun OrdersAnalyticsContent(
                         if (index > 0) {
                             Divider(
                                 modifier = Modifier.padding(vertical = 12.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                color = DividerColor
                             )
                         }
 
@@ -412,13 +457,13 @@ private fun OrdersAnalyticsContent(
                                     text = "${index + 1}. ${item.menuItemName}",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = TextPrimary
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "${item.totalQuantity} sold • ${item.totalOrders} orders",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = TextSecondary
                                 )
                             }
 
@@ -429,12 +474,12 @@ private fun OrdersAnalyticsContent(
                                     text = currencyFormatter.format(item.totalRevenue),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = AccentOrange
                                 )
                                 Text(
                                     text = "${String.format("%.1f", item.percentage)}%",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = TextSecondary
                                 )
                             }
                         }
@@ -446,7 +491,7 @@ private fun OrdersAnalyticsContent(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    containerColor = CardBackground
                 )
             ) {
                 Box(
@@ -457,7 +502,7 @@ private fun OrdersAnalyticsContent(
                 ) {
                     Text(
                         text = "No orders data available for this period",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = TextSecondary
                     )
                 }
             }
@@ -466,3 +511,4 @@ private fun OrdersAnalyticsContent(
         Spacer(modifier = Modifier.height(20.dp))
     }
 }
+

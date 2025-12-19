@@ -2,7 +2,7 @@ package com.example.canteen.viewmodel.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.canteen.Repository.UserRepository
+import com.example.canteen.repository.UserRepository
 import com.example.canteen.data.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
