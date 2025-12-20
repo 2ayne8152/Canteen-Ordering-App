@@ -56,6 +56,8 @@ fun StaffMenuItemEditPage(
     var editedQuantity by remember { mutableStateOf(item.remainQuantity.toString()) }
     var editedImageUri by remember { mutableStateOf<Uri?>(null) }
     var expanded by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) } // ⭐ ADDED
+
 
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -311,21 +313,7 @@ fun StaffMenuItemEditPage(
 
             // Delete Button
             OutlinedButton(
-                onClick = {
-                    viewModel.deleteMenuItem(item.id) { success, error ->
-                        coroutineScope.launch {
-                            if (success) {
-                                snackbarHostState.showSnackbar("Menu item deleted successfully!")
-                                navController.navigate(CanteenScreen.StaffDashboard.name) {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                snackbarHostState.showSnackbar("Delete failed: ${error ?: "Unknown error"}")
-                            }
-                        }
-                    }
-                },
+                onClick = { showDeleteDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -342,6 +330,43 @@ fun StaffMenuItemEditPage(
                     "Delete Item",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text("Delete Menu Item") },
+                    text = { Text("Are you sure you want to delete this item? This action cannot be undone.") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showDeleteDialog = false
+                                viewModel.deleteMenuItem(item.id) { success, error ->
+                                    coroutineScope.launch {
+                                        if (success) {
+                                            snackbarHostState.showSnackbar("Menu item deleted successfully!")
+                                            navController.navigate(CanteenScreen.StaffDashboard.name) {
+                                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                                launchSingleTop = true
+                                            }
+                                        } else {
+                                            snackbarHostState.showSnackbar("Delete failed: ${error ?: "Unknown error"}")
+                                        }
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("Delete", color = AppColors.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
                 )
             }
 

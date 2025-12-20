@@ -56,6 +56,7 @@ fun MenuItemForm(navController: NavController) {
     var description by remember { mutableStateOf("") }
     var unitPrice by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
+    var quantityError by remember { mutableStateOf<String?>(null) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var validationMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -329,12 +330,18 @@ fun MenuItemForm(navController: NavController) {
                                 unfocusedContainerColor = AppColors.background
                             )
                         )
-
                         OutlinedTextField(
                             value = quantity,
                             onValueChange = { input ->
                                 if (input.isEmpty() || input.matches(Regex("^[0-9]+$"))) {
-                                    quantity = input
+                                    val value = input.toIntOrNull()
+                                    if (value != null && value > 10000) {
+                                        // Keep the value as-is but show error
+                                        quantityError = "Quantity cannot exceed 10,000"
+                                    } else {
+                                        quantity = input
+                                        quantityError = null
+                                    }
                                 }
                             },
                             label = { Text("Quantity", color = AppColors.textSecondary) },
@@ -350,6 +357,14 @@ fun MenuItemForm(navController: NavController) {
                                 focusedContainerColor = AppColors.background,
                                 unfocusedContainerColor = AppColors.background
                             )
+                        )
+                    }
+                    quantityError?.let { errorMsg ->
+                        Text(
+                            text = errorMsg,
+                            color = AppColors.error,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 12.dp, top = 4.dp)
                         )
                     }
                 }
@@ -422,6 +437,10 @@ fun MenuItemForm(navController: NavController) {
                             }
                             quantityInt == null || quantityInt < 0 -> {
                                 validationMessage = "Please enter a valid quantity"
+                                return@launch
+                            }
+                            quantityInt == null || quantityInt < 0 || quantityInt > 10000 -> {
+                                validationMessage = "Quantity must be between 0 and 10,000"
                                 return@launch
                             }
                             imageUri == null -> {
@@ -500,7 +519,7 @@ fun MenuItemForm(navController: NavController) {
                     disabledContainerColor = AppColors.disabled
                 ),
                 shape = RoundedCornerShape(16.dp),
-                enabled = !isLoading
+                enabled = !isLoading && quantityError == null
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
