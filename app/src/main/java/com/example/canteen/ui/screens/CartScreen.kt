@@ -15,7 +15,10 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -42,6 +45,8 @@ fun CartScreen(
     val cart = cartViewModel.cart.collectAsState()
     val totalItems = cart.value.sumOf { it.quantity }
     val totalPrice = cart.value.sumOf { it.totalPrice }
+
+    var showClearDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = AppColors.background
@@ -177,7 +182,7 @@ fun CartScreen(
                             ) {
                                 // Clear Cart Button
                                 OutlinedButton(
-                                    onClick = { cartViewModel.clearCart() },
+                                    onClick = { showClearDialog = true },
                                     modifier = Modifier
                                         .weight(0.35f)
                                         .height(56.dp),
@@ -221,6 +226,60 @@ fun CartScreen(
                     }
                 }
             }
+        }
+
+        // Clear Cart Confirmation Dialog
+        if (showClearDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearDialog = false },
+                icon = {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = AppColors.error,
+                        modifier = Modifier.size(32.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        "Clear Cart?",
+                        color = AppColors.textPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        "Are you sure you want to remove all items from your cart? This action cannot be undone.",
+                        color = AppColors.textSecondary
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            cartViewModel.clearCart()
+                            showClearDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.error
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Clear Cart", color = AppColors.surface)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showClearDialog = false },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = AppColors.textPrimary
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = AppColors.surface,
+                shape = RoundedCornerShape(20.dp)
+            )
         }
     }
 }

@@ -54,7 +54,23 @@ fun ReportScreen(
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
     var showDatePicker by remember { mutableStateOf(false) }
     val reportData by viewModel.reportData.collectAsState()
-    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale.US) }
+    val currencyFormatter = remember {
+        object : NumberFormat() {
+            private val decimalFormat = java.text.DecimalFormat("#,##0.00")
+
+            override fun format(number: Double, toAppendTo: StringBuffer, pos: java.text.FieldPosition): StringBuffer {
+                return toAppendTo.append("RM ").append(decimalFormat.format(number))
+            }
+
+            override fun format(number: Long, toAppendTo: StringBuffer, pos: java.text.FieldPosition): StringBuffer {
+                return toAppendTo.append("RM ").append(decimalFormat.format(number))
+            }
+
+            override fun parse(source: String, parsePosition: java.text.ParsePosition): Number? {
+                return null
+            }
+        }
+    }
 
     val periods = listOf("Daily", "Weekly", "Monthly", "Yearly")
 
@@ -463,7 +479,17 @@ fun ReportScreen(
                             selectedDayContentColor = Color.White,
                             selectedDayContainerColor = AccentOrange,
                             todayContentColor = AccentOrange,
-                            todayDateBorderColor = AccentOrange
+                            todayDateBorderColor = AccentOrange,
+                            dateTextFieldColors = TextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedContainerColor = Color.Black,
+                                unfocusedContainerColor = Color.Black,
+                                cursorColor = AccentOrange,
+                                focusedIndicatorColor = AccentOrange,
+                                unfocusedIndicatorColor = TextSecondary
+                            )
+
                         )
                     )
                 }
