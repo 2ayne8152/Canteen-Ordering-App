@@ -480,6 +480,7 @@ fun ReportScreen(
                             selectedDayContainerColor = AccentOrange,
                             todayContentColor = AccentOrange,
                             todayDateBorderColor = AccentOrange,
+                            navigationContentColor = Color.White,
                             dateTextFieldColors = TextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
@@ -487,7 +488,9 @@ fun ReportScreen(
                                 unfocusedContainerColor = Color.Black,
                                 cursorColor = AccentOrange,
                                 focusedIndicatorColor = AccentOrange,
-                                unfocusedIndicatorColor = TextSecondary
+                                unfocusedIndicatorColor = TextSecondary,
+                                focusedTrailingIconColor = Color.White,
+                                unfocusedTrailingIconColor = Color.White
                             )
 
                         )
