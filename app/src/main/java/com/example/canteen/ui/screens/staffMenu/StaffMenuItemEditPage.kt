@@ -52,11 +52,11 @@ fun StaffMenuItemEditPage(
     var editedName by remember { mutableStateOf(item.name) }
     var editedDescription by remember { mutableStateOf(item.description) }
     var selectedCategory by remember { mutableStateOf(item.categoryId) }
-    var editedPrice by remember { mutableStateOf(item.price.toString()) }
+    var editedPrice by remember { mutableStateOf(String.format("%.2f", item.price)) }
     var editedQuantity by remember { mutableStateOf(item.remainQuantity.toString()) }
     var editedImageUri by remember { mutableStateOf<Uri?>(null) }
     var expanded by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) } // ⭐ ADDED
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
 
     val imageLauncher = rememberLauncherForActivityResult(
@@ -230,7 +230,15 @@ fun StaffMenuItemEditPage(
 
             OutlinedTextField(
                 value = editedPrice,
-                onValueChange = { editedPrice = it },
+                onValueChange = { input ->
+                    val filteredInput = input.filter { it.isDigit() || it == '.' }
+                    val doubleValue = filteredInput.toDoubleOrNull()
+                    editedPrice = if (doubleValue != null) {
+                        String.format("%.2f", doubleValue)
+                    } else {
+                        filteredInput
+                    }
+                },
                 label = { Text("Price (RM)", color = AppColors.textSecondary) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -242,6 +250,7 @@ fun StaffMenuItemEditPage(
                 ),
                 shape = RoundedCornerShape(12.dp)
             )
+
 
             Spacer(Modifier.height(12.dp))
 
