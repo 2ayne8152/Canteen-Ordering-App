@@ -60,6 +60,7 @@ fun MenuItemForm(navController: NavController) {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var validationMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    var showConfirmationDialog by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -135,7 +136,8 @@ fun MenuItemForm(navController: NavController) {
                         val bitmap = if (Build.VERSION.SDK_INT < 28) {
                             MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri)
                         } else {
-                            val source = ImageDecoder.createSource(context.contentResolver, imageUri!!)
+                            val source =
+                                ImageDecoder.createSource(context.contentResolver, imageUri!!)
                             ImageDecoder.decodeBitmap(source)
                         }
                         Image(
@@ -418,96 +420,23 @@ fun MenuItemForm(navController: NavController) {
             // Submit Button
             Button(
                 onClick = {
-                    coroutineScope.launch {
-                        val priceDouble = unitPrice.toDoubleOrNull()
-                        val quantityInt = quantity.toIntOrNull()
+                    // First, validate fields
+                    val priceDouble = unitPrice.toDoubleOrNull()
+                    val quantityInt = quantity.toIntOrNull()
 
-                        when {
-                            itemName.isBlank() -> {
-                                validationMessage = "Please enter item name"
-                                return@launch
-                            }
-                            description.isBlank() -> {
-                                validationMessage = "Please enter description"
-                                return@launch
-                            }
-                            priceDouble == null || priceDouble <= 0 -> {
-                                validationMessage = "Please enter a valid price"
-                                return@launch
-                            }
-                            quantityInt == null || quantityInt < 0 -> {
-                                validationMessage = "Please enter a valid quantity"
-                                return@launch
-                            }
-                            quantityInt == null || quantityInt < 0 || quantityInt > 10000 -> {
-                                validationMessage = "Quantity must be between 0 and 10,000"
-                                return@launch
-                            }
-                            imageUri == null -> {
-                                validationMessage = "Please upload an image"
-                                return@launch
-                            }
-                        }
+                    when {
+                        itemName.isBlank() -> validationMessage = "Please enter item name"
+                        description.isBlank() -> validationMessage = "Please enter description"
+                        priceDouble == null || priceDouble <= 0 -> validationMessage =
+                            "Please enter a valid price"
 
-                        validationMessage = ""
-                        isLoading = true
+                        quantityInt == null || quantityInt < 0 || quantityInt > 10000 -> validationMessage =
+                            "Quantity must be between 0 and 10,000"
 
-                        try {
-                            val generatedMenuId = generateNextMenuId()
-                            val bitmap = if (Build.VERSION.SDK_INT < 28) {
-                                MediaStore.Images.Media.getBitmap(
-                                    context.contentResolver, imageUri
-                                )
-                            } else {
-                                val source = ImageDecoder.createSource(
-                                    context.contentResolver, imageUri!!
-                                )
-                                ImageDecoder.decodeBitmap(source)
-                            }
-
-                            val outputStream = ByteArrayOutputStream()
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-                            val imageBase64 = Base64.encodeToString(
-                                outputStream.toByteArray(),
-                                Base64.DEFAULT
-                            )
-
-                            val newMenuItem = mapOf(
-                                "id" to generatedMenuId,
-                                "name" to itemName,
-                                "description" to description,
-                                "price" to priceDouble,
-                                "remainQuantity" to quantityInt,
-                                "categoryId" to selectedCategory,
-                                "imageUrl" to imageBase64
-                            )
-
-                            Firebase.firestore
-                                .collection("MenuItems")
-                                .document(generatedMenuId)
-                                .set(newMenuItem)
-                                .await()
-
-                            validationMessage = "Menu item added successfully!"
-
-                            // Clear form
-                            itemName = ""
-                            description = ""
-                            unitPrice = ""
-                            quantity = ""
-                            imageUri = null
-                            selectedCategory = categoryOptions.first()
-
-                            // Navigate to dashboard after delay
-                            kotlinx.coroutines.delay(1500)
-                            navController.navigate(CanteenScreen.StaffDashboard.name) {
-                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                launchSingleTop = true
-                            }
-                        } catch (e: Exception) {
-                            validationMessage = "Error: ${e.message}"
-                        } finally {
-                            isLoading = false
+                        imageUri == null -> validationMessage = "Please upload an image"
+                        else -> {
+                            validationMessage = "" // All fields valid
+                            showConfirmationDialog = true // Show confirmation dialog
                         }
                     }
                 },
@@ -544,6 +473,89 @@ fun MenuItemForm(navController: NavController) {
             }
 
             Spacer(Modifier.height(20.dp))
+            if (showConfirmationDialog) {
+                AlertDialog(
+                    onDismissRequest = { showConfirmationDialog = false },
+                    title = { Text("Confirm Add") },
+                    text = { Text("Are you sure you want to add this menu item?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showConfirmationDialog = false
+                            // Call the same coroutine that adds the menu item
+                            coroutineScope.launch {
+                                isLoading = true
+                                try {
+                                    val generatedMenuId = generateNextMenuId()
+                                    val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                                        MediaStore.Images.Media.getBitmap(
+                                            context.contentResolver,
+                                            imageUri
+                                        )
+                                    } else {
+                                        val source = ImageDecoder.createSource(
+                                            context.contentResolver,
+                                            imageUri!!
+                                        )
+                                        ImageDecoder.decodeBitmap(source)
+                                    }
+
+                                    val outputStream = ByteArrayOutputStream()
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                                    val imageBase64 = Base64.encodeToString(
+                                        outputStream.toByteArray(),
+                                        Base64.DEFAULT
+                                    )
+
+                                    val newMenuItem = mapOf(
+                                        "id" to generatedMenuId,
+                                        "name" to itemName,
+                                        "description" to description,
+                                        "price" to unitPrice.toDouble(),
+                                        "remainQuantity" to quantity.toInt(),
+                                        "categoryId" to selectedCategory,
+                                        "imageUrl" to imageBase64
+                                    )
+
+                                    Firebase.firestore
+                                        .collection("MenuItems")
+                                        .document(generatedMenuId)
+                                        .set(newMenuItem)
+                                        .await()
+
+                                    validationMessage = "Menu item added successfully!"
+
+                                    // Clear form
+                                    itemName = ""
+                                    description = ""
+                                    unitPrice = ""
+                                    quantity = ""
+                                    imageUri = null
+                                    selectedCategory = categoryOptions.first()
+
+                                    kotlinx.coroutines.delay(1500)
+                                    navController.navigate(CanteenScreen.StaffDashboard.name) {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            inclusive = false
+                                        }
+                                        launchSingleTop = true
+                                    }
+                                } catch (e: Exception) {
+                                    validationMessage = "Error: ${e.message}"
+                                } finally {
+                                    isLoading = false
+                                }
+                            }
+                        }) {
+                            Text("Confirm")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showConfirmationDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
         }
     }
 }

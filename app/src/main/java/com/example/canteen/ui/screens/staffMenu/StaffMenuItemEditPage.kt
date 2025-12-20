@@ -57,6 +57,7 @@ fun StaffMenuItemEditPage(
     var editedImageUri by remember { mutableStateOf<Uri?>(null) }
     var expanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showSaveDialog by remember { mutableStateOf(false) }
 
 
     val imageLauncher = rememberLauncherForActivityResult(
@@ -273,35 +274,7 @@ fun StaffMenuItemEditPage(
 
             // Save Button
             Button(
-                onClick = {
-                    val updatedItem = item.copy(
-                        name = editedName,
-                        description = editedDescription,
-                        categoryId = selectedCategory,
-                        price = editedPrice.toDoubleOrNull() ?: 0.0,
-                        remainQuantity = editedQuantity.toIntOrNull() ?: 0,
-                        imageUrl = editedImageUri?.let { uri ->
-                            context.contentResolver.openInputStream(uri)?.use { input ->
-                                val bytes = input.readBytes()
-                                Base64.encodeToString(bytes, Base64.DEFAULT)
-                            }
-                        } ?: item.imageUrl
-                    )
-
-                    viewModel.updateMenuItem(updatedItem) { success, error ->
-                        coroutineScope.launch {
-                            if (success) {
-                                snackbarHostState.showSnackbar("Menu item updated successfully!")
-                                navController.navigate("StaffDashboard") {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            } else {
-                                snackbarHostState.showSnackbar("Update failed: ${error ?: "Unknown error"}")
-                            }
-                        }
-                    }
-                },
+                onClick = { showSaveDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -320,6 +293,54 @@ fun StaffMenuItemEditPage(
 
             Spacer(Modifier.height(12.dp))
 
+            if (showSaveDialog) {
+                AlertDialog(
+                    onDismissRequest = { showSaveDialog = false },
+                    title = { Text("Confirm Save") },
+                    text = { Text("Are you sure you want to save changes to this menu item?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showSaveDialog = false
+                                val updatedItem = item.copy(
+                                    name = editedName,
+                                    description = editedDescription,
+                                    categoryId = selectedCategory,
+                                    price = editedPrice.toDoubleOrNull() ?: 0.0,
+                                    remainQuantity = editedQuantity.toIntOrNull() ?: 0,
+                                    imageUrl = editedImageUri?.let { uri ->
+                                        context.contentResolver.openInputStream(uri)?.use { input ->
+                                            val bytes = input.readBytes()
+                                            Base64.encodeToString(bytes, Base64.DEFAULT)
+                                        }
+                                    } ?: item.imageUrl
+                                )
+
+                                viewModel.updateMenuItem(updatedItem) { success, error ->
+                                    coroutineScope.launch {
+                                        if (success) {
+                                            snackbarHostState.showSnackbar("Menu item updated successfully!")
+                                            navController.navigate("StaffDashboard") {
+                                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                                launchSingleTop = true
+                                            }
+                                        } else {
+                                            snackbarHostState.showSnackbar("Update failed: ${error ?: "Unknown error"}")
+                                        }
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("Save", color = AppColors.primary)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showSaveDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
             // Delete Button
             OutlinedButton(
                 onClick = { showDeleteDialog = true },
