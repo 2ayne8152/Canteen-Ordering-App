@@ -152,6 +152,14 @@ fun StaffMenuDetailPage(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
+                    DetailRow("Menu ID", item.id)
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        thickness = 1.dp,
+                        color = AppColors.divider
+                    )
+
                     DetailRow("Category", item.categoryId)
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 12.dp),
