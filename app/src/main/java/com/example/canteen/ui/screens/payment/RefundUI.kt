@@ -12,18 +12,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +37,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -74,7 +78,6 @@ fun Refund(
     val error by refundViewModel.error.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val receiptPair by receiptViewModel.receiptLoadByOrderId.collectAsState()
-    //val newReceiptId by receiptViewModel.newReceiptId.collectAsState()
     val newRefundId by refundViewModel.newRefundId.collectAsState()
 
     // UI States
@@ -85,6 +88,7 @@ fun Refund(
     var refundDetails by remember { mutableStateOf("") }
     var textFieldWidth by remember { mutableStateOf(0.dp) }
     var hasTouchedHolder by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
 
     val isValid = selectedReason.isNotBlank() && refundDetails.isNotBlank()
 
@@ -227,15 +231,7 @@ fun Refund(
 
             // --- SUBMIT BUTTON ---
             Button(
-                onClick = {
-                    val orderId = receiptPair?.first?.orderId
-
-                    if (!orderId.isNullOrBlank()) {
-                        refundViewModel.createRefund(selectedReason, refundDetails)
-                        orderViewModel.orderStatusUpdate(orderId, "REFUNDED")
-                        onBack()
-                    }
-                },
+                onClick = { showConfirmDialog = true },
                 enabled = isValid && !loading,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -262,6 +258,136 @@ fun Refund(
                 onDismissRequest = {},
                 confirmButton = {},
                 title = { Text("Submitting...", color = Color.White) }
+            )
+        }
+
+        // --- CONFIRMATION DIALOG ---
+        if (showConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmDialog = false },
+                icon = {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = AppColors.primary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        "Submit Refund Request",
+                        color = AppColors.textPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Are you sure you want to submit this refund request?",
+                            color = AppColors.textSecondary,
+                            fontSize = 14.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        HorizontalDivider(color = AppColors.divider)
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                "Order #:",
+                                color = AppColors.textSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                receiptPair?.first?.orderId?.takeLast(6) ?: "N/A",
+                                color = AppColors.textPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                "Reason:",
+                                color = AppColors.textSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                selectedReason,
+                                color = AppColors.textPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                "Details:",
+                                color = AppColors.textSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                refundDetails,
+                                color = AppColors.textPrimary,
+                                fontSize = 14.sp,
+                                maxLines = 3,
+                                lineHeight = 18.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                "Amount:",
+                                color = AppColors.textSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "RM ${"%.2f".format(receiptPair?.first?.pay_Amount ?: 0.0)}",
+                                color = AppColors.primary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showConfirmDialog = false
+                            val orderId = receiptPair?.first?.orderId
+
+                            if (!orderId.isNullOrBlank()) {
+                                refundViewModel.createRefund(selectedReason, refundDetails)
+                                orderViewModel.orderStatusUpdate(orderId, "REFUNDED")
+                                onBack()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.primary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Confirm", color = AppColors.surface)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showConfirmDialog = false },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = AppColors.textPrimary
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = AppColors.surface,
+                shape = RoundedCornerShape(20.dp)
             )
         }
     }

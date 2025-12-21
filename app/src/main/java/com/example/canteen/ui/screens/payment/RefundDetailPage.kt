@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,8 +18,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,6 +48,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.tooling.preview.Preview
@@ -82,6 +87,9 @@ fun RefundDetailPage(
     var responseRemark by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var textFieldWidth by remember { mutableStateOf(0.dp) }
+    var showApproveDialog by remember { mutableStateOf(false) }
+    var showRejectDialog by remember { mutableStateOf(false) }
+
     val isValid = responseBy.isNotBlank() && responseRemark.isNotBlank()
 
     if (selected == null) {
@@ -373,17 +381,7 @@ fun RefundDetailPage(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
-                            onClick = {
-                                onBack()
-                                refundViewModel.updateRefund(
-                                    id = receipt.refundId!!,
-                                    updates = mapOf(
-                                        "refundBy" to responseBy,
-                                        "remark" to responseRemark,
-                                        "status" to "Approved",
-                                    )
-                                )
-                            },
+                            onClick = { showApproveDialog = true },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AppColors.success,
                                 disabledContainerColor = AppColors.disabled
@@ -403,17 +401,7 @@ fun RefundDetailPage(
                         }
 
                         Button(
-                            onClick = {
-                                onBack()
-                                refundViewModel.updateRefund(
-                                    id = receipt.refundId!!,
-                                    updates = mapOf(
-                                        "refundBy" to responseBy,
-                                        "remark" to responseRemark,
-                                        "status" to "Rejected",
-                                    )
-                                )
-                            },
+                            onClick = { showRejectDialog = true },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AppColors.error,
                                 disabledContainerColor = AppColors.disabled
@@ -436,6 +424,216 @@ fun RefundDetailPage(
             }
 
             Spacer(Modifier.height(25.dp))
+        }
+
+        // Approve Confirmation Dialog
+        if (showApproveDialog) {
+            AlertDialog(
+                onDismissRequest = { showApproveDialog = false },
+                icon = {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = AppColors.success,
+                        modifier = Modifier.size(32.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        "Approve Refund?",
+                        color = AppColors.textPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Are you sure you want to approve this refund request?",
+                            color = AppColors.textSecondary,
+                            fontSize = 14.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        HorizontalDivider(color = AppColors.divider)
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Amount:",
+                                color = AppColors.textSecondary,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                "RM ${"%.2f".format(receipt.pay_Amount)}",
+                                color = AppColors.primary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Response By:",
+                                color = AppColors.textSecondary,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                responseBy,
+                                color = AppColors.textPrimary,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showApproveDialog = false
+                            onBack()
+                            refundViewModel.updateRefund(
+                                id = receipt.refundId!!,
+                                updates = mapOf(
+                                    "refundBy" to responseBy,
+                                    "remark" to responseRemark,
+                                    "status" to "Approved",
+                                )
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.success
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Approve", color = AppColors.surface)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showApproveDialog = false },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = AppColors.textPrimary
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = AppColors.surface,
+                shape = RoundedCornerShape(20.dp)
+            )
+        }
+
+        // Reject Confirmation Dialog
+        if (showRejectDialog) {
+            AlertDialog(
+                onDismissRequest = { showRejectDialog = false },
+                icon = {
+                    Icon(
+                        Icons.Default.Cancel,
+                        contentDescription = null,
+                        tint = AppColors.error,
+                        modifier = Modifier.size(32.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        "Reject Refund?",
+                        color = AppColors.textPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Are you sure you want to reject this refund request? This action cannot be undone.",
+                            color = AppColors.textSecondary,
+                            fontSize = 14.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        HorizontalDivider(color = AppColors.divider)
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Order #:",
+                                color = AppColors.textSecondary,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                receipt.orderId.takeLast(6),
+                                color = AppColors.textPrimary,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Response By:",
+                                color = AppColors.textSecondary,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                responseBy,
+                                color = AppColors.textPrimary,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showRejectDialog = false
+                            onBack()
+                            refundViewModel.updateRefund(
+                                id = receipt.refundId!!,
+                                updates = mapOf(
+                                    "refundBy" to responseBy,
+                                    "remark" to responseRemark,
+                                    "status" to "Rejected",
+                                )
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.error
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Reject", color = AppColors.surface)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showRejectDialog = false },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = AppColors.textPrimary
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = AppColors.surface,
+                shape = RoundedCornerShape(20.dp)
+            )
         }
     }
 }

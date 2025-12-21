@@ -47,7 +47,7 @@ fun PaymentBottomBar(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // 🧾 Summary row
+            // Summary row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
