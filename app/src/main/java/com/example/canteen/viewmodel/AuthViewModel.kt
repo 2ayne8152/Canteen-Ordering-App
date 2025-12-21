@@ -80,6 +80,12 @@ class AuthViewModel : ViewModel() {
                     return@launch
                 }
 
+                if (username.length > 25) {
+                    Log.d("AuthViewModel", "Validation failed: username too long")
+                    _authState.value = AuthState.Error("Username must be less than 25 characters")
+                    return@launch
+                }
+
                 if (password.length < 6) {
                     Log.d("AuthViewModel", "Validation failed: password too short")
                     _authState.value = AuthState.Error("Password must be at least 6 characters")
