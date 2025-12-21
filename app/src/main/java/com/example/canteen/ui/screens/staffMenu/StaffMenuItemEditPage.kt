@@ -232,13 +232,24 @@ fun StaffMenuItemEditPage(
             OutlinedTextField(
                 value = editedPrice,
                 onValueChange = { input ->
-                    val filteredInput = input.filter { it.isDigit() || it == '.' }
-                    val doubleValue = filteredInput.toDoubleOrNull()
-                    editedPrice = if (doubleValue != null) {
-                        String.format("%.2f", doubleValue)
-                    } else {
-                        filteredInput
+                    // If empty, keep empty
+                    if (input.isEmpty()) {
+                        editedPrice = ""
+                        return@OutlinedTextField
                     }
+
+                    // Allow only digits and ONE dot
+                    if (input.count { it == '.' } > 1) return@OutlinedTextField
+
+                    val filtered = input.filter { it.isDigit() || it == '.' }
+
+                    // Prevent starting with dot
+                    if (filtered == ".") {
+                        editedPrice = "0."
+                        return@OutlinedTextField
+                    }
+
+                    editedPrice = filtered
                 },
                 label = { Text("Price (RM)", color = AppColors.textSecondary) },
                 modifier = Modifier.fillMaxWidth(),
@@ -257,7 +268,19 @@ fun StaffMenuItemEditPage(
 
             OutlinedTextField(
                 value = editedQuantity,
-                onValueChange = { editedQuantity = it },
+                onValueChange = { input ->
+                    if (input.isEmpty()) {
+                        editedQuantity = ""
+                        return@OutlinedTextField
+                    }
+
+                    if (!input.all { it.isDigit() }) return@OutlinedTextField
+
+                    val number = input.toIntOrNull() ?: return@OutlinedTextField
+                    if (number <= 10000) {
+                        editedQuantity = input
+                    }
+                },
                 label = { Text("Quantity", color = AppColors.textSecondary) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -300,7 +323,15 @@ fun StaffMenuItemEditPage(
                     text = { Text("Are you sure you want to save changes to this menu item?") },
                     confirmButton = {
                         TextButton(
-                            onClick = {
+                            onClick = { if (editedName.isBlank() ||
+                                editedPrice.isBlank() ||
+                                editedQuantity.isBlank()
+                            ) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Please fill in all required fields")
+                                }
+                                return@TextButton
+                            }
                                 showSaveDialog = false
                                 val updatedItem = item.copy(
                                     name = editedName,
