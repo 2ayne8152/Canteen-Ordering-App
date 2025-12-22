@@ -117,7 +117,7 @@ fun StaffDashboardScreen(
                     title = "Orders Analytics",
                     subtitle = "Track orders",
                     icon = Icons.Default.Assessment,
-                    backgroundColor = AppColors.info,
+                    backgroundColor = AppColors.primary,
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(CanteenScreen.OrdersAnalyticsScreen.name) }
                 )
